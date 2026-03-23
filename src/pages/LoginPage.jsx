@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import FormField, { Input } from '../components/FormField';
@@ -6,11 +6,21 @@ import Button from '../components/Button';
 
 export default function LoginPage() {
   const [mode, setMode] = useState('login');
+  const [exiting, setExiting] = useState(false);
   const navigate = useNavigate();
   const { dark, toggle } = useTheme();
 
+  const handleSubmit = () => {
+    setExiting(true);
+    // Wait for the fade-out to finish, then navigate
+    setTimeout(() => navigate('/dashboard'), 300);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white dark:from-[#0f0c18] dark:to-purple-950 flex items-center justify-center p-6 transition-colors duration-200">
+    <div
+      className={`min-h-screen bg-gradient-to-b from-purple-50 to-white dark:from-[#0f0c18] dark:to-purple-950 flex items-center justify-center p-6 transition-all duration-300
+        ${exiting ? 'opacity-0 translate-y-[-8px]' : 'opacity-100 translate-y-0'}`}
+    >
       <button
         type="button"
         onClick={toggle}
@@ -59,7 +69,7 @@ export default function LoginPage() {
             <Input type="password" placeholder="••••••••" />
           </FormField>
 
-          <Button className="w-full mt-4" size="lg" onClick={() => navigate('/dashboard')}>
+          <Button className="w-full mt-4" size="lg" onClick={handleSubmit}>
             {mode === 'login' ? 'Sign in' : 'Register'}
           </Button>
 

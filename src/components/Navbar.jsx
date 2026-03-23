@@ -9,24 +9,8 @@ export default function Navbar({ onMenuOpen }) {
     <header className="sticky top-0 z-30 bg-white/75 dark:bg-[#110e1c]/85 backdrop-blur border-b border-purple-100/70 dark:border-purple-900/50 shadow-sm shadow-purple-900/5 dark:shadow-black/20">
       <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
         <div className="flex items-center gap-2 min-w-0">
-          <button
-            type="button"
-            onClick={onMenuOpen}
-            className="md:hidden inline-flex items-center justify-center rounded-2xl p-2 border border-purple-200/70 bg-white/70 hover:bg-white text-purple-800 hover:text-purple-950 transition
-            dark:bg-purple-950/40 dark:hover:bg-purple-950 dark:border-purple-900/60 dark:text-purple-100
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#110e1c]"
-            aria-label="Open sidebar"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h18v14H3V5Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5v14" />
-            </svg>
-          </button>
-
           <NavLink to="/dashboard" className="flex items-center gap-3 min-w-0 group">
-            <div className="h-9 w-9 rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white flex items-center justify-center font-display font-extrabold shadow-sm flex-shrink-0">
-              RS
-            </div>
+            
             <span className="font-display text-lg font-extrabold text-purple-900 dark:text-purple-100 tracking-tight truncate group-hover:text-purple-950 dark:group-hover:text-white transition-colors">
               Roomie<span className="text-purple-600 dark:text-purple-300">Split</span>
             </span>

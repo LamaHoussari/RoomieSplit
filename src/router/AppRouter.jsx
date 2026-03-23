@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import MainLayout      from '../layouts/MainLayout';
 import LoginPage       from '../pages/LoginPage';
 import DashboardPage   from '../pages/DashboardPage';
@@ -9,10 +9,11 @@ import BalancesPage    from '../pages/BalancesPage';
 import ChoresPage      from '../pages/ChoresPage';
 import ProfilePage     from '../pages/ProfilePage';
 
-export default function AppRouter() {
+function AnimatedRoutes() {
+  const location = useLocation();
   return (
-    <BrowserRouter>
-      <Routes>
+    <div key={location.pathname} className="page-transition">
+      <Routes location={location}>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<MainLayout />}>
           <Route path="/dashboard"  element={<DashboardPage />} />
@@ -25,6 +26,14 @@ export default function AppRouter() {
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+    </div>
+  );
+}
+
+export default function AppRouter() {
+  return (
+    <BrowserRouter>
+      <AnimatedRoutes />
     </BrowserRouter>
   );
 }
