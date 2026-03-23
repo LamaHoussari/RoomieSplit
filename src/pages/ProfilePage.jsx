@@ -1,25 +1,83 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 
 export default function ProfilePage() {
-  const navigate = useNavigate();
+  const [profile, setProfile] = useState({ name: 'Rand Al Yaman', email: 'rand@example.com' });
+  const [draft, setDraft] = useState(profile);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const isDirty = draft.name !== profile.name || draft.email !== profile.email;
 
   return (
     <>
       <PageHeader title="Profile" subtitle="Manage your account" />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card title="Account Info">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card
+          title="Account Info"
+          className={isEditing ? 'ring-2 ring-purple-400/25 dark:ring-purple-400/20' : ''}
+        >
           <FormField label="Full Name">
-            <Input defaultValue="Rand Al Yaman" />
+            <Input
+              value={draft.name}
+              onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+              readOnly={!isEditing}
+              className={!isEditing ? 'cursor-default bg-purple-50/70 dark:bg-purple-950/40' : ''}
+            />
           </FormField>
           <FormField label="Email">
-            <Input defaultValue="rand@example.com" type="email" />
+            <Input
+              value={draft.email}
+              onChange={e => setDraft(d => ({ ...d, email: e.target.value }))}
+              type="email"
+              readOnly={!isEditing}
+              className={!isEditing ? 'cursor-default bg-purple-50/70 dark:bg-purple-950/40' : ''}
+            />
           </FormField>
-          <Button size="sm" className="mt-4">Save changes</Button>
+
+          <div className="flex items-center justify-between gap-3 mt-5">
+            <span className="text-sm text-purple-600/70 dark:text-purple-300/70">
+              {isEditing ? 'Editing enabled' : 'Click edit to update your info.'}
+            </span>
+            {!isEditing ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDraft(profile);
+                  setIsEditing(true);
+                }}
+              >
+                Edit
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDraft(profile);
+                    setIsEditing(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!isDirty}
+                  onClick={() => {
+                    setProfile(draft);
+                    setIsEditing(false);
+                  }}
+                >
+                  Save changes
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
 
         <Card title="Security">
@@ -29,13 +87,9 @@ export default function ProfilePage() {
           <FormField label="New password">
             <Input type="password" placeholder="••••••••" />
           </FormField>
-          <Button variant="outline" size="sm" className="mt-4">Update password</Button>
-
-          <div className="border-t border-purple-100 dark:border-purple-800/60 mt-6 pt-5">
-            <Button variant="danger" size="sm" onClick={() => navigate('/login')}>
-              Sign out
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" className="mt-2">
+            Update password
+          </Button>
         </Card>
       </div>
     </>
