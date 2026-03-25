@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import Badge from '../components/Badge';
 import FormField, { Input, Select } from '../components/FormField';
 import { MOCK_CHORES, MOCK_MEMBERS } from '../data/mockData';
-import type { Chore } from '../types';
+import type { Chore } from '../types/Chore';
 
 interface ChoreItem extends Chore {
   id: number;

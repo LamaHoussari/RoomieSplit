@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import Badge from '../components/Badge';
 import FormField, { Input, Select } from '../components/FormField';
 import { MOCK_EXPENSES, MOCK_MEMBERS } from '../data/mockData';
-import type { Expense } from '../types';
+import type { Expense } from '../types/Expense';
 
 interface ExpenseItem extends Expense {
   paid: boolean;

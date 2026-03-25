@@ -1,4 +1,7 @@
-import type { Member, Expense, Group, Chore } from '../types';
+import type { Member} from "../types/Member"
+import type {Expense} from "../types/Expense"
+import type {Group} from "../types/Group" 
+import type {Chore} from '../types/Chore'
 
 export const MOCK_MEMBERS: Member[] = [
   { name: 'Rand',  initials: 'RA', colorClass: 'bg-purple-500/20 text-purple-400', balance: +235 },
