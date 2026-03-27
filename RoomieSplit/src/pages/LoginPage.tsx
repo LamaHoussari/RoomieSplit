@@ -1,22 +1,47 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import FormField, { Input } from '../components/FormField';
 import Button from '../components/Button';
 
 type LoginMode = 'login' | 'register';
 
-export default function LoginPage() {
+type AuthProps = {
+    onSignUp: (email:string, password:string) => Promise<boolean>;
+    onSignIn: (email:string, password:string) => Promise<boolean>;
+error:string;
+successMessage: string;
+loading:boolean;
+}
+
+export default function LoginPage({
+    onSignUp, onSignIn, error, successMessage, loading
+}: AuthProps) {
   const [mode, setMode] = useState<LoginMode>('login');
   const [exiting, setExiting] = useState(false);
-  const navigate = useNavigate();
   const { dark, toggle } = useTheme();
 
-  const handleSubmit = () => {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [localError, setLocalError] = useState("")
+
+  function validate(){
+      if(!email.trim() || !password.trim()){
+          setLocalError("Email & pass are required!")
+          return false
+      }
+      setLocalError("")
+      return true;
+  }
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
     setExiting(true);
-    // Wait for the fade-out to finish, then navigate
-    setTimeout(() => navigate('/dashboard'), 300);
-  };
+    if (mode === 'login') {
+      await onSignIn(email, password)
+    } else {
+      await onSignUp(email, password)
+  }
+};
 
   return (
     <div
@@ -58,7 +83,7 @@ export default function LoginPage() {
           </h2>
 
           <FormField label="Email">
-            <Input type="email" placeholder="you@example.com" />
+            <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           </FormField>
 
           {mode === 'register' && (
@@ -68,10 +93,14 @@ export default function LoginPage() {
           )}
 
           <FormField label="Password">
-            <Input type="password" placeholder="••••••••" />
+            <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
           </FormField>
-
-          <Button className="w-full mt-4" size="lg" onClick={handleSubmit}>
+        
+          {/* Note: needs styling */}
+          {localError && <p>{localError}</p>}
+          {error && <p>{error}</p>}
+          {successMessage && <p>{successMessage}</p>}
+          <Button className="w-full mt-4" size="lg" onClick={handleSubmit} disabled={loading}>
             {mode === 'login' ? 'Sign in' : 'Register'}
           </Button>
 

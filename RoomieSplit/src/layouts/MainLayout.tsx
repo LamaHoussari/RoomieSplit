@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 
-export default function MainLayout() {
+export default function MainLayout({ onSignOut }: { onSignOut: () => void }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -20,7 +20,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-purple-50/70 dark:bg-[#110e1c] transition-colors duration-200">
-      <Navbar />
+      <Navbar onSignOut={onSignOut} />
 
       <div className="flex flex-1 min-h-0">
         <Sidebar

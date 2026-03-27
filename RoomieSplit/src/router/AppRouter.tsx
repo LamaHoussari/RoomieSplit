@@ -9,13 +9,33 @@ import BalancesPage    from '../pages/BalancesPage';
 import ChoresPage      from '../pages/ChoresPage';
 import ProfilePage     from '../pages/ProfilePage';
 
+import { useAuth } from "../hooks/useAuth";
+
 function AnimatedRoutes() {
-  const location = useLocation();
+  const location = useLocation(); // to know where they are in the app and how they got there
+  
+    const {
+    user, // current user
+    loading, // auth loading state
+    error, // auth error
+    successMessage, // auth success feedback
+    signUp, // signup action
+    signIn, // signin action
+    signOut, // signout action
+  } = useAuth();
+  
   return (
     <div key={location.pathname} className="page-transition">
       <Routes location={location}>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<MainLayout />}>
+        <Route path="/login" element={<LoginPage 
+          onSignUp={signUp}
+          onSignIn={signIn}
+          error={error}
+          successMessage={successMessage}
+          loading={loading}
+        />} />
+        {user && (
+        <Route element={<MainLayout onSignOut={signOut}/>}>
           <Route path="/dashboard"  element={<DashboardPage />} />
           <Route path="/groups"     element={<GroupsPage />} />
           <Route path="/groups/:id" element={<GroupDetailPage />} />
@@ -24,7 +44,10 @@ function AnimatedRoutes() {
           <Route path="/chores"     element={<ChoresPage />} />
           <Route path="/profile"    element={<ProfilePage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        )}
+        {!user && !loading && (
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        )}
       </Routes>
     </div>
   );

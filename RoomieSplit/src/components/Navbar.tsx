@@ -1,9 +1,8 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Navbar() {
+export default function Navbar({ onSignOut }: { onSignOut: () => void }) {
   const { dark, toggle } = useTheme();
-  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-30 bg-white/75 dark:bg-[#110e1c]/85 backdrop-blur border-b border-purple-100/70 dark:border-purple-900/50 shadow-sm shadow-purple-900/5 dark:shadow-black/20">
@@ -20,7 +19,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => navigate('/login')}
+            onClick={onSignOut}
             className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold transition border
             bg-red-50/70 hover:bg-red-50 border-red-200/70 text-red-700 hover:text-red-800
             dark:bg-red-950/20 dark:hover:bg-red-950/30 dark:border-red-900/60 dark:text-red-300
