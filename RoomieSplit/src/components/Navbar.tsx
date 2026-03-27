@@ -1,7 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
-export default function Navbar({ onSignOut }: { onSignOut: () => void }) {
+type NavProps = {
+  onSignOut: () => Promise<boolean>;
+};
+
+export default function Navbar({ onSignOut }: NavProps) {
   const { dark, toggle } = useTheme();
 
   return (

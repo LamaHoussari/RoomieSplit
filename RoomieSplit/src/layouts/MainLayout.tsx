@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 
-export default function MainLayout({ onSignOut }: { onSignOut: () => void }) {
+export default function MainLayout({ onSignOut }: { onSignOut: () => Promise<boolean>; }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {

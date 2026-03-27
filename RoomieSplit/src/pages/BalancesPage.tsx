@@ -4,20 +4,8 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import { MOCK_MEMBERS } from '../data/mockData';
-
-interface Settlement {
-  id: number;
-  from: string;
-  to: string;
-  amount: number;
-  paid: number;
-}
-
-const SETTLEMENTS: Settlement[] = [
-  { id: 1, from: 'Reem', to: 'Rand', amount: 120, paid: 0 },
-  { id: 2, from: 'Lama', to: 'Rand', amount: 115, paid: 0 },
-];
+import { MOCK_MEMBERS, MOCK_SETELEMENTS } from '../data/mockData';
+import type { Setelment } from '../types/Setelment';
 
 // Deterministic hue from name
 const memberHue = (name: string) => {
@@ -28,11 +16,11 @@ const memberHue = (name: string) => {
 const initials = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
 export default function BalancesPage() {
-  const [settlements, setSettlements] = useState<Settlement[]>(SETTLEMENTS);
-  const [payTarget, setPayTarget] = useState<Settlement | null>(null);
+  const [settlements, setSettlements] = useState<Setelment[]>(MOCK_SETELEMENTS);
+  const [payTarget, setPayTarget] = useState<Setelment | null>(null);
   const [payAmount, setPayAmount] = useState('');
 
-  const openPay = (s: Settlement) => {
+  const openPay = (s: Setelment) => {
     setPayTarget(s);
     setPayAmount(String(s.amount - s.paid));
   };

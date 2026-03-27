@@ -2,6 +2,7 @@ import type { Member} from "../types/Member"
 import type {Expense} from "../types/Expense"
 import type {Group} from "../types/Group" 
 import type {Chore} from '../types/Chore'
+import type {Setelment} from '../types/Setelment'
 
 export const MOCK_MEMBERS: Member[] = [
   { name: 'Rand',  initials: 'RA', colorClass: 'bg-purple-500/20 text-purple-400', balance: +235 },
@@ -27,4 +28,9 @@ export const MOCK_CHORES: Chore[] = [
   { icon: '', name: 'Wash dishes',         freq: 'Daily',     assigned: 'Lama' },
   { icon: '', name: 'Groceries run',       freq: 'Bi-weekly', assigned: 'Rand' },
   { icon: '', name: 'Feed the cat',        freq: 'Daily',     assigned: 'Reem' },
+];
+
+export const MOCK_SETELEMENTS: Setelment[] = [
+  { id: 1, from: 'Reem', to: 'Rand', amount: 120, paid: 0 },
+  { id: 2, from: 'Lama', to: 'Rand', amount: 115, paid: 0 },
 ];
