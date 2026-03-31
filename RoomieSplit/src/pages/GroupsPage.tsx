@@ -14,6 +14,27 @@ export default function GroupsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const navigate = useNavigate();
+  const [groupName, setGroupName] = useState('');
+  const [members, setMembers] = useState(['']);  
+
+  const addMember = () => setMembers([...members, '']);
+  const updateMember = (index: number, val: string) => setMembers(members.map((m, idx) => idx === index ? val : m));
+  const removeMember = (index: number) => setMembers(members.filter((_, idx) => idx !== index));
+
+  const canCreate = groupName.trim() !== '' && members.some(m => m.trim() !== '');
+
+  const handleCreate = () => {
+    if (!canCreate) return;
+    setShowCreate(false);
+    setGroupName('');
+    setMembers(['']);
+  };
+
+  const handleClose = () => {
+    setShowCreate(false);
+    setGroupName('');
+    setMembers(['']);
+  };
 
   return (
     <>
@@ -103,15 +124,42 @@ export default function GroupsPage() {
       </div>
 
       {showCreate && (
-        <Modal title="Create Group" onClose={() => setShowCreate(false)}>
+        <Modal title="Create Group" onClose={handleClose}>
           <FormField label="Group name">
-            <Input placeholder="e.g. Hamra Flat" />
+            <Input
+              placeholder="e.g. Hamra Flat"
+              value={groupName}
+              onChange={e => setGroupName(e.target.value)}
+            />
+          </FormField>
+
+          <FormField label="Members">
+            {members.map((m, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <Input
+                  placeholder="Member name or email"
+                  value={m}
+                  onChange={e => updateMember(i, e.target.value)}
+                />
+                {members.length > 1 && (
+                  <Button variant="outline" size="sm" onClick={() => removeMember(i)}>
+                    ✕
+                  </Button>
+                )}
+              </div>
+            ))}
+            <button
+              className="text-sm text-purple-600 dark:text-purple-300 mt-1 hover:underline"
+              onClick={addMember}
+            >
+              + Add another member
+            </button>
           </FormField>
           <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" size="sm" onClick={() => setShowCreate(false)}>
+            <Button variant="outline" size="sm" onClick={handleClose}>
               Cancel
             </Button>
-            <Button size="sm" onClick={() => setShowCreate(false)}>
+            <Button size="sm" onClick={handleCreate} disabled={!canCreate}>    
               Create
             </Button>
           </div>
