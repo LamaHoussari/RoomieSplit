@@ -3,7 +3,7 @@ import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
-import { MOCK_EXPENSES, MOCK_MEMBERS } from '../data/mockData';
+import { MOCK_EXPENSES, MOCK_MEMBERS, computeBalance } from '../data/mockData';
 
 interface StatCardProps {
   label: string;
@@ -27,6 +27,9 @@ function StatCard({ label, value, colorClass, accentClass }: StatCardProps) {
     </div>
   );
 }
+
+const getInitials = (name?: string) =>
+  (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -72,10 +75,10 @@ export default function DashboardPage() {
               >
                 <div className="min-w-0">
                   <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
-                    {e.desc}
+                    {e.description}
                   </p>
                   <p className="text-sm text-purple-600/70 dark:text-purple-300/70 mt-0.5">
-                    {e.date} · paid by {e.payer}
+                    {e.date} · paid by {e.profiles?.name ?? 'Unknown'}
                   </p>
                 </div>
                 <span className="font-semibold text-base text-purple-800 dark:text-purple-200">
@@ -91,29 +94,33 @@ export default function DashboardPage() {
 
         <Card title="Balances" className="overflow-hidden">
           <div className="-mx-2">
-            {MOCK_MEMBERS.map(m => (
-              <div
-                key={m.name}
-                className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
-              >
-                <Avatar initials={m.initials} colorClass={m.colorClass} />
-                <div className="min-w-0">
-                  <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
-                    {m.name}
-                  </p>
-                  <p className="text-sm text-purple-600/70 dark:text-purple-300/70">
-                    {m.balance > 0 ? 'is owed' : 'owes'}
-                  </p>
-                </div>
-                <span
-                  className={`ml-auto font-semibold text-base ${
-                    m.balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
-                  }`}
+            {MOCK_MEMBERS.map(m => {
+              const balance = computeBalance(m.user_id);
+              const name = m.profiles?.name ?? 'Unknown';
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
                 >
-                  {m.balance > 0 ? '+' : ''}${Math.abs(m.balance)}
-                </span>
-              </div>
-            ))}
+                  <Avatar initials={getInitials(name)} colorClass={m.color_class} />
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
+                      {name}
+                    </p>
+                    <p className="text-sm text-purple-600/70 dark:text-purple-300/70">
+                      {balance > 0 ? 'is owed' : 'owes'}
+                    </p>
+                  </div>
+                  <span
+                    className={`ml-auto font-semibold text-base ${
+                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
+                    }`}
+                  >
+                    {balance > 0 ? '+' : ''}${Math.abs(balance)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </Card>
       </div>

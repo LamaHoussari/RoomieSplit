@@ -4,8 +4,8 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import { MOCK_MEMBERS, MOCK_SETELEMENTS } from '../data/mockData';
-import type { Setelment } from '../types/Setelment';
+import { MOCK_MEMBERS, MOCK_SETTLEMENTS, computeBalance } from '../data/mockData';
+import type { Settlement } from '../types/Setelment';
 
 // Deterministic hue from name
 const memberHue = (name: string) => {
@@ -16,11 +16,11 @@ const memberHue = (name: string) => {
 const initials = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
 export default function BalancesPage() {
-  const [settlements, setSettlements] = useState<Setelment[]>(MOCK_SETELEMENTS);
-  const [payTarget, setPayTarget] = useState<Setelment | null>(null);
+  const [settlements, setSettlements] = useState<Settlement[]>(MOCK_SETTLEMENTS);
+  const [payTarget, setPayTarget] = useState<Settlement | null>(null);
   const [payAmount, setPayAmount] = useState('');
 
-  const openPay = (s: Setelment) => {
+  const openPay = (s: Settlement) => {
     setPayTarget(s);
     setPayAmount(String(s.amount - s.paid));
   };
@@ -42,18 +42,22 @@ export default function BalancesPage() {
 
       {/* Member balance cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {MOCK_MEMBERS.map(m => (
-          <div
-            key={m.name}
-            className="bg-white/90 dark:bg-purple-950/70 border border-purple-100/80 dark:border-purple-900/60 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <p className="text-sm font-semibold text-purple-700/70 dark:text-purple-200/70 mb-2">{m.name}</p>
-            <p className={`font-display text-4xl font-extrabold tracking-tight ${m.balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-              {m.balance > 0 ? '+' : ''}${Math.abs(m.balance)}
-            </p>
-            <p className="text-sm text-purple-700/70 dark:text-purple-200/70 mt-1">{m.balance > 0 ? 'is owed' : 'owes'}</p>
-          </div>
-        ))}
+        {MOCK_MEMBERS.map(m => {
+          const balance = computeBalance(m.user_id);
+          const name = m.profiles?.name ?? 'Unknown';
+          return (
+            <div
+              key={m.id}
+              className="bg-white/90 dark:bg-purple-950/70 border border-purple-100/80 dark:border-purple-900/60 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <p className="text-sm font-semibold text-purple-700/70 dark:text-purple-200/70 mb-2">{name}</p>
+              <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                {balance > 0 ? '+' : ''}${Math.abs(balance)}
+              </p>
+              <p className="text-sm text-purple-700/70 dark:text-purple-200/70 mt-1">{balance > 0 ? 'is owed' : 'owes'}</p>
+            </div>
+          );
+        })}
       </div>
 
       {/* Settlement table */}
@@ -83,10 +87,12 @@ export default function BalancesPage() {
             <tbody>
               {settlements.map(s => {
                 const settled = s.paid >= s.amount;
+                const fromName = s.from_profile?.name ?? 'Unknown';
+                const toName = s.to_profile?.name ?? 'Unknown';
                 return (
                   <tr key={s.id} className="border-b border-purple-50/80 dark:border-purple-800/30 last:border-0 hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors">
-                    <td className="py-4 px-4"><Badge variant="red">{s.from}</Badge></td>
-                    <td className="py-4 px-4"><Badge variant="purple">{s.to}</Badge></td>
+                    <td className="py-4 px-4"><Badge variant="red">{fromName}</Badge></td>
+                    <td className="py-4 px-4"><Badge variant="purple">{toName}</Badge></td>
                     <td className="py-4 px-4 font-semibold text-purple-900 dark:text-purple-100">${s.amount}</td>
                     <td className="py-4 px-4 text-purple-700/70 dark:text-purple-200/70 whitespace-nowrap">${s.paid} / ${s.amount}</td>
                     <td className="py-4 px-4">
@@ -120,7 +126,7 @@ export default function BalancesPage() {
 
           {/* From → To summary */}
           <div className="flex items-center gap-3 mb-6">
-            {[payTarget.from, payTarget.to].map((name, i) => {
+            {[payTarget.from_profile?.name ?? 'Unknown', payTarget.to_profile?.name ?? 'Unknown'].map((name, i) => {
               const h = memberHue(name);
               return (
                 <React.Fragment key={name}>

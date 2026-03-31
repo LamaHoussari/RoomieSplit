@@ -2,12 +2,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Card from '../components/Card';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
-import { MOCK_MEMBERS, MOCK_GROUPS } from '../data/mockData';
+import { MOCK_MEMBERS, MOCK_GROUPS, computeBalance } from '../data/mockData';
+
+const getInitials = (name?: string) =>
+  (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
 export default function GroupDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const group = MOCK_GROUPS.find(g => g.id === Number(id)) || MOCK_GROUPS[0];
+  const groupMembers = MOCK_MEMBERS.filter(m => m.group_id === group.id);
 
   return (
     <>
@@ -33,36 +37,40 @@ export default function GroupDetailPage() {
           {group.name}
         </h1>
         <p className="text-base text-purple-700/70 dark:text-purple-200/70 mt-2">
-          {group.members} members · Created {group.created}
+          {groupMembers.length} members · Created {group.created_at}
         </p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card title="Members" className="overflow-hidden">
           <div className="-mx-2">
-            {MOCK_MEMBERS.map((m, i) => (
-              <div
-                key={m.name}
-                className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
-              >
-                <Avatar initials={m.initials} colorClass={m.colorClass} />
-                <div className="min-w-0">
-                  <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
-                    {m.name}
-                  </p>
-                  <p className="text-sm text-purple-700/70 dark:text-purple-200/70">
-                    {i === 0 ? 'Admin' : 'Member'}
-                  </p>
-                </div>
-                <span
-                  className={`ml-auto font-semibold text-base ${
-                    m.balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
-                  }`}
+            {groupMembers.map(m => {
+              const balance = computeBalance(m.user_id);
+              const name = m.profiles?.name ?? 'Unknown';
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
                 >
-                  {m.balance > 0 ? '+' : ''}${Math.abs(m.balance)}
-                </span>
-              </div>
-            ))}
+                  <Avatar initials={getInitials(name)} colorClass={m.color_class} />
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
+                      {name}
+                    </p>
+                    <p className="text-sm text-purple-700/70 dark:text-purple-200/70">
+                      {m.role === 'admin' ? 'Admin' : 'Member'}
+                    </p>
+                  </div>
+                  <span
+                    className={`ml-auto font-semibold text-base ${
+                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
+                    }`}
+                  >
+                    {balance > 0 ? '+' : ''}${Math.abs(balance)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           <Button variant="outline" size="sm" className="mt-4">
