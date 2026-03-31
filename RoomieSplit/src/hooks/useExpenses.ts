@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { NewExpense, Expense, NewExpenseSplit } from "../types/Expense";
 import { createExpense, getExpensesByGroup } from "../services/expensesService";
 
-export function useExpenses(groupId: number | null) {
+export function useExpenses(groupId: string | null) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const [loading, setLoading] = useState(false);

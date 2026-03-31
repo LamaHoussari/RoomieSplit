@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { NewChore, Chore } from "../types/Chore";
 import { createChore, getChoresByGroup } from "../services/choreService";
 
-export function useChores(groupId: number | null) {
+export function useChores(groupId: string | null) {
   const [chores, setChores] = useState<Chore[]>([]);
 
   const [loading, setLoading] = useState(false);

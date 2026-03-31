@@ -18,7 +18,7 @@ export async function createExpense(expense: NewExpense, splits: NewExpenseSplit
     return { data, error: splitError };
 }
 
-export async function getExpensesByGroup(groupId: number) {
+export async function getExpensesByGroup(groupId: string) {
     return await supabase
         .from("expenses")
         .select("*, profiles:payer_id(name), expense_splits(*, profiles:user_id(name))")

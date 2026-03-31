@@ -1,9 +1,10 @@
 export interface GroupMember {
-  id: number;
-  group_id: number;
+  id: string;
+  group_id: string;
   user_id: string;
   role: string;
-  color_class: string;
+  color_class: string | null;
+  nickname?: string | null;
   joined_at: string;
   profiles?: {
     name: string;
@@ -12,8 +13,9 @@ export interface GroupMember {
 }
 
 export interface NewGroupMember {
-  group_id: number;
+  group_id: string;
   user_id: string;
   role?: string;
-  color_class?: string;
+  color_class?: string | null;
+  nickname?: string | null;
 }

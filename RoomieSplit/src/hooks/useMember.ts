@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { GroupMember, NewGroupMember } from "../types/Member";
 import { addGroupMember, getMembersByGroup } from "../services/memberService";
 
-export function useMembers(groupId: number | null) {
+export function useMembers(groupId: string | null) {
   const [members, setMembers] = useState<GroupMember[]>([]);
 
   const [loading, setLoading] = useState(false);

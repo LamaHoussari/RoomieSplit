@@ -5,7 +5,7 @@ export async function createChore(chore: NewChore) {
     return await supabase.from("chores").insert([chore]);
 }
 
-export async function getChoresByGroup(groupId: number) {
+export async function getChoresByGroup(groupId: string) {
     return await supabase
         .from("chores")
         .select("*, profiles:assigned_to(name)")

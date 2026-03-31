@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { NewSettlement, Settlement } from "../types/Setelment";
 import { createSettlement, getSettlementsByGroup } from "../services/setelmentService";
 
-export function useSettlements(groupId: number | null) {
+export function useSettlements(groupId: string | null) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
   const [loading, setLoading] = useState(false);

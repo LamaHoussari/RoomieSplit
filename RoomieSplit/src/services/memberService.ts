@@ -5,7 +5,7 @@ export async function addGroupMember(member: NewGroupMember) {
     return await supabase.from("group_members").insert([member]);
 }
 
-export async function getMembersByGroup(groupId: number) {
+export async function getMembersByGroup(groupId: string) {
     return await supabase
         .from("group_members")
         .select("*, profiles(name, email)")

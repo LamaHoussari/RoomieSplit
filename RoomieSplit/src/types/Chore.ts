@@ -1,19 +1,21 @@
 export interface Chore {
-  id: number;
-  group_id: number;
+  id: string;
+  group_id: string;
   name: string;
   icon: string;
   frequency: string;
-  assigned_to: string;
+  assigned_to: string | null;
+  created_by: string;
   is_completed: boolean;
   created_at: string;
   profiles?: { name: string };
 }
 
 export interface NewChore {
-  group_id: number;
+  group_id: string;
   name: string;
   icon?: string;
   frequency: string;
-  assigned_to: string;
+  assigned_to: string | null;
+  created_by: string;
 }

@@ -5,7 +5,7 @@ export async function createSettlement(settlement: NewSettlement) {
     return await supabase.from("settlements").insert([settlement]);
 }
 
-export async function getSettlementsByGroup(groupId: number) {
+export async function getSettlementsByGroup(groupId: string) {
     return await supabase
         .from("settlements")
         .select("*, from_profile:from_user_id(name), to_profile:to_user_id(name)")

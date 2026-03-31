@@ -1,9 +1,10 @@
 export interface Expense {
-  id: number;
-  group_id: number;
+  id: string;
+  group_id: string;
   description: string;
   amount: number;
   payer_id: string;
+  created_by: string;
   date: string;
   is_paid: boolean;
   created_at: string;
@@ -12,24 +13,25 @@ export interface Expense {
 }
 
 export interface NewExpense {
-  group_id: number;
+  group_id: string;
   description: string;
   amount: number;
   payer_id: string;
+  created_by: string;
   date: string;
   is_paid?: boolean;
 }
 
 export interface ExpenseSplit {
-  id: number;
-  expense_id: number;
+  id: string;
+  expense_id: string;
   user_id: string;
   share_amount: number | null;
   profiles?: { name: string };
 }
 
 export interface NewExpenseSplit {
-  expense_id: number;
+  expense_id?: string;
   user_id: string;
   share_amount?: number | null;
 }
