@@ -1,4 +1,5 @@
 export type AppUser = {
-    id:string;
-    email:string | null;
+    id: string;
+    email: string | null;
+    name: string | null;
 }

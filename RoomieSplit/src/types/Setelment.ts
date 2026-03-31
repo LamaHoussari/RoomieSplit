@@ -1,14 +1,19 @@
-export interface Setelment {
+export interface Settlement {
   id: number;
-  from: string;
-  to: string;
+  group_id: number;
+  from_user_id: string;
+  to_user_id: string;
   amount: number;
   paid: number;
+  created_at: string;
+  from_profile?: { name: string };
+  to_profile?: { name: string };
 }
 
-export interface NewSetelment {
-  from: string;
-  to: string;
+export interface NewSettlement {
+  group_id: number;
+  from_user_id: string;
+  to_user_id: string;
   amount: number;
-  paid: number;
+  paid?: number;
 }
