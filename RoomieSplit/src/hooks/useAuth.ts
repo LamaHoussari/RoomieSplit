@@ -6,7 +6,7 @@ import {
   signOutUser,
   signUpWithEmail,
   subscribeToAuthChanges,
-} from "../services/authService";
+} from "../services/authServices";
 
 function mapUser(
   user: { id: string; email?: string | null } | null,
