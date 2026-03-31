@@ -1,27 +1,23 @@
 import { useEffect, useState } from "react";
-import type { Member } from "../types/Member";
-import { createMember, getMembersByUser  } from "../services/memberService";
+import type { GroupMember, NewGroupMember } from "../types/Member";
+import { addGroupMember, getMembersByGroup } from "../services/memberService";
 
-// Custom hook for loading and adding members for one specific user
-export function useMembers(userId: string | null) {
-  // Stores the current user's members
-  const [members, setMembers] = useState<Member[]>([]);
+export function useMembers(groupId: number | null) {
+  const [members, setMembers] = useState<GroupMember[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Loads members for the current user
   async function loadMembers() {
-    // If there is no user, clear members and stop
-    if (!userId) {
+    if (!groupId) {
       setMembers([]);
       return;
     }
     setLoading(true);
     setError("");
 
-    const { data, error } = await getMembersByUser(userId);
+    const { data, error } = await getMembersByGroup(groupId);
 
     if (error) {
       setError(error.message);
@@ -34,20 +30,18 @@ export function useMembers(userId: string | null) {
     setLoading(false);
   }
 
-  // Reload members whenever userId changes
   useEffect(() => {
     async function loadMembersWrapper() {
       await loadMembers();
     }
     loadMembersWrapper();
-  }, [userId]);
+  }, [groupId]);
 
-  // Adds a new member
-  async function addMember(member: Member) {
+  async function addMember(member: NewGroupMember) {
     setError("");
     setSuccessMessage("");
 
-    const { error } = await createMember(member);
+    const { error } = await addGroupMember(member);
 
     if (error) {
       setError(error.message);
@@ -62,10 +56,10 @@ export function useMembers(userId: string | null) {
   }
 
   return {
-    members, // user's members
-    loading, // loading state
-    error, // member error
-    successMessage, // member success feedback
-    addMember, // action to insert a new member
+    members,
+    loading,
+    error,
+    successMessage,
+    addMember,
   };
 }

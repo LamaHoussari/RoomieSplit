@@ -1,27 +1,23 @@
 import { useEffect, useState } from "react";
-import type { NewSetelment, Setelment } from "../types/Setelment";
-import { createSetelment, getSetelmentsByUser } from "../services/setelmentService";
+import type { NewSettlement, Settlement } from "../types/Setelment";
+import { createSettlement, getSettlementsByGroup } from "../services/setelmentService";
 
-// Custom hook for loading and adding setelments for one specific user
-export function useSetelment(userId: string | null) {
-  // Stores the current user's setelments
-  const [setelments, setSetelments] = useState<Setelment[]>([]);
+export function useSettlements(groupId: number | null) {
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Loads setelments for the current user
-  async function loadSetelments() {
-    // If there is no user, clear setelments and stop
-    if (!userId) {
-      setSetelments([]);
+  async function loadSettlements() {
+    if (!groupId) {
+      setSettlements([]);
       return;
     }
     setLoading(true);
     setError("");
 
-    const { data, error } = await getSetelmentsByUser(userId);
+    const { data, error } = await getSettlementsByGroup(groupId);
 
     if (error) {
       setError(error.message);
@@ -29,43 +25,41 @@ export function useSetelment(userId: string | null) {
       return;
     }
 
-    setSetelments(data ?? []);
+    setSettlements(data ?? []);
 
     setLoading(false);
   }
 
-  // Reload setelments whenever userId changes
   useEffect(() => {
-    async function loadSetelmentsWrapper() {
-      await loadSetelments();
+    async function loadSettlementsWrapper() {
+      await loadSettlements();
     }
-    loadSetelmentsWrapper();
-  }, [userId]);
+    loadSettlementsWrapper();
+  }, [groupId]);
 
-  // Adds a new setelment
-  async function addSetelment(setelment: NewSetelment) {
+  async function addSettlement(settlement: NewSettlement) {
     setError("");
     setSuccessMessage("");
 
-    const { error } = await createSetelment(setelment);
+    const { error } = await createSettlement(settlement);
 
     if (error) {
       setError(error.message);
       return false;
     }
 
-    setSuccessMessage("Setelment added successfully.");
+    setSuccessMessage("Settlement added successfully.");
 
-    await loadSetelments();
+    await loadSettlements();
 
     return true;
   }
 
   return {
-    setelments, // user's setelments
-    loading, // loading state
-    error, // setelment error
-    successMessage, // setelment success feedback
-    addSetelment, // action to insert a new setelment
+    settlements,
+    loading,
+    error,
+    successMessage,
+    addSettlement,
   };
 }

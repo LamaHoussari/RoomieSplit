@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AppUser } from "../types/auth";
 import {
-  getCuurentUser,
+  getCurrentUser,
   signInWithEmail,
   signOutUser,
   signUpWithEmail,
@@ -15,6 +15,7 @@ function mapUser(
   return {
     id: user.id,
     email: user.email ?? null,
+    name: user.email?.split("@")[0] ?? null,
   };
 }
 export function useAuth() {
@@ -27,7 +28,7 @@ export function useAuth() {
     async function loadUser() {
       setLoading(true);
       setError("");
-      const { data, error } = await getCuurentUser();
+      const { data, error } = await getCurrentUser();
 
       if (error) {
         setError(error.message);

@@ -1,27 +1,23 @@
 import { useEffect, useState } from "react";
-import type { NewExpense, Expense } from "../types/Expense";
-import { createExpense, getExpensesByUser } from "../services/expensesService";
+import type { NewExpense, Expense, NewExpenseSplit } from "../types/Expense";
+import { createExpense, getExpensesByGroup } from "../services/expensesService";
 
-// Custom hook for loading and adding expenses for one specific user
-export function useExpenses(userId: string | null) {
-  // Stores the current user's expenses
+export function useExpenses(groupId: number | null) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Loads expenses for the current user
   async function loadExpenses() {
-    // If there is no user, clear expenses and stop
-    if (!userId) {
+    if (!groupId) {
       setExpenses([]);
       return;
     }
     setLoading(true);
     setError("");
 
-    const { data, error } = await getExpensesByUser(userId);
+    const { data, error } = await getExpensesByGroup(groupId);
 
     if (error) {
       setError(error.message);
@@ -34,20 +30,18 @@ export function useExpenses(userId: string | null) {
     setLoading(false);
   }
 
-  // Reload expenses whenever userId changes
   useEffect(() => {
     async function loadExpensesWrapper() {
       await loadExpenses();
     }
     loadExpensesWrapper();
-  }, [userId]);
+  }, [groupId]);
 
-  // Adds a new expense 
-  async function addExpense(expense: NewExpense) {
+  async function addExpense(expense: NewExpense, splits: NewExpenseSplit[]) {
     setError("");
     setSuccessMessage("");
 
-    const { error } = await createExpense(expense);
+    const { error } = await createExpense(expense, splits);
 
     if (error) {
       setError(error.message);
@@ -62,10 +56,10 @@ export function useExpenses(userId: string | null) {
   }
 
   return {
-    expenses, // user's expenses
-    loading, // loading state
-    error, // expense error
-    successMessage, // expense success feedback
-    addExpense, // action to insert a new expense
+    expenses,
+    loading,
+    error,
+    successMessage,
+    addExpense,
   };
 }
