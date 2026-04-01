@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import {useNavigate} from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import FormField, { Input } from '../components/FormField';
 import Button from '../components/Button';
@@ -24,6 +25,8 @@ export default function LoginPage({
   const [password, setPassword] = useState("")
   const [localError, setLocalError] = useState("")
 
+  const navigate = useNavigate();
+
   function validate(){
       if(!email.trim() || !password.trim()){
           setLocalError("Email & pass are required!")
@@ -37,10 +40,25 @@ export default function LoginPage({
     if (!validate()) return;
     setExiting(true);
     if (mode === 'login') {
-      await onSignIn(email, password)
+      if (await onSignIn(email, password)) {
+        // Handle successful login
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 300); // Match the CSS transition duration
+      }
+      else {
+        setExiting(false);
+      }
     } else {
-      await onSignUp(email, password)
-  }
+      if (await onSignUp(email, password)) {
+        // Handle successful signup
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 300); // Match the CSS transition duration
+      } else {
+        setExiting(false);
+      }
+    }
 };
 
   return (

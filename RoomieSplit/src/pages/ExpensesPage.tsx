@@ -91,7 +91,7 @@ export default function ExpensesPage() {
   const paidAmount = expenses.reduce((sum, e) => sum + (e.is_paid ? Number(e.amount || 0) : 0), 0);
   const unpaidAmount = totalAmount - paidAmount;
 
-  const expenseToDelete = expenses.find(e => e.id === confirmDeleteId);
+  const expenseToDelete = expenses.find(e => e.id === confirmDeleteId); 
   const editingExpense = expenses.find(e => e.id === editingId);
 
   const openEdit = (expense: Expense) => {
