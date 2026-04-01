@@ -13,7 +13,14 @@ export async function createGroup(group: NewGroup) {
 export async function getGroupsByUser(userId: string) {
   return await supabase
     .from("groups")
-    .select("*, group_members!inner(user_id)")
+    .select(`
+      *,
+      group_members!inner (
+        user_id,
+        role,
+        nickname
+      )
+    `)
     .eq("group_members.user_id", userId);
 }
 
