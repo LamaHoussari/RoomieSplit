@@ -12,7 +12,7 @@ export default function ChoresPage() {
   const [chores, setChores] = useState<Chore[]>(() => [...MOCK_CHORES]);
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   const visibleChores = chores.filter(c => {
     if (statusFilter === 'completed') return Boolean(c.is_completed);

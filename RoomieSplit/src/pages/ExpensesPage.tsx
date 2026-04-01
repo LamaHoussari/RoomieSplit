@@ -72,9 +72,9 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>(() => [...MOCK_EXPENSES]);
   const [showModal, setShowModal] = useState(false);
   const [paidFilter, setPaidFilter] = useState('all');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: '', date: '', splitUserIds: [] });
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const [addDraft, setAddDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: MOCK_MEMBERS[0]?.user_id || '', date: '', splitUserIds: [] });
 
@@ -120,7 +120,7 @@ export default function ExpensesPage() {
             date: editDraft.date,
             profiles: { name: payerProfile?.profiles?.name ?? 'Unknown' },
             expense_splits: editDraft.splitUserIds.map((uid, i) => ({
-              id: i + 1,
+              id: String(i + 1),
               expense_id: x.id,
               user_id: uid,
               share_amount: amount / splitCount,
@@ -270,18 +270,19 @@ export default function ExpensesPage() {
               const payerProfile = MOCK_MEMBERS.find(m => m.user_id === addDraft.payer);
               const splitCount = addDraft.splitUserIds.length || 1;
               setExpenses(prev => [...prev, {
-                id: Date.now(),
-                group_id: 1,
+                id: String(Date.now()),
+                group_id: '1',
                 description: addDraft.title.trim(),
                 amount,
                 payer_id: addDraft.payer,
+                created_by: addDraft.payer,
                 date: addDraft.date,
                 is_paid: false,
                 created_at: new Date().toISOString().slice(0, 10),
                 profiles: { name: payerProfile?.profiles?.name ?? 'Unknown' },
                 expense_splits: addDraft.splitUserIds.map((uid, i) => ({
-                  id: i + 1,
-                  expense_id: Date.now(),
+                  id: String(i + 1),
+                  expense_id: String(Date.now()),
                   user_id: uid,
                   share_amount: amount / splitCount,
                   profiles: { name: MOCK_MEMBERS.find(m => m.user_id === uid)?.profiles?.name ?? 'Unknown' },
