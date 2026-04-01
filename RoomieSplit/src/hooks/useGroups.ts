@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NewGroup, Group } from "../types/Group";
-import { getGroupsByUser, createGroup } from "../services/groupService";
+import { getGroupsByUser, createGroup, joinGroupByCode } from "../services/groupService";
 
 // Custom hook for loading and adding groups for one specific user
 export function useGroups(userId: string | null) {
@@ -61,11 +61,25 @@ export function useGroups(userId: string | null) {
     return true;
   }
 
+  async function joinGroup(code: string) {
+    setError("");
+    setSuccessMessage("");
+    const { error } = await joinGroupByCode(code);
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+    setSuccessMessage("Joined group successfully.");
+    await loadGroups();
+    return true;
+  }
+
   return {
-    groups, // user's groups
-    loading, // loading state
-    error, // group error
-    successMessage, // group success feedback
-    addGroup, // action to insert a new group
+    groups,
+    loading,
+    error,
+    successMessage,
+    addGroup,
+    joinGroup,
   };
 }

@@ -12,6 +12,6 @@ export async function getSettlementsByGroup(groupId: string) {
         .eq("group_id", groupId);
 }
 
-export async function updateSettlement(settlementId: number, updates: { paid: number }) {
+export async function updateSettlement(settlementId: string, updates: { paid: number }) {
     return await supabase.from("settlements").update(updates).eq("id", settlementId);
 }

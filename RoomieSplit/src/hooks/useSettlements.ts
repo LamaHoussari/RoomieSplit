@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NewSettlement, Settlement } from "../types/Settlement";
-import { createSettlement, getSettlementsByGroup } from "../services/settlementService";
+import { createSettlement, getSettlementsByGroup, updateSettlement as updateSettlementService } from "../services/settlementService";
 
 export function useSettlements(groupId: string | null) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
@@ -55,11 +55,25 @@ export function useSettlements(groupId: string | null) {
     return true;
   }
 
+  async function recordPayment(settlementId: string, paidAmount: number) {
+    setError("");
+    setSuccessMessage("");
+    const { error } = await updateSettlementService(settlementId, { paid: paidAmount });
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+    setSuccessMessage("Payment recorded.");
+    await loadSettlements();
+    return true;
+  }
+
   return {
     settlements,
     loading,
     error,
     successMessage,
     addSettlement,
+    recordPayment,
   };
 }

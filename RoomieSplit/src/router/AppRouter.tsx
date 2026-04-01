@@ -36,12 +36,12 @@ function AnimatedRoutes() {
         />} />
         {user && (
         <Route element={<MainLayout onSignOut={signOut}/>}>
-          <Route path="/dashboard"  element={<DashboardPage />} />
-          <Route path="/groups"     element={<GroupsPage />} />
-          <Route path="/groups/:id" element={<GroupDetailPage />} />
-          <Route path="/expenses"   element={<ExpensesPage />} />
-          <Route path="/balances"   element={<BalancesPage />} />
-          <Route path="/chores"     element={<ChoresPage />} />
+          <Route path="/dashboard"  element={<DashboardPage userId={user.id} />} />
+          <Route path="/groups"     element={<GroupsPage userId={user.id} />} />
+          <Route path="/groups/:id" element={<GroupDetailPage userId={user.id} />} />
+          <Route path="/expenses"   element={<ExpensesPage userId={user.id} />} />
+          <Route path="/balances"   element={<BalancesPage userId={user.id} />} />
+          <Route path="/chores"     element={<ChoresPage userId={user.id} />} />
           <Route path="/profile"    element={<ProfilePage />} />
         </Route>
         )}

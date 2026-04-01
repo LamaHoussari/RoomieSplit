@@ -26,10 +26,32 @@ export async function getExpensesByGroup(groupId: string) {
         .order("date", { ascending: false });
 }
 
-export async function deleteExpense(expenseId: number) {
+export async function deleteExpense(expenseId: string) {
     return await supabase.from("expenses").delete().eq("id", expenseId);
 }
 
-export async function updateExpense(expenseId: number, updates: Partial<NewExpense>) {
+export async function updateExpense(expenseId: string, updates: Partial<NewExpense>) {
     return await supabase.from("expenses").update(updates).eq("id", expenseId);
+}
+
+export async function updateExpenseWithSplits(
+    expenseId: string,
+    updates: Partial<NewExpense>,
+    newSplits: NewExpenseSplit[]
+) {
+    const { error: updateError } = await supabase
+        .from("expenses")
+        .update(updates)
+        .eq("id", expenseId);
+
+    if (updateError) return { error: updateError };
+
+    await supabase.from("expense_splits").delete().eq("expense_id", expenseId);
+
+    const splitsWithId = newSplits.map((s) => ({ ...s, expense_id: expenseId }));
+    const { error: splitError } = await supabase
+        .from("expense_splits")
+        .insert(splitsWithId);
+
+    return { error: splitError };
 }

@@ -4,7 +4,12 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import { MOCK_MEMBERS, MOCK_SETTLEMENTS, computeBalance } from '../data/mockData';
+import { Select } from '../components/FormField';
+import { useGroups } from '../hooks/useGroups';
+import { useMembers } from '../hooks/useMembers';
+import { useExpenses } from '../hooks/useExpenses';
+import { useSettlements } from '../hooks/useSettlements';
+import type { Expense } from '../types/Expense';
 import type { Settlement } from '../types/Settlement';
 
 // Deterministic hue from name
@@ -15,8 +20,33 @@ const memberHue = (name: string) => {
 };
 const initials = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-export default function BalancesPage() {
-  const [settlements, setSettlements] = useState<Settlement[]>(MOCK_SETTLEMENTS);
+function computeBalance(userId: string, expenses: Expense[], settlements: Settlement[]): number {
+  let balance = 0;
+  for (const e of expenses) {
+    if (e.payer_id === userId) balance += e.amount;
+    const mySplit = e.expense_splits?.find(s => s.user_id === userId);
+    if (mySplit?.share_amount) balance -= mySplit.share_amount;
+  }
+  for (const s of settlements) {
+    if (s.from_user_id === userId) balance += s.paid;
+    if (s.to_user_id === userId) balance -= s.paid;
+  }
+  return balance;
+}
+
+interface BalancesPageProps {
+  userId: string;
+}
+
+export default function BalancesPage({ userId }: BalancesPageProps) {
+  const { groups } = useGroups(userId);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const groupId = selectedGroupId ?? groups[0]?.id ?? null;
+
+  const { members } = useMembers(groupId);
+  const { expenses } = useExpenses(groupId);
+  const { settlements, recordPayment } = useSettlements(groupId);
+
   const [payTarget, setPayTarget] = useState<Settlement | null>(null);
   const [payAmount, setPayAmount] = useState('');
 
@@ -25,25 +55,31 @@ export default function BalancesPage() {
     setPayAmount(String(s.amount - s.paid));
   };
 
-  const submitPay = () => {
+  const submitPay = async () => {
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0 || !payTarget) return;
-    setSettlements(settlements.map(s =>
-      s.id === payTarget.id
-        ? { ...s, paid: Math.min(s.paid + amount, s.amount) }
-        : s
-    ));
-    setPayTarget(null);
+    const success = await recordPayment(payTarget.id, Math.min(payTarget.paid + amount, payTarget.amount));
+    if (success) setPayTarget(null);
   };
 
   return (
     <>
-      <PageHeader title="Balances" subtitle="Who owes whom in Hamra Flat" />
+      <PageHeader
+        title="Balances"
+        subtitle={groups.find(g => g.id === groupId)?.name ?? 'Select a group'}
+        actions={
+          <div className="w-44">
+            <Select value={groupId ?? ''} onChange={e => setSelectedGroupId(e.target.value)} className="py-2.5 text-sm">
+              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </Select>
+          </div>
+        }
+      />
 
       {/* Member balance cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {MOCK_MEMBERS.map(m => {
-          const balance = computeBalance(m.user_id);
+        {members.map(m => {
+          const balance = computeBalance(m.user_id, expenses, settlements);
           const name = m.profiles?.name ?? 'Unknown';
           return (
             <div

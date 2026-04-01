@@ -12,10 +12,10 @@ export async function getChoresByGroup(groupId: string) {
         .eq("group_id", groupId);
 }
 
-export async function updateChore(choreId: number, updates: Partial<NewChore & { is_completed: boolean }>) {
+export async function updateChore(choreId: string, updates: Partial<NewChore & { is_completed: boolean }>) {
     return await supabase.from("chores").update(updates).eq("id", choreId);
 }
 
-export async function deleteChore(choreId: number) {
+export async function deleteChore(choreId: string) {
     return await supabase.from("chores").delete().eq("id", choreId);
 }

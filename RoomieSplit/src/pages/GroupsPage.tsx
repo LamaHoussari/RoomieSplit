@@ -3,37 +3,45 @@ import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
-import Badge from '../components/Badge';
 import FormField, { Input } from '../components/FormField';
-import { MOCK_GROUPS, MOCK_MEMBERS, MOCK_EXPENSES } from '../data/mockData';
+import { useGroups } from '../hooks/useGroups';
 
-const getInitials = (name?: string) =>
-  (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+interface GroupsPageProps {
+  userId: string;
+}
 
-export default function GroupsPage() {
+export default function GroupsPage({ userId }: GroupsPageProps) {
+  const { groups, addGroup, joinGroup } = useGroups(userId);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const navigate = useNavigate();
   const [groupName, setGroupName] = useState('');
-  const [members, setMembers] = useState(['']);  
+  const [joinCode, setJoinCode] = useState('');
 
-  const addMember = () => setMembers([...members, '']);
-  const updateMember = (index: number, val: string) => setMembers(members.map((m, idx) => idx === index ? val : m));
-  const removeMember = (index: number) => setMembers(members.filter((_, idx) => idx !== index));
+  const canCreate = groupName.trim() !== '';
 
-  const canCreate = groupName.trim() !== '' && members.some(m => m.trim() !== '');
-
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!canCreate) return;
-    setShowCreate(false);
-    setGroupName('');
-    setMembers(['']);
+    const code = groupName.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 4) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const success = await addGroup({ name: groupName.trim(), code });
+    if (success) {
+      setShowCreate(false);
+      setGroupName('');
+    }
+  };
+
+  const handleJoin = async () => {
+    if (!joinCode.trim()) return;
+    const success = await joinGroup(joinCode.trim());
+    if (success) {
+      setShowJoin(false);
+      setJoinCode('');
+    }
   };
 
   const handleClose = () => {
     setShowCreate(false);
     setGroupName('');
-    setMembers(['']);
   };
 
   return (
@@ -54,9 +62,7 @@ export default function GroupsPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        {MOCK_GROUPS.map(g => {
-          const groupMembers = MOCK_MEMBERS.filter(m => m.group_id === g.id);
-          const groupTotal = MOCK_EXPENSES.filter(e => e.group_id === g.id).reduce((s, e) => s + e.amount, 0);
+        {groups.map(g => {
           return (
             <div
               key={g.id}
@@ -69,7 +75,7 @@ export default function GroupsPage() {
                     {g.name}
                   </h3>
                   <p className="text-sm text-purple-700/70 dark:text-purple-200/70 mt-1">
-                    {groupMembers.length} members · since {g.created_at}
+                    Since {g.created_at}
                   </p>
                 </div>
                 <span className="h-10 w-10 rounded-2xl bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-200 flex items-center justify-center flex-shrink-0">
@@ -82,28 +88,12 @@ export default function GroupsPage() {
 
               <div className="mt-5">
                 <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/70 dark:text-purple-200/70">
-                  Members
+                  Invite Code
                 </p>
-                <div className="mt-2 flex items-center gap-3 min-w-0">
-                  <div className="flex -space-x-2">
-                    {groupMembers.map(m => (
-                      <span
-                        key={m.id}
-                        title={m.profiles?.name ?? 'Unknown'}
-                        className={`inline-flex items-center justify-center w-8 h-8 text-xs font-bold rounded-full ring-2 ring-white dark:ring-purple-950 ${m.color_class}`}
-                      >
-                        {getInitials(m.profiles?.name)}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-sm text-purple-700/80 dark:text-purple-200/80 truncate">
-                    {groupMembers.map(m => m.profiles?.name ?? 'Unknown').join(', ')}
-                  </span>
-                </div>
+                <p className="mt-1 text-sm font-mono font-semibold text-purple-900 dark:text-purple-100">{g.code}</p>
               </div>
 
-              <div className="flex items-center justify-between mt-6">
-                <Badge variant="purple">${groupTotal} total</Badge>
+              <div className="flex items-center justify-end mt-6">
                 <span className="text-sm font-semibold text-purple-700 dark:text-purple-200">
                   Open →
                 </span>
@@ -132,29 +122,6 @@ export default function GroupsPage() {
               onChange={e => setGroupName(e.target.value)}
             />
           </FormField>
-
-          <FormField label="Members">
-            {members.map((m, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <Input
-                  placeholder="Member name or email"
-                  value={m}
-                  onChange={e => updateMember(i, e.target.value)}
-                />
-                {members.length > 1 && (
-                  <Button variant="outline" size="sm" onClick={() => removeMember(i)}>
-                    ✕
-                  </Button>
-                )}
-              </div>
-            ))}
-            <button
-              className="text-sm text-purple-600 dark:text-purple-300 mt-1 hover:underline"
-              onClick={addMember}
-            >
-              + Add another member
-            </button>
-          </FormField>
           <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" size="sm" onClick={handleClose}>
               Cancel
@@ -169,13 +136,13 @@ export default function GroupsPage() {
       {showJoin && (
         <Modal title="Join Group" onClose={() => setShowJoin(false)}>
           <FormField label="Invite code">
-            <Input placeholder="e.g. FLAT-4KX2" />
+            <Input placeholder="e.g. FLAT-4KX2" value={joinCode} onChange={e => setJoinCode(e.target.value)} />
           </FormField>
           <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" size="sm" onClick={() => setShowJoin(false)}>
               Cancel
             </Button>
-            <Button size="sm" onClick={() => setShowJoin(false)}>
+            <Button size="sm" onClick={handleJoin}>
               Join
             </Button>
           </div>

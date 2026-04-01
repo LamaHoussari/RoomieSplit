@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NewExpense, Expense, NewExpenseSplit } from "../types/Expense";
-import { createExpense, getExpensesByGroup } from "../services/expensesService";
+import { createExpense, getExpensesByGroup, deleteExpense as deleteExpenseService, updateExpenseWithSplits } from "../services/expensesService";
 
 export function useExpenses(groupId: string | null) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -55,11 +55,39 @@ export function useExpenses(groupId: string | null) {
     return true;
   }
 
+  async function removeExpense(expenseId: string) {
+    setError("");
+    setSuccessMessage("");
+    const { error } = await deleteExpenseService(expenseId);
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+    setSuccessMessage("Expense deleted.");
+    await loadExpenses();
+    return true;
+  }
+
+  async function editExpense(expenseId: string, updates: Partial<NewExpense>, splits: NewExpenseSplit[]) {
+    setError("");
+    setSuccessMessage("");
+    const { error } = await updateExpenseWithSplits(expenseId, updates, splits);
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+    setSuccessMessage("Expense updated.");
+    await loadExpenses();
+    return true;
+  }
+
   return {
     expenses,
     loading,
     error,
     successMessage,
     addExpense,
+    removeExpense,
+    editExpense,
   };
 }

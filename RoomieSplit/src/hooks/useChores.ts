@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NewChore, Chore } from "../types/Chore";
-import { createChore, getChoresByGroup } from "../services/choreService";
+import { createChore, getChoresByGroup, updateChore as updateChoreService, deleteChore as deleteChoreService } from "../services/choreService";
 
 export function useChores(groupId: string | null) {
   const [chores, setChores] = useState<Chore[]>([]);
@@ -55,11 +55,37 @@ export function useChores(groupId: string | null) {
     return true;
   }
 
+  async function removeChore(choreId: string) {
+    setError("");
+    setSuccessMessage("");
+    const { error } = await deleteChoreService(choreId);
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+    setSuccessMessage("Chore removed.");
+    await loadChores();
+    return true;
+  }
+
+  async function toggleChore(choreId: string, isCompleted: boolean) {
+    setError("");
+    const { error } = await updateChoreService(choreId, { is_completed: isCompleted });
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+    await loadChores();
+    return true;
+  }
+
   return {
     chores,
     loading,
     error,
     successMessage,
     addChore,
+    removeChore,
+    toggleChore,
   };
 }

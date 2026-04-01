@@ -1,17 +1,55 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Card from '../components/Card';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
-import { MOCK_MEMBERS, MOCK_GROUPS, computeBalance } from '../data/mockData';
+import { useMembers } from '../hooks/useMembers';
+import { useExpenses } from '../hooks/useExpenses';
+import { useSettlements } from '../hooks/useSettlements';
+import { getGroupById } from '../services/groupService';
+import type { Group } from '../types/Group';
+import type { Expense } from '../types/Expense';
+import type { Settlement } from '../types/Settlement';
 
 const getInitials = (name?: string) =>
   (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-export default function GroupDetailPage() {
+function computeBalance(userId: string, expenses: Expense[], settlements: Settlement[]): number {
+  let balance = 0;
+  for (const e of expenses) {
+    if (e.payer_id === userId) balance += e.amount;
+    const mySplit = e.expense_splits?.find(s => s.user_id === userId);
+    if (mySplit?.share_amount) balance -= mySplit.share_amount;
+  }
+  for (const s of settlements) {
+    if (s.from_user_id === userId) balance += s.paid;
+    if (s.to_user_id === userId) balance -= s.paid;
+  }
+  return balance;
+}
+
+interface GroupDetailPageProps {
+  userId: string;
+}
+
+export default function GroupDetailPage(_props: GroupDetailPageProps) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const group = MOCK_GROUPS.find(g => g.id === id) || MOCK_GROUPS[0];
-  const groupMembers = MOCK_MEMBERS.filter(m => m.group_id === group.id);
+  const groupId = id ?? null;
+
+  const [group, setGroup] = useState<Group | null>(null);
+  useEffect(() => {
+    if (!groupId) return;
+    getGroupById(groupId).then(({ data }) => setGroup(data));
+  }, [groupId]);
+
+  const { members } = useMembers(groupId);
+  const { expenses } = useExpenses(groupId);
+  const { settlements } = useSettlements(groupId);
+
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalSettled = settlements.reduce((s, st) => s + st.paid, 0);
+  const formatMoney = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (
     <>
@@ -34,18 +72,18 @@ export default function GroupDetailPage() {
 
       <div className="mb-8">
         <h1 className="font-display text-4xl font-extrabold text-purple-900 dark:text-purple-100 tracking-tight">
-          {group.name}
+          {group?.name ?? 'Loading...'}
         </h1>
         <p className="text-base text-purple-700/70 dark:text-purple-200/70 mt-2">
-          {groupMembers.length} members · Created {group.created_at}
+          {members.length} members · Created {group?.created_at ?? ''}
         </p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card title="Members" className="overflow-hidden">
           <div className="-mx-2">
-            {groupMembers.map(m => {
-              const balance = computeBalance(m.user_id);
+            {members.map(m => {
+              const balance = computeBalance(m.user_id, expenses, settlements);
               const name = m.profiles?.name ?? 'Unknown';
               return (
                 <div
@@ -80,9 +118,9 @@ export default function GroupDetailPage() {
 
         <Card title="Group Stats">
           {[
-            { label: 'Total Expenses', value: '$1,705', color: 'text-purple-900 dark:text-purple-100' },
-            { label: 'This Month', value: '$1,650', color: 'text-purple-900 dark:text-purple-100' },
-            { label: 'Settled', value: '$0', color: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Total Expenses', value: `$${formatMoney(totalExpenses)}`, color: 'text-purple-900 dark:text-purple-100' },
+            { label: 'Expenses Count', value: String(expenses.length), color: 'text-purple-900 dark:text-purple-100' },
+            { label: 'Settled', value: `$${formatMoney(totalSettled)}`, color: 'text-emerald-600 dark:text-emerald-400' },
           ].map(s => (
             <div key={s.label} className="flex justify-between py-3">
               <span className="text-base text-purple-700/70 dark:text-purple-200/70">{s.label}</span>
@@ -93,7 +131,7 @@ export default function GroupDetailPage() {
           <div className="mt-6 pt-5 border-t border-purple-100/80 dark:border-purple-900/60">
             <p className="text-sm font-medium text-purple-700/70 dark:text-purple-200/70">Invite code</p>
             <div className="mt-2 inline-flex items-center rounded-2xl px-4 py-2 bg-purple-100/70 dark:bg-purple-900/30 border border-purple-200/70 dark:border-purple-900/60 text-purple-900 dark:text-purple-100 font-semibold">
-              {group.code}
+              {group?.code ?? '—'}
             </div>
           </div>
         </Card>

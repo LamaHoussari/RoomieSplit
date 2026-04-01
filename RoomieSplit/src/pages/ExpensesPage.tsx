@@ -5,8 +5,10 @@ import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import FormField, { Input, Select } from '../components/FormField';
-import { MOCK_EXPENSES, MOCK_MEMBERS } from '../data/mockData';
-import type { Expense } from '../types/Expense';
+import { useGroups } from '../hooks/useGroups';
+import { useExpenses } from '../hooks/useExpenses';
+import { useMembers } from '../hooks/useMembers';
+import type { GroupMember } from '../types/Member';
 
 interface ExpenseDraft {
   title: string;
@@ -14,6 +16,10 @@ interface ExpenseDraft {
   payer: string;
   date: string;
   splitUserIds: string[];
+}
+
+interface ExpensesPageProps {
+  userId: string;
 }
 
 // Deterministic avatar colour from name
@@ -25,10 +31,10 @@ const memberHue = (name: string) => {
 const getInitials = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
 // Reusable split picker — renders member toggle pills
-function SplitPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+function SplitPicker({ value, onChange, members }: { value: string[]; onChange: (v: string[]) => void; members: GroupMember[] }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {MOCK_MEMBERS.map(m => {
+      {members.map(m => {
         const name = m.profiles?.name ?? 'Unknown';
         const active = value.includes(m.user_id);
         const h = memberHue(name);
@@ -68,15 +74,21 @@ function SplitPicker({ value, onChange }: { value: string[]; onChange: (v: strin
   );
 }
 
-export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<Expense[]>(() => [...MOCK_EXPENSES]);
+export default function ExpensesPage({ userId }: ExpensesPageProps) {
+  const { groups } = useGroups(userId);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const groupId = selectedGroupId ?? groups[0]?.id ?? null;
+
+  const { expenses, addExpense, removeExpense, editExpense } = useExpenses(groupId);
+  const { members } = useMembers(groupId);
+
   const [showModal, setShowModal] = useState(false);
   const [paidFilter, setPaidFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: '', date: '', splitUserIds: [] });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const [addDraft, setAddDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: MOCK_MEMBERS[0]?.user_id || '', date: '', splitUserIds: [] });
+  const [addDraft, setAddDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: userId, date: '', splitUserIds: [] });
 
   const visibleExpenses = expenses.filter(e => {
     if (paidFilter === 'paid') return Boolean(e.is_paid);
@@ -91,45 +103,50 @@ export default function ExpensesPage() {
   const paidAmount = expenses.reduce((sum, e) => sum + (e.is_paid ? Number(e.amount || 0) : 0), 0);
   const unpaidAmount = totalAmount - paidAmount;
 
-  const expenseToDelete = expenses.find(e => e.id === confirmDeleteId); 
+  const expenseToDelete = expenses.find(e => e.id === confirmDeleteId);
   const editingExpense = expenses.find(e => e.id === editingId);
 
-  const openEdit = (expense: Expense) => {
+  const openEdit = (expense: typeof expenses[0]) => {
     setEditingId(expense.id);
     setEditDraft({
       title: expense.description || '',
       amount: String(expense.amount ?? ''),
-      payer: expense.payer_id || MOCK_MEMBERS[0]?.user_id || '',
+      payer: expense.payer_id || userId,
       date: expense.date || '',
       splitUserIds: expense.expense_splits?.map(s => s.user_id) ?? [],
     });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     const amount = Number(editDraft.amount);
-    if (!editDraft.title.trim() || Number.isNaN(amount)) return;
-    const payerProfile = MOCK_MEMBERS.find(m => m.user_id === editDraft.payer);
+    if (!editDraft.title.trim() || Number.isNaN(amount) || !editingId || !groupId) return;
     const splitCount = editDraft.splitUserIds.length || 1;
-    setExpenses(expenses.map(x =>
-      x.id === editingId
-        ? {
-            ...x,
-            description: editDraft.title.trim(),
-            amount,
-            payer_id: editDraft.payer,
-            date: editDraft.date,
-            profiles: { name: payerProfile?.profiles?.name ?? 'Unknown' },
-            expense_splits: editDraft.splitUserIds.map((uid, i) => ({
-              id: String(i + 1),
-              expense_id: x.id,
-              user_id: uid,
-              share_amount: amount / splitCount,
-              profiles: { name: MOCK_MEMBERS.find(m => m.user_id === uid)?.profiles?.name ?? 'Unknown' },
-            })),
-          }
-        : x
-    ));
-    setEditingId(null);
+    const success = await editExpense(
+      editingId,
+      { description: editDraft.title.trim(), amount, payer_id: editDraft.payer, date: editDraft.date },
+      editDraft.splitUserIds.map(uid => ({ expense_id: editingId, user_id: uid, share_amount: amount / splitCount }))
+    );
+    if (success) setEditingId(null);
+  };
+
+  const handleAdd = async () => {
+    const amount = Number(addDraft.amount);
+    if (!addDraft.title.trim() || isNaN(amount) || !groupId) return;
+    const splitCount = addDraft.splitUserIds.length || 1;
+    const success = await addExpense(
+      { group_id: groupId, description: addDraft.title.trim(), amount, payer_id: addDraft.payer, created_by: userId, date: addDraft.date, is_paid: false },
+      addDraft.splitUserIds.map(uid => ({ expense_id: '', user_id: uid, share_amount: amount / splitCount }))
+    );
+    if (success) {
+      setAddDraft({ title: '', amount: '', payer: userId, date: '', splitUserIds: [] });
+      setShowModal(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
+    const success = await removeExpense(confirmDeleteId);
+    if (success) setConfirmDeleteId(null);
   };
 
   return (
@@ -139,6 +156,11 @@ export default function ExpensesPage() {
         subtitle="All shared expenses"
         actions={
           <>
+            <div className="w-44">
+              <Select value={groupId ?? ''} onChange={e => setSelectedGroupId(e.target.value)} className="py-2.5 text-sm">
+                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </Select>
+            </div>
             <div className="w-44">
               <Select
                 value={paidFilter}
@@ -253,44 +275,18 @@ export default function ExpensesPage() {
           </FormField>
           <FormField label="Paid by">
             <Select value={addDraft.payer} onChange={e => setAddDraft(d => ({ ...d, payer: e.target.value }))}>
-              {MOCK_MEMBERS.map(m => <option key={m.id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
+              {members.map(m => <option key={m.id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
             </Select>
           </FormField>
           <FormField label="Date">
             <Input type="date" value={addDraft.date} onChange={e => setAddDraft(d => ({ ...d, date: e.target.value }))} />
           </FormField>
           <FormField label="Split between">
-            <SplitPicker value={addDraft.splitUserIds} onChange={splitUserIds => setAddDraft(d => ({ ...d, splitUserIds }))} />
+            <SplitPicker value={addDraft.splitUserIds} onChange={splitUserIds => setAddDraft(d => ({ ...d, splitUserIds }))} members={members} />
           </FormField>
           <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button size="sm" onClick={() => {
-              const amount = Number(addDraft.amount);
-              if (!addDraft.title.trim() || isNaN(amount)) return;
-              const payerProfile = MOCK_MEMBERS.find(m => m.user_id === addDraft.payer);
-              const splitCount = addDraft.splitUserIds.length || 1;
-              setExpenses(prev => [...prev, {
-                id: String(Date.now()),
-                group_id: '1',
-                description: addDraft.title.trim(),
-                amount,
-                payer_id: addDraft.payer,
-                created_by: addDraft.payer,
-                date: addDraft.date,
-                is_paid: false,
-                created_at: new Date().toISOString().slice(0, 10),
-                profiles: { name: payerProfile?.profiles?.name ?? 'Unknown' },
-                expense_splits: addDraft.splitUserIds.map((uid, i) => ({
-                  id: String(i + 1),
-                  expense_id: String(Date.now()),
-                  user_id: uid,
-                  share_amount: amount / splitCount,
-                  profiles: { name: MOCK_MEMBERS.find(m => m.user_id === uid)?.profiles?.name ?? 'Unknown' },
-                })),
-              }]);
-              setAddDraft({ title: '', amount: '', payer: MOCK_MEMBERS[0]?.user_id || '', date: '', splitUserIds: [] });
-              setShowModal(false);
-            }}>Add</Button>
+            <Button size="sm" onClick={handleAdd}>Add</Button>
           </div>
         </Modal>
       )}
@@ -306,14 +302,14 @@ export default function ExpensesPage() {
           </FormField>
           <FormField label="Paid by">
             <Select value={editDraft.payer} onChange={e => setEditDraft(d => ({ ...d, payer: e.target.value }))}>
-              {MOCK_MEMBERS.map(m => <option key={m.id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
+              {members.map(m => <option key={m.id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
             </Select>
           </FormField>
           <FormField label="Date">
             <Input type="date" value={editDraft.date} onChange={e => setEditDraft(d => ({ ...d, date: e.target.value }))} />
           </FormField>
           <FormField label="Split between">
-            <SplitPicker value={editDraft.splitUserIds} onChange={splitUserIds => setEditDraft(d => ({ ...d, splitUserIds }))} />
+            <SplitPicker value={editDraft.splitUserIds} onChange={splitUserIds => setEditDraft(d => ({ ...d, splitUserIds }))} members={members} />
           </FormField>
           <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
@@ -332,7 +328,7 @@ export default function ExpensesPage() {
           </p>
           <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
-            <Button variant="danger" size="sm" onClick={() => { setExpenses(expenses.filter(x => x.id !== confirmDeleteId)); setConfirmDeleteId(null); }}>
+            <Button variant="danger" size="sm" onClick={handleDelete}>
               Delete
             </Button>
           </div>

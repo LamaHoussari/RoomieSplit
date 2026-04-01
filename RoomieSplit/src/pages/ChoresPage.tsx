@@ -5,14 +5,30 @@ import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import FormField, { Input, Select } from '../components/FormField';
-import { MOCK_CHORES, MOCK_MEMBERS } from '../data/mockData';
-import type { Chore } from '../types/Chore';
+import { useGroups } from '../hooks/useGroups';
+import { useChores } from '../hooks/useChores';
+import { useMembers } from '../hooks/useMembers';
 
-export default function ChoresPage() {
-  const [chores, setChores] = useState<Chore[]>(() => [...MOCK_CHORES]);
+interface ChoresPageProps {
+  userId: string;
+}
+
+export default function ChoresPage({ userId }: ChoresPageProps) {
+  const { groups } = useGroups(userId);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const groupId = selectedGroupId ?? groups[0]?.id ?? null;
+
+  const { chores, addChore, removeChore, toggleChore } = useChores(groupId);
+  const { members } = useMembers(groupId);
+
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+
+  // Add chore form state
+  const [choreName, setChoreName] = useState('');
+  const [choreFrequency, setChoreFrequency] = useState('Daily');
+  const [choreAssignee, setChoreAssignee] = useState('');
 
   const visibleChores = chores.filter(c => {
     if (statusFilter === 'completed') return Boolean(c.is_completed);
@@ -22,6 +38,29 @@ export default function ChoresPage() {
 
   const choreToRemove = chores.find(c => c.id === confirmRemoveId);
 
+  const handleAddChore = async () => {
+    if (!choreName.trim() || !groupId) return;
+    const success = await addChore({
+      group_id: groupId,
+      name: choreName.trim(),
+      frequency: choreFrequency,
+      assigned_to: choreAssignee || null,
+      created_by: userId,
+    });
+    if (success) {
+      setShowModal(false);
+      setChoreName('');
+      setChoreFrequency('Daily');
+      setChoreAssignee('');
+    }
+  };
+
+  const handleRemoveChore = async () => {
+    if (!confirmRemoveId) return;
+    await removeChore(confirmRemoveId);
+    setConfirmRemoveId(null);
+  };
+
   return (
     <>
       <PageHeader
@@ -29,6 +68,15 @@ export default function ChoresPage() {
         subtitle="Track household tasks and assignments"
         actions={
           <>
+            <div className="w-44">
+              <Select
+                value={groupId ?? ''}
+                onChange={e => setSelectedGroupId(e.target.value)}
+                className="py-2.5 text-sm"
+              >
+                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </Select>
+            </div>
             <div className="w-44">
               <Select
                 value={statusFilter}
@@ -79,7 +127,7 @@ export default function ChoresPage() {
                 <button
                   type="button"
                   title={c.is_completed ? 'Mark undone' : 'Mark done'}
-                  onClick={() => setChores(chores.map(x => x.id === c.id ? { ...x, is_completed: !x.is_completed } : x))}
+                  onClick={() => toggleChore(c.id, !c.is_completed)}
                   className={`flex items-center justify-center w-6 h-6 rounded-md border-2 transition-all duration-150 shrink-0
                     ${c.is_completed
                       ? 'bg-emerald-500 border-emerald-500 text-white hover:bg-emerald-600 hover:border-emerald-600'
@@ -112,10 +160,10 @@ export default function ChoresPage() {
       {showModal && (
         <Modal title="Add Chore" onClose={() => setShowModal(false)}>
           <FormField label="Chore name">
-            <Input placeholder="e.g. Take out trash" />
+            <Input placeholder="e.g. Take out trash" value={choreName} onChange={e => setChoreName(e.target.value)} />
           </FormField>
           <FormField label="Frequency">
-            <Select>
+            <Select value={choreFrequency} onChange={e => setChoreFrequency(e.target.value)}>
               <option>Daily</option>
               <option>Weekly</option>
               <option>Bi-weekly</option>
@@ -123,13 +171,14 @@ export default function ChoresPage() {
             </Select>
           </FormField>
           <FormField label="Assigned to">
-            <Select>
-              {MOCK_MEMBERS.map(m => <option key={m.id} value={m.profiles?.name}>{m.profiles?.name ?? 'Unknown'}</option>)}
+            <Select value={choreAssignee} onChange={e => setChoreAssignee(e.target.value)}>
+              <option value="">Unassigned</option>
+              {members.map(m => <option key={m.id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
             </Select>
           </FormField>
           <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button size="sm" onClick={() => setShowModal(false)}>Add</Button>
+            <Button size="sm" onClick={handleAddChore}>Add</Button>
           </div>
         </Modal>
       )}
@@ -146,10 +195,7 @@ export default function ChoresPage() {
             <Button
               variant="danger"
               size="sm"
-              onClick={() => {
-                setChores(chores.filter(x => x.id !== confirmRemoveId));
-                setConfirmRemoveId(null);
-              }}
+              onClick={handleRemoveChore}
             >
               Remove
             </Button>
