@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
-import type { NewSettlement } from "../types/Setelment";
+import type { NewSettlement } from "../types/Settlement";
 
 export async function createSettlement(settlement: NewSettlement) {
     return await supabase.from("settlements").insert([settlement]);

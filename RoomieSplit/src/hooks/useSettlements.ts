@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { NewSettlement, Settlement } from "../types/Setelment";
-import { createSettlement, getSettlementsByGroup } from "../services/setelmentService";
+import type { NewSettlement, Settlement } from "../types/Settlement";
+import { createSettlement, getSettlementsByGroup } from "../services/settlementService";
 
 export function useSettlements(groupId: string | null) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);

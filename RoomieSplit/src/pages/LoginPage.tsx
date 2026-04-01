@@ -8,9 +8,9 @@ type LoginMode = 'login' | 'register';
 type AuthProps = {
     onSignUp: (email:string, password:string) => Promise<boolean>;
     onSignIn: (email:string, password:string) => Promise<boolean>;
-error:string;
-successMessage: string;
-loading:boolean;
+    error:string;
+    successMessage: string;
+    loading:boolean;
 }
 
 export default function LoginPage({
