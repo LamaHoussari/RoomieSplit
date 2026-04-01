@@ -102,7 +102,7 @@ export default function DashboardPage() {
                   key={m.id}
                   className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
                 >
-                  <Avatar initials={getInitials(name)} colorClass={m.color_class} />
+                  <Avatar initials={getInitials(name)} colorClass={m.color_class || ''} />
                   <div className="min-w-0">
                     <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
                       {name}

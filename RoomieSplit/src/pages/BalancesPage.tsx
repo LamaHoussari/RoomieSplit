@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import { MOCK_MEMBERS, MOCK_SETTLEMENTS, computeBalance } from '../data/mockData';
-import type { Settlement } from '../types/Setelment';
+import type { Settlement } from '../types/Settlement';
 
 // Deterministic hue from name
 const memberHue = (name: string) => {

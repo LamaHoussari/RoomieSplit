@@ -10,7 +10,7 @@ const getInitials = (name?: string) =>
 export default function GroupDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const group = MOCK_GROUPS.find(g => g.id === Number(id)) || MOCK_GROUPS[0];
+  const group = MOCK_GROUPS.find(g => g.id === id) || MOCK_GROUPS[0];
   const groupMembers = MOCK_MEMBERS.filter(m => m.group_id === group.id);
 
   return (
@@ -52,7 +52,7 @@ export default function GroupDetailPage() {
                   key={m.id}
                   className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
                 >
-                  <Avatar initials={getInitials(name)} colorClass={m.color_class} />
+                  <Avatar initials={getInitials(name)} colorClass={m.color_class || ''} />
                   <div className="min-w-0">
                     <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
                       {name}
