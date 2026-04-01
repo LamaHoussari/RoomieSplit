@@ -11,6 +11,7 @@ import { useMembers } from '../hooks/useMembers';
 import { useSettlements } from '../hooks/useSettlements';
 import type { Expense } from '../types/Expense';
 import type { Settlement } from '../types/Settlement';
+import { useProfile } from '../hooks/useProfile';
 
 interface StatCardProps {
   label: string;
@@ -61,6 +62,8 @@ export default function DashboardPage({ userId }: DashboardPageProps) {
   const { groups } = useGroups(userId);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const groupId = selectedGroupId ?? groups[0]?.id ?? null;
+  
+  const { name } = useProfile(userId);
 
   const { expenses } = useExpenses(groupId);
   const { members } = useMembers(groupId);
@@ -74,7 +77,8 @@ export default function DashboardPage({ userId }: DashboardPageProps) {
     <>
       <PageHeader
         title="Dashboard"
-        subtitle="Overview of your shared expenses"
+         subtitle={name ? `Welcome, ${name} 👋
+          Overview of your shared expenses` : "Overview of your shared expenses"}
         actions={
           <div className="w-44">
             <Select value={groupId ?? ''} onChange={e => setSelectedGroupId(e.target.value)} className="py-2.5 text-sm">
