@@ -20,14 +20,14 @@ export default function MainLayout({ onSignOut }: { onSignOut: () => Promise<boo
 
   return (
     <div className="min-h-screen flex flex-col bg-purple-50/70 dark:bg-[#110e1c] transition-colors duration-200">
-      <Navbar onSignOut={onSignOut} />
+      <Navbar onSignOut={onSignOut} onMenuClick={()=> setSidebarOpen(true)} />
 
       <div className="flex flex-1 min-h-0">
         <Sidebar
-          mobileOpen={sidebarOpen}
-          setMobileOpen={setSidebarOpen}
-          collapsed={sidebarCollapsed}
-          onToggleCollapsed={() => setSidebarCollapsed(c => !c)}
+            mobileOpen={sidebarOpen}
+            setMobileOpen={setSidebarOpen}
+            collapsed={sidebarOpen ? false : sidebarCollapsed}
+            onToggleCollapsed={() => setSidebarCollapsed(c => !c)}
         />
 
         <main className="flex-1 min-w-0 p-5 sm:p-6 md:p-10 overflow-y-auto">

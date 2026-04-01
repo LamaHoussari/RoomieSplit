@@ -87,6 +87,7 @@ export default function Sidebar({
         />
       )}
 
+      
       {/* Sidebar — fixed on mobile, static full-height on desktop */}
       <aside
         className={[

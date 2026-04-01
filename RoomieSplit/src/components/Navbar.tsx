@@ -3,15 +3,27 @@ import { useTheme } from '../context/ThemeContext';
 
 type NavProps = {
   onSignOut: () => Promise<boolean>;
+  onMenuClick?: () => void;
 };
 
-export default function Navbar({ onSignOut }: NavProps) {
+export default function Navbar({ onSignOut, onMenuClick }: NavProps) {
   const { dark, toggle } = useTheme();
 
   return (
     <header className="sticky top-0 z-30 bg-white/75 dark:bg-[#110e1c]/85 backdrop-blur border-b border-purple-100/70 dark:border-purple-900/50 shadow-sm shadow-purple-900/5 dark:shadow-black/20">
       <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
         <div className="flex items-center gap-2 min-w-0">
+           
+            <button
+              type="button"
+              onClick={onMenuClick}
+              aria-label="Open menu"
+              className="md:hidden inline-flex items-center justify-center rounded-xl p-2 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/40 transition"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+                <path fillRule="evenodd" d="M3 5.5A.75.75 0 0 1 3.75 4.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 5.5Zm0 4.5a.75.75 0 0 1 .75-.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 10Zm.75 3.75a.75.75 0 0 0 0 1.5h12.5a.75.75 0 0 0 0-1.5H3.75Z" clipRule="evenodd" />
+              </svg>
+            </button>
           <NavLink to="/dashboard" className="flex items-center gap-3 min-w-0 group">
             
             <span className="font-display text-lg font-extrabold text-purple-900 dark:text-purple-100 tracking-tight truncate group-hover:text-purple-950 dark:group-hover:text-white transition-colors">
