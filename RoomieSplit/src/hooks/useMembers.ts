@@ -41,7 +41,7 @@ export function useMembers(groupId: string | null) {
     setError("");
     setSuccessMessage("");
 
-    const { error } = await addGroupMember(member);
+    const { error } = await addGroupMember(member, groupId!);
 
     if (error) {
       setError(error.message);
@@ -61,5 +61,6 @@ export function useMembers(groupId: string | null) {
     error,
     successMessage,
     addMember,
+    loadMembers,
   };
 }

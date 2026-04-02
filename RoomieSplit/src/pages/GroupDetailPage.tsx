@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Card from '../components/Card';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
+import InviteMemberModal from '../components/InviteMemberModal';
 import { useMembers } from '../hooks/useMembers';
 import { useExpenses } from '../hooks/useExpenses';
 import { useSettlements } from '../hooks/useSettlements';
@@ -32,18 +33,23 @@ interface GroupDetailPageProps {
   userId: string;
 }
 
-export default function GroupDetailPage(_props: GroupDetailPageProps) {
+export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
   const { id } = useParams();
   const navigate = useNavigate();
   const groupId = id ?? null;
 
   const [group, setGroup] = useState<Group | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
+
   useEffect(() => {
     if (!groupId) return;
     getGroupById(groupId).then(({ data }) => setGroup(data));
   }, [groupId]);
 
-  const { members } = useMembers(groupId);
+  const { members, loading: membersLoading, loadMembers } = useMembers(groupId);
+
+  const currentMember = members.find(m => m.user_id === userId);
+  const isAdmin = currentMember?.role === 'admin';
   const { expenses } = useExpenses(groupId);
   const { settlements } = useSettlements(groupId);
 
@@ -53,6 +59,20 @@ export default function GroupDetailPage(_props: GroupDetailPageProps) {
 
   return (
     <>
+      {showInvite && groupId && group && (
+        <InviteMemberModal
+          groupId={groupId}
+          groupName={group.name}
+          groupCode={group.code}
+          inviterName={currentMember?.profiles?.name ?? 'A group admin'}
+          onClose={() => setShowInvite(false)}
+          onMemberAdded={() => {
+            loadMembers();
+          }}
+          loading={membersLoading}
+        />
+      )}
+
       <button
         type="button"
         className="inline-flex items-center gap-2 text-base font-semibold text-purple-700 hover:text-purple-900 dark:text-purple-200 dark:hover:text-white mb-6 transition-colors"
@@ -111,9 +131,11 @@ export default function GroupDetailPage(_props: GroupDetailPageProps) {
             })}
           </div>
 
-          <Button variant="outline" size="sm" className="mt-4">
-            + Invite member
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => setShowInvite(true)}>
+              + Invite member
+            </Button>
+          )}
         </Card>
 
         <Card title="Group Stats">
