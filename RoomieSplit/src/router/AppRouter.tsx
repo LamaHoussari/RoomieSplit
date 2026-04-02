@@ -10,10 +10,13 @@ import ChoresPage      from '../pages/ChoresPage';
 import ProfilePage     from '../pages/ProfilePage';
 
 import { useAuth } from "../hooks/useAuth";
+import { useState } from 'react';
 
 function AnimatedRoutes() {
   
-    const {
+  const [chosenGroup, setChosenGroup] = useState<string>("");
+
+  const {
     user, // current user
     loading, // auth loading state
     error, // auth error
@@ -36,12 +39,16 @@ function AnimatedRoutes() {
         />} />
         {user && (
         <Route element={<MainLayout onSignOut={signOut}/>}>
-          <Route path="/dashboard"  element={<DashboardPage userId={user.id} />} />
+          <Route path="/dashboard"  element={<DashboardPage userId={user.id} 
+          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup} />} />
           <Route path="/groups"     element={<GroupsPage userId={user.id} />} />
           <Route path="/groups/:id" element={<GroupDetailPage userId={user.id} />} />
-          <Route path="/expenses"   element={<ExpensesPage userId={user.id} />} />
-          <Route path="/balances"   element={<BalancesPage userId={user.id} />} />
-          <Route path="/chores"     element={<ChoresPage userId={user.id} />} />
+          <Route path="/expenses"   element={<ExpensesPage userId={user.id} 
+          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
+          <Route path="/balances"   element={<BalancesPage userId={user.id} 
+          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
+          <Route path="/chores"     element={<ChoresPage userId={user.id} 
+          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
           <Route path="/profile"    element={<ProfilePage user={user} />} />
         </Route>
         )}

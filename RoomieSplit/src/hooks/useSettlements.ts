@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { NewSettlement, Settlement } from "../types/Settlement";
-import { createSettlement, getSettlementsByGroup, updateSettlement as updateSettlementService } from "../services/settlementService";
+import { createSettlement, getSettlementsByGroup, getSettlementsByGroups, updateSettlement as updateSettlementService } from "../services/settlementService";
 
-export function useSettlements(groupId: string | null) {
+export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -10,14 +10,16 @@ export function useSettlements(groupId: string | null) {
   const [successMessage, setSuccessMessage] = useState("");
 
   async function loadSettlements() {
-    if (!groupId) {
+    if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setSettlements([]);
       return;
     }
     setLoading(true);
     setError("");
 
-    const { data, error } = await getSettlementsByGroup(groupId);
+    const { data, error } = groupId
+      ? await getSettlementsByGroup(groupId)
+      : await getSettlementsByGroups(allGroupIds!);
 
     if (error) {
       setError(error.message);
@@ -35,7 +37,7 @@ export function useSettlements(groupId: string | null) {
       await loadSettlements();
     }
     loadSettlementsWrapper();
-  }, [groupId]);
+  }, [groupId, allGroupIds?.join()]);
 
   async function addSettlement(settlement: NewSettlement) {
     setError("");

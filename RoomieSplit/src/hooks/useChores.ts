@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { NewChore, Chore } from "../types/Chore";
-import { createChore, getChoresByGroup, updateChore as updateChoreService, deleteChore as deleteChoreService } from "../services/choreService";
+import { createChore, getChoresByGroup, getChoresByGroups, updateChore as updateChoreService, deleteChore as deleteChoreService } from "../services/choreService";
 
-export function useChores(groupId: string | null) {
+export function useChores(groupId: string | null, allGroupIds?: string[]) {
   const [chores, setChores] = useState<Chore[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -10,14 +10,16 @@ export function useChores(groupId: string | null) {
   const [successMessage, setSuccessMessage] = useState("");
 
   async function loadChores() {
-    if (!groupId) {
+    if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setChores([]);
       return;
     }
     setLoading(true);
     setError("");
 
-    const { data, error } = await getChoresByGroup(groupId);
+    const { data, error } = groupId
+      ? await getChoresByGroup(groupId)
+      : await getChoresByGroups(allGroupIds!);
 
     if (error) {
       setError(error.message);
@@ -35,7 +37,7 @@ export function useChores(groupId: string | null) {
       await loadChores();
     }
     loadChoresWrapper();
-  }, [groupId]);
+  }, [groupId, allGroupIds?.join()]);
 
   async function addChore(chore: NewChore) {
     setError("");

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -36,16 +36,18 @@ function computeBalance(userId: string, expenses: Expense[], settlements: Settle
 
 interface BalancesPageProps {
   userId: string;
+  chosenGroup: string;
+  setChosenGroup: (id: string) => void;
 }
 
-export default function BalancesPage({ userId }: BalancesPageProps) {
+export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: BalancesPageProps) {
   const { groups } = useGroups(userId);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const groupId = selectedGroupId ?? groups[0]?.id ?? null;
+  const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
+  const groupId = chosenGroup || null;
 
-  const { members } = useMembers(groupId);
-  const { expenses } = useExpenses(groupId);
-  const { settlements, recordPayment } = useSettlements(groupId);
+  const { members } = useMembers(groupId, allGroupIds);
+  const { expenses } = useExpenses(groupId, allGroupIds);
+  const { settlements, recordPayment } = useSettlements(groupId, allGroupIds);
 
   const [payTarget, setPayTarget] = useState<Settlement | null>(null);
   const [payAmount, setPayAmount] = useState('');
@@ -66,10 +68,11 @@ export default function BalancesPage({ userId }: BalancesPageProps) {
     <>
       <PageHeader
         title="Balances"
-        subtitle={groups.find(g => g.id === groupId)?.name ?? 'Select a group'}
+        subtitle={chosenGroup ? (groups.find(g => g.id === chosenGroup)?.name ?? 'Select a group') : 'All Groups'}
         actions={
           <div className="w-44">
-            <Select value={groupId ?? ''} onChange={e => setSelectedGroupId(e.target.value)} className="py-2.5 text-sm">
+            <Select value={chosenGroup} onChange={e => setChosenGroup(e.target.value)} className="py-2.5 text-sm">
+              <option value="">All Groups</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </Select>
           </div>

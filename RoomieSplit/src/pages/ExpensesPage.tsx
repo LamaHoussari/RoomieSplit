@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -21,6 +21,8 @@ interface ExpenseDraft {
 
 interface ExpensesPageProps {
   userId: string;
+  chosenGroup: string;
+  setChosenGroup: (id: string) => void;
 }
 
 // Deterministic avatar colour from name
@@ -75,13 +77,13 @@ function SplitPicker({ value, onChange, members }: { value: string[]; onChange: 
   );
 }
 
-export default function ExpensesPage({ userId }: ExpensesPageProps) {
+export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: ExpensesPageProps) {
   const { groups } = useGroups(userId);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const groupId = selectedGroupId ?? groups[0]?.id ?? null;
+  const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
+  const groupId = chosenGroup || null;
 
-  const { expenses, addExpense, removeExpense, editExpense } = useExpenses(groupId);
-  const { members } = useMembers(groupId);
+  const { expenses, addExpense, removeExpense, editExpense } = useExpenses(groupId, allGroupIds);
+  const { members } = useMembers(groupId, allGroupIds);
 
   const [showModal, setShowModal] = useState(false);
   const [paidFilter, setPaidFilter] = useState('all');
@@ -158,7 +160,8 @@ export default function ExpensesPage({ userId }: ExpensesPageProps) {
         actions={
           <>
             <div className="w-44">
-              <Select value={groupId ?? ''} onChange={e => setSelectedGroupId(e.target.value)} className="py-2.5 text-sm">
+              <Select value={chosenGroup} onChange={e => setChosenGroup(e.target.value)} className="py-2.5 text-sm">
+                <option value="">All Groups</option>
                 {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
               </Select>
             </div>

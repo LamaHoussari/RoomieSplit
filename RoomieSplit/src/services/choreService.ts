@@ -12,6 +12,13 @@ export async function getChoresByGroup(groupId: string) {
         .eq("group_id", groupId);
 }
 
+export async function getChoresByGroups(groupIds: string[]) {
+    return await supabase
+        .from("chores")
+        .select("*, profiles:assigned_to(name)")
+        .in("group_id", groupIds);
+}
+
 export async function updateChore(choreId: string, updates: Partial<NewChore & { is_completed: boolean }>) {
     return await supabase.from("chores").update(updates).eq("id", choreId);
 }

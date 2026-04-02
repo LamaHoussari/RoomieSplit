@@ -26,6 +26,14 @@ export async function getExpensesByGroup(groupId: string) {
         .order("date", { ascending: false });
 }
 
+export async function getExpensesByGroups(groupIds: string[]) {
+    return await supabase
+        .from("expenses")
+        .select("*, profiles:payer_id(name), expense_splits(*, profiles:user_id(name))")
+        .in("group_id", groupIds)
+        .order("date", { ascending: false });
+}
+
 export async function deleteExpense(expenseId: string) {
     return await supabase.from("expenses").delete().eq("id", expenseId);
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
@@ -55,19 +55,21 @@ function computeBalance(userId: string, expenses: Expense[], settlements: Settle
 
 interface DashboardPageProps {
   userId: string;
+  chosenGroup: string;
+  setChosenGroup: (id: string) => void;
 }
 
-export default function DashboardPage({ userId }: DashboardPageProps) {
+export default function DashboardPage({ userId, chosenGroup, setChosenGroup }: DashboardPageProps) {
   const navigate = useNavigate();
   const { groups } = useGroups(userId);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const groupId = selectedGroupId ?? groups[0]?.id ?? null;
+  const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
+  const groupId = chosenGroup || null;
   
   const { name } = useProfile(userId);
 
-  const { expenses } = useExpenses(groupId);
-  const { members } = useMembers(groupId);
-  const { settlements } = useSettlements(groupId);
+  const { expenses } = useExpenses(groupId, allGroupIds);
+  const { members } = useMembers(groupId, allGroupIds);
+  const { settlements } = useSettlements(groupId, allGroupIds);
 
   const totalSpend = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const myBalance = computeBalance(userId, expenses, settlements);
@@ -77,11 +79,12 @@ export default function DashboardPage({ userId }: DashboardPageProps) {
     <>
       <PageHeader
         title="Dashboard"
-         subtitle={name ? `Welcome, ${name} 👋
+         subtitle={name ? `Welcome, ${name} 👋 
           Overview of your shared expenses` : "Overview of your shared expenses"}
         actions={
           <div className="w-44">
-            <Select value={groupId ?? ''} onChange={e => setSelectedGroupId(e.target.value)} className="py-2.5 text-sm">
+            <Select value={chosenGroup} onChange={e => setChosenGroup(e.target.value)} className="py-2.5 text-sm">
+              <option value="">All Groups</option>
               {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
             </Select>
           </div>

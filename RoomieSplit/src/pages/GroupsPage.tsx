@@ -10,7 +10,7 @@ interface GroupsPageProps {
   userId: string;
 }
 
-export default function GroupsPage({ userId }: GroupsPageProps) {
+export default function GroupsPage({ userId}: GroupsPageProps) {
   const { groups, addGroup, joinGroup } = useGroups(userId);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);

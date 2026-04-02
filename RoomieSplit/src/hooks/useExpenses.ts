@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { NewExpense, Expense, NewExpenseSplit } from "../types/Expense";
-import { createExpense, getExpensesByGroup, deleteExpense as deleteExpenseService, updateExpenseWithSplits } from "../services/expensesService";
+import { createExpense, getExpensesByGroup, getExpensesByGroups, deleteExpense as deleteExpenseService, updateExpenseWithSplits } from "../services/expensesService";
 
-export function useExpenses(groupId: string | null) {
+export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -10,14 +10,16 @@ export function useExpenses(groupId: string | null) {
   const [successMessage, setSuccessMessage] = useState("");
 
   async function loadExpenses() {
-    if (!groupId) {
+    if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setExpenses([]);
       return;
     }
     setLoading(true);
     setError("");
 
-    const { data, error } = await getExpensesByGroup(groupId);
+    const { data, error } = groupId
+      ? await getExpensesByGroup(groupId)
+      : await getExpensesByGroups(allGroupIds!);
 
     if (error) {
       setError(error.message);
@@ -35,7 +37,7 @@ export function useExpenses(groupId: string | null) {
       await loadExpenses();
     }
     loadExpensesWrapper();
-  }, [groupId]);
+  }, [groupId, allGroupIds?.join()]);
 
   async function addExpense(expense: NewExpense, splits: NewExpenseSplit[]) {
     setError("");

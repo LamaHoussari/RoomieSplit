@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { GroupMember, NewGroupMember } from "../types/Member";
-import { addGroupMember, getMembersByGroup } from "../services/memberService";
+import { addGroupMember, getMembersByGroup, getMembersByGroups } from "../services/memberService";
 
-export function useMembers(groupId: string | null) {
+export function useMembers(groupId: string | null, allGroupIds?: string[]) {
   const [members, setMembers] = useState<GroupMember[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -10,14 +10,16 @@ export function useMembers(groupId: string | null) {
   const [successMessage, setSuccessMessage] = useState("");
 
   async function loadMembers() {
-    if (!groupId) {
+    if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setMembers([]);
       return;
     }
     setLoading(true);
     setError("");
 
-    const { data, error } = await getMembersByGroup(groupId);
+    const { data, error } = groupId
+      ? await getMembersByGroup(groupId)
+      : await getMembersByGroups(allGroupIds!);
 
     if (error) {
       setError(error.message);
@@ -25,7 +27,19 @@ export function useMembers(groupId: string | null) {
       return;
     }
 
-    setMembers(data ?? []);
+    // Deduplicate by user_id when fetching across multiple groups
+    const list = data ?? [];
+    if (!groupId && allGroupIds) {
+      const seen = new Set<string>();
+      const unique = list.filter(m => {
+        if (seen.has(m.user_id)) return false;
+        seen.add(m.user_id);
+        return true;
+      });
+      setMembers(unique);
+    } else {
+      setMembers(list);
+    }
 
     setLoading(false);
   }
@@ -35,7 +49,7 @@ export function useMembers(groupId: string | null) {
       await loadMembers();
     }
     loadMembersWrapper();
-  }, [groupId]);
+  }, [groupId, allGroupIds?.join()]);
 
   async function addMember(member: NewGroupMember) {
     setError("");
