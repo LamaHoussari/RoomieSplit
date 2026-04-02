@@ -96,7 +96,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
           {group?.name ?? 'Loading...'}
         </h1>
         <p className="text-base text-purple-700/70 dark:text-purple-200/70 mt-2">
-          {members.length} members · Created {group?.created_at ?? ''}
+          {members.length} members · Created {group?.created_at ? new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
         </p>
       </div>
 
