@@ -9,6 +9,7 @@ import { useGroups } from '../hooks/useGroups';
 import { useExpenses } from '../hooks/useExpenses';
 import { useMembers } from '../hooks/useMembers';
 import type { GroupMember } from '../types/Member';
+import DatePicker from '../components/DatePicker';
 
 interface ExpenseDraft {
   title: string;
@@ -279,7 +280,7 @@ export default function ExpensesPage({ userId }: ExpensesPageProps) {
             </Select>
           </FormField>
           <FormField label="Date">
-            <Input type="date" value={addDraft.date} onChange={e => setAddDraft(d => ({ ...d, date: e.target.value }))} />
+           <DatePicker value={addDraft.date} onChange={date => setAddDraft(d => ({ ...d, date }))} />
           </FormField>
           <FormField label="Split between">
             <SplitPicker value={addDraft.splitUserIds} onChange={splitUserIds => setAddDraft(d => ({ ...d, splitUserIds }))} members={members} />

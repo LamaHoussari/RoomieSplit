@@ -96,3 +96,7 @@ body.modal-open > #root > * {
 body.modal-open .modal-layer {
   filter: none !important;
 }
+input[type="date"] {
+  color-scheme: light;
+}
+
