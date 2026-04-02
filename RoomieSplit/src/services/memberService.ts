@@ -1,8 +1,13 @@
 import { supabase } from "../lib/supabaseClient";
 import type { NewGroupMember } from "../types/Member";
 
-export async function addGroupMember(member: NewGroupMember) {
-    return await supabase.from("group_members").insert([member]);
+export async function addGroupMember(member: NewGroupMember, userId: string) {
+  return await supabase.rpc("add_group_member_by_admin", {
+    p_group_id: member.group_id,
+    p_user_id: userId,
+    p_role: "member",
+    p_nickname: member.nickname ?? null,
+  });
 }
 
 export async function getMembersByGroup(groupId: string) {
