@@ -37,3 +37,7 @@ export async function joinGroupByCode(code: string) {
     input_code: code,
   });
 }
+
+export async function deleteGroup(groupId: string) {
+  return await supabase.from("groups").delete().eq("id", groupId);
+}

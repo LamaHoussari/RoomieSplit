@@ -7,7 +7,7 @@ import InviteMemberModal from '../components/InviteMemberModal';
 import { useMembers } from '../hooks/useMembers';
 import { useExpenses } from '../hooks/useExpenses';
 import { useSettlements } from '../hooks/useSettlements';
-import { getGroupById } from '../services/groupService';
+import { getGroupById, deleteGroup } from '../services/groupService';
 import { removeMember } from '../services/memberService';
 import type { Group } from '../types/Group';
 import type { Expense } from '../types/Expense';
@@ -185,6 +185,24 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
           </div>
         </Card>
       </div>
+
+      {isAdmin && (
+        <div className="mt-8">
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={async () => {
+              if (!confirm(`Are you sure you want to delete "${group?.name}"? This action cannot be undone.`)) return;
+              if (!groupId) return;
+              const { error } = await deleteGroup(groupId);
+              if (error) alert(error.message);
+              else navigate('/groups');
+            }}
+          >
+            Delete Group
+          </Button>
+        </div>
+      )}
     </>
   );
 }
