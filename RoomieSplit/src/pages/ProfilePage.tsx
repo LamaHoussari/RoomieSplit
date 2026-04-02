@@ -1,21 +1,19 @@
 import { useState } from 'react';
+import type { AppUser } from '../types/auth';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 
-interface Profile {
-  name: string;
-  email: string;
-}
-
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile>({ name: 'Rand Al Yaman', email: 'rand@example.com' });
-  const [draft, setDraft] = useState<Profile>(profile);
+export default function ProfilePage({ user }: { user: AppUser }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState({
+    name: user.name || '',
+    email: user.email || '',
+  });
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const isDirty = draft.name !== profile.name || draft.email !== profile.email;
+  const isDirty = draft.name !== (user.name || '') || draft.email !== (user.email || '');
 
   return (
     <>
@@ -53,7 +51,7 @@ export default function ProfilePage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setDraft(profile);
+                  setDraft({ name: user.name || '', email: user.email || '' });
                   setIsEditing(true);
                 }}
               >
@@ -65,7 +63,7 @@ export default function ProfilePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setDraft(profile);
+                    setDraft({ name: user.name || '', email: user.email || '' });
                     setIsEditing(false);
                   }}
                 >
@@ -75,7 +73,7 @@ export default function ProfilePage() {
                   size="sm"
                   disabled={!isDirty}
                   onClick={() => {
-                    setProfile(draft);
+                    setDraft({ name: user.name || '', email: user.email || '' });
                     setIsEditing(false);
                   }}
                 >

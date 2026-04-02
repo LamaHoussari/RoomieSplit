@@ -27,6 +27,7 @@ function AnimatedRoutes() {
   return (
     <div key={location.pathname} className="page-transition">
       <Routes location={location}>
+        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
         <Route path="/login" element={<LoginPage 
           onSignUp={signUp}
           onSignIn={signIn}
@@ -42,7 +43,7 @@ function AnimatedRoutes() {
           <Route path="/expenses"   element={<ExpensesPage userId={user.id} />} />
           <Route path="/balances"   element={<BalancesPage userId={user.id} />} />
           <Route path="/chores"     element={<ChoresPage userId={user.id} />} />
-          <Route path="/profile"    element={<ProfilePage />} />
+          <Route path="/profile"    element={<ProfilePage user={user} />} />
         </Route>
         )}
         {!user && !loading && (
