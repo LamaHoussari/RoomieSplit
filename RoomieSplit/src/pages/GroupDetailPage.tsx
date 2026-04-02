@@ -48,7 +48,7 @@ export default function GroupDetailPage(_props: GroupDetailPageProps) {
   const { settlements } = useSettlements(groupId);
 
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalSettled = settlements.reduce((s, st) => s + st.paid, 0);
+  const totalSettled = settlements.reduce((s, st) => s + Number(st.paid || 0), 0);
   const formatMoney = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (

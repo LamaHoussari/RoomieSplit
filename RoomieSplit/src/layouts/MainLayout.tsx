@@ -30,7 +30,7 @@ export default function MainLayout({ onSignOut }: { onSignOut: () => Promise<boo
             onToggleCollapsed={() => setSidebarCollapsed(c => !c)}
         />
 
-        <main className="flex-1 min-w-0 p-5 sm:p-6 md:p-10 overflow-y-auto">
+        <main className={`flex-1 min-w-0 p-5 sm:p-6 md:p-10 overflow-y-auto transition-[filter] duration-200 ${sidebarOpen ? '' : ''}`}>
           <div key={location.pathname} className="animate-slide-up-soft">
             <Outlet />
           </div>
