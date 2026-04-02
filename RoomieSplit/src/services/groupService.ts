@@ -32,6 +32,14 @@ export async function getGroupById(groupId: string) {
     .single();
 }
 
+export async function getGroupByCode(code: string) {
+  return await supabase
+    .from("groups")
+    .select("*")
+    .eq("code", code)
+    .single();
+}
+
 export async function joinGroupByCode(code: string) {
   return await supabase.rpc("join_group_by_code", {
     input_code: code,
