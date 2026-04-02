@@ -17,6 +17,8 @@ export async function getMembersByGroup(groupId: string) {
         .eq("group_id", groupId);
 }
 
-export async function removeMember(memberId: number) {
-    return await supabase.from("group_members").delete().eq("id", memberId);
+export async function removeMember(memberId: string) {
+  const q = await supabase.from("group_members").delete().eq("id", memberId);
+  console.log("removeMember", { memberId, q });
+  return await supabase.from("group_members").delete().eq("id", memberId);
 }

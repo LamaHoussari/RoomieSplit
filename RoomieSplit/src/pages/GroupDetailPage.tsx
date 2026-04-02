@@ -8,6 +8,7 @@ import { useMembers } from '../hooks/useMembers';
 import { useExpenses } from '../hooks/useExpenses';
 import { useSettlements } from '../hooks/useSettlements';
 import { getGroupById } from '../services/groupService';
+import { removeMember } from '../services/memberService';
 import type { Group } from '../types/Group';
 import type { Expense } from '../types/Expense';
 import type { Settlement } from '../types/Settlement';
@@ -126,6 +127,23 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                   >
                     {balance > 0 ? '+' : ''}${Math.abs(balance)}
                   </span>
+                  {isAdmin && m.role !== 'admin' && (
+                    <button
+                      type="button"
+                      title="Remove member"
+                      className="ml-2 p-1.5 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      onClick={async () => {
+                        if (!confirm(`Remove ${name} from the group?`)) return;
+                        const { error } = await removeMember(m.id);
+                        if (error) alert(error.message);
+                        else loadMembers();
+                      }}
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                        <path d="M6.28 5.22a.75.75 0 0 1 1.06 0L10 7.94l2.66-2.72a.75.75 0 1 1 1.08 1.04L11.06 9l2.68 2.74a.75.75 0 1 1-1.08 1.04L10 10.06l-2.66 2.72a.75.75 0 0 1-1.08-1.04L8.94 9 6.28 6.26a.75.75 0 0 1 0-1.04Z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               );
             })}
