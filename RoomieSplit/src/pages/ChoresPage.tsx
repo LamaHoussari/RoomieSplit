@@ -23,6 +23,9 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   const { chores, addChore, removeChore, toggleChore } = useChores(groupId, allGroupIds);
   const { members } = useMembers(groupId, allGroupIds);
 
+  const currentMember = members.find(m => m.user_id === userId);
+  const isAdmin = currentMember?.role === 'admin';
+
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
@@ -91,7 +94,14 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                 <option value="completed">Completed</option>
               </Select>
             </div>
-            <Button size="sm" onClick={() => setShowModal(true)}>+ Add chore</Button>
+            <div className="relative group/add">
+              <Button size="sm" onClick={() => setShowModal(true)} disabled={!groupId}>+ Add chore</Button>
+              {!groupId && (
+                <span className="pointer-events-none absolute -bottom-9 right-0 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-700 px-2.5 py-1 text-xs font-medium text-white opacity-0 group-hover/add:opacity-100 transition-opacity shadow-lg">
+                  Select a group first
+                </span>
+              )}
+            </div>
           </>
         }
       />
@@ -143,6 +153,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                 </button>
 
                 {/* Remove */}
+                {(isAdmin || c.created_by === userId) && (
                 <button
                   type="button"
                   title="Remove"
@@ -154,6 +165,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l8 8M14 6l-8 8" />
                   </svg>
                 </button>
+                )}
               </div>
             </div>
           ))}

@@ -21,7 +21,7 @@ function computeBalance(userId: string, expenses: Expense[], settlements: Settle
   for (const e of expenses) {
     if (e.payer_id === userId) balance += e.amount;
     const mySplit = e.expense_splits?.find(s => s.user_id === userId);
-    if (mySplit?.share_amount) balance -= mySplit.share_amount;
+    if (mySplit != null && mySplit.share_amount != null) balance -= mySplit.share_amount;
   }
   for (const s of settlements) {
     if (s.from_user_id === userId) balance += s.paid;
@@ -122,10 +122,10 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                   </div>
                   <span
                     className={`ml-auto font-semibold text-base ${
-                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
+                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-purple-900/60 dark:text-purple-100/60'
                     }`}
                   >
-                    {balance > 0 ? '+' : ''}${Math.abs(balance)}
+                    {balance > 0 ? '+' : balance < 0 ? '-' : ''}${Math.abs(balance).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </span>
                   {isAdmin && m.role !== 'admin' && (
                     <div className="relative ml-2 group/remove">

@@ -22,3 +22,7 @@ export async function getSettlementsByGroups(groupIds: string[]) {
 export async function updateSettlement(settlementId: string, updates: { paid: number }) {
     return await supabase.from("settlements").update(updates).eq("id", settlementId);
 }
+
+export async function deleteSettlementsByExpense(expenseId: string) {
+    return await supabase.from("settlements").delete().eq("expense_id", expenseId);
+}

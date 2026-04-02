@@ -4,7 +4,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import { Select } from '../components/FormField';
+import FormField, { Select } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { useMembers } from '../hooks/useMembers';
 import { useExpenses } from '../hooks/useExpenses';
@@ -25,7 +25,7 @@ function computeBalance(userId: string, expenses: Expense[], settlements: Settle
   for (const e of expenses) {
     if (e.payer_id === userId) balance += e.amount;
     const mySplit = e.expense_splits?.find(s => s.user_id === userId);
-    if (mySplit?.share_amount) balance -= mySplit.share_amount;
+    if (mySplit != null && mySplit.share_amount != null) balance -= mySplit.share_amount;
   }
   for (const s of settlements) {
     if (s.from_user_id === userId) balance += s.paid;
@@ -33,6 +33,8 @@ function computeBalance(userId: string, expenses: Expense[], settlements: Settle
   }
   return balance;
 }
+
+const formatMoney = (v: number) => Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 interface BalancesPageProps {
   userId: string;
@@ -47,10 +49,14 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
 
   const { members } = useMembers(groupId, allGroupIds);
   const { expenses } = useExpenses(groupId, allGroupIds);
-  const { settlements, recordPayment } = useSettlements(groupId, allGroupIds);
+  const { settlements, recordPayment, addSettlement } = useSettlements(groupId, allGroupIds);
 
   const [payTarget, setPayTarget] = useState<Settlement | null>(null);
   const [payAmount, setPayAmount] = useState('');
+  const [showNewSettlement, setShowNewSettlement] = useState(false);
+  const [newFrom, setNewFrom] = useState('');
+  const [newTo, setNewTo] = useState('');
+  const [newAmount, setNewAmount] = useState('');
 
   const openPay = (s: Settlement) => {
     setPayTarget(s);
@@ -60,8 +66,33 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const submitPay = async () => {
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0 || !payTarget) return;
-    const success = await recordPayment(payTarget.id, Math.min(payTarget.paid + amount, payTarget.amount));
+    const remaining = payTarget.amount - payTarget.paid;
+    if (amount > remaining) {
+      alert(`Amount exceeds the remaining balance of $${formatMoney(remaining)}.`);
+      return;
+    }
+    const success = await recordPayment(payTarget.id, payTarget.paid + amount);
     if (success) setPayTarget(null);
+  };
+
+  const submitNewSettlement = async () => {
+    const amount = parseFloat(newAmount);
+    if (!newFrom || !newTo || !amount || amount <= 0 || !groupId) return;
+    if (newFrom === newTo) return;
+    const success = await addSettlement({
+      group_id: groupId,
+      from_user_id: newFrom,
+      to_user_id: newTo,
+      amount,
+      paid: 0,
+      created_by: userId,
+    });
+    if (success) {
+      setShowNewSettlement(false);
+      setNewFrom('');
+      setNewTo('');
+      setNewAmount('');
+    }
   };
 
   return (
@@ -90,10 +121,10 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
               className="bg-white/90 dark:bg-purple-950/70 border border-purple-100/80 dark:border-purple-900/60 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-shadow"
             >
               <p className="text-sm font-semibold text-purple-700/70 dark:text-purple-200/70 mb-2">{name}</p>
-              <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                {balance > 0 ? '+' : ''}${Math.abs(balance)}
+              <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-purple-900 dark:text-purple-100'}`}>
+                {balance > 0 ? '+' : balance < 0 ? '-' : ''}${formatMoney(balance)}
               </p>
-              <p className="text-sm text-purple-700/70 dark:text-purple-200/70 mt-1">{balance > 0 ? 'is owed' : 'owes'}</p>
+              <p className="text-sm text-purple-700/70 dark:text-purple-200/70 mt-1">{balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'all settled'}</p>
             </div>
           );
         })}
@@ -109,11 +140,12 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
               <col className="w-28" />
               <col className="w-36" />
               <col className="w-28" />
+              <col className="w-20" />
               <col className="w-12" />
             </colgroup>
             <thead>
               <tr className="border-b border-purple-100/80 dark:border-purple-800/60 bg-purple-50/60 dark:bg-purple-900/20">
-                {['From', 'To', 'Amount', 'Paid', 'Status', ''].map((h, i) => (
+                {['From', 'To', 'Amount', 'Paid', 'Status', 'Source', ''].map((h, i) => (
                   <th
                     key={h || i}
                     className="text-left py-3.5 px-4 text-xs font-semibold uppercase tracking-wider text-purple-600/70 dark:text-purple-200/70"
@@ -132,10 +164,15 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                   <tr key={s.id} className="border-b border-purple-50/80 dark:border-purple-800/30 last:border-0 hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors">
                     <td className="py-4 px-4"><Badge variant="red">{fromName}</Badge></td>
                     <td className="py-4 px-4"><Badge variant="purple">{toName}</Badge></td>
-                    <td className="py-4 px-4 font-semibold text-purple-900 dark:text-purple-100">${s.amount}</td>
-                    <td className="py-4 px-4 text-purple-700/70 dark:text-purple-200/70 whitespace-nowrap">${s.paid} / ${s.amount}</td>
+                    <td className="py-4 px-4 font-semibold text-purple-900 dark:text-purple-100">${formatMoney(s.amount)}</td>
+                    <td className="py-4 px-4 text-purple-700/70 dark:text-purple-200/70 whitespace-nowrap">${formatMoney(s.paid)} / ${formatMoney(s.amount)}</td>
                     <td className="py-4 px-4">
                       {settled ? <Badge variant="green">Settled</Badge> : <Badge variant="orange">Pending</Badge>}
+                    </td>
+                    <td className="py-4 px-4">
+                      {s.expense_id
+                        ? <Badge variant="purple">Expenses</Badge>
+                        : <Badge variant="violet">External</Badge>}
                     </td>
                     <td className="py-4 px-4">
                       {!settled && (
@@ -158,6 +195,56 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
           </table>
         </div>
       </Card>
+
+      {/* New settlement button */}
+      <div className="mt-4">
+        <div className="relative group/settle inline-block">
+          <Button size="sm" onClick={() => { setShowNewSettlement(true); setNewFrom(''); setNewTo(''); setNewAmount(''); }} disabled={!groupId}>
+            + New Settlement
+          </Button>
+          {!groupId && (
+            <span className="pointer-events-none absolute -bottom-9 left-0 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-700 px-2.5 py-1 text-xs font-medium text-white opacity-0 group-hover/settle:opacity-100 transition-opacity shadow-lg">
+              Select a group first
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* New settlement modal */}
+      {showNewSettlement && (
+        <Modal title="New Settlement" onClose={() => setShowNewSettlement(false)}>
+          <FormField label="From (who owes)">
+            <Select value={newFrom} onChange={e => setNewFrom(e.target.value)}>
+              <option value="">Select member</option>
+              {members.map(m => <option key={m.user_id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
+            </Select>
+          </FormField>
+          <FormField label="To (who is owed)">
+            <Select value={newTo} onChange={e => setNewTo(e.target.value)}>
+              <option value="">Select member</option>
+              {members.filter(m => m.user_id !== newFrom).map(m => <option key={m.user_id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
+            </Select>
+          </FormField>
+          <FormField label="Amount ($)">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={newAmount}
+              onChange={e => setNewAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full px-4 py-3 rounded-2xl border border-purple-100 dark:border-purple-800 bg-white dark:bg-purple-900/20 text-purple-900 dark:text-purple-100 text-base font-semibold placeholder:text-purple-300 dark:placeholder:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-600 transition"
+            />
+          </FormField>
+          {newFrom && newTo && newFrom === newTo && (
+            <p className="text-sm text-red-500 mt-1">From and To must be different members</p>
+          )}
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" size="sm" onClick={() => setShowNewSettlement(false)}>Cancel</Button>
+            <Button size="sm" onClick={submitNewSettlement} disabled={!newFrom || !newTo || newFrom === newTo || !parseFloat(newAmount)}>Create</Button>
+          </div>
+        </Modal>
+      )}
 
       {/* Pay modal */}
       {payTarget && (
@@ -187,7 +274,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
               );
             })}
             <span className="ml-auto text-sm font-bold text-purple-900 dark:text-purple-100 whitespace-nowrap">
-              ${payTarget.amount - payTarget.paid} remaining
+              ${formatMoney(payTarget.amount - payTarget.paid)} remaining
             </span>
           </div>
 
@@ -207,7 +294,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             />
           </div>
           <p className="text-xs text-purple-400 dark:text-purple-500 mb-6">
-            Full amount: ${payTarget.amount - payTarget.paid}
+            Full amount: ${formatMoney(payTarget.amount - payTarget.paid)}
           </p>
 
           <div className="flex justify-end gap-2">

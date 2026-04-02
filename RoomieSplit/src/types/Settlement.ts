@@ -7,6 +7,7 @@ export interface Settlement {
   paid: number;
   created_by: string;
   created_at: string;
+  expense_id?: string | null;
   from_profile?: { name: string };
   to_profile?: { name: string };
 }
@@ -18,4 +19,5 @@ export interface NewSettlement {
   amount: number;
   paid?: number;
   created_by: string;
+  expense_id?: string | null;
 }

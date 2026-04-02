@@ -82,8 +82,11 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
 
-  const { expenses, addExpense, removeExpense, editExpense } = useExpenses(groupId, allGroupIds);
+  const { expenses, addExpense, removeExpense, editExpense, togglePaid } = useExpenses(groupId, allGroupIds);
   const { members } = useMembers(groupId, allGroupIds);
+
+  const currentMember = members.find(m => m.user_id === userId);
+  const isAdmin = currentMember?.role === 'admin';
 
   const [showModal, setShowModal] = useState(false);
   const [paidFilter, setPaidFilter] = useState('all');
@@ -176,7 +179,14 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                 <option value="paid">Paid</option>
               </Select>
             </div>
-            <Button size="sm" onClick={() => setShowModal(true)}>+ Add expense</Button>
+            <div className="relative group/add">
+              <Button size="sm" onClick={() => setShowModal(true)} disabled={!groupId}>+ Add expense</Button>
+              {!groupId && (
+                <span className="pointer-events-none absolute -bottom-9 right-0 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-700 px-2.5 py-1 text-xs font-medium text-white opacity-0 group-hover/add:opacity-100 transition-opacity shadow-lg">
+                  Select a group first
+                </span>
+              )}
+            </div>
           </>
         }
       />
@@ -205,11 +215,11 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
           <table className="w-full text-base">
             <thead>
               <tr className="border-b border-purple-100/80 dark:border-purple-800/60 bg-purple-50/60 dark:bg-purple-900/20">
-                {['Title', 'Paid by', 'Date', 'Split', 'Amount', ''].map((h, i) => (
+                {['', 'Title', 'Paid by', 'Date', 'Split', 'Amount', ''].map((h, i) => (
                   <th
                     key={h || i}
                     className={`text-left py-3.5 px-4 text-xs font-semibold uppercase tracking-wider text-purple-600/70 dark:text-purple-200/70
-                      ${i === 5 ? 'w-[140px] min-w-[140px]' : ''}`}
+                      ${i === 0 ? 'w-10' : ''} ${i === 6 ? 'w-[140px] min-w-[140px]' : ''}`}
                   >
                     {h}
                   </th>
@@ -222,6 +232,40 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                   key={e.id}
                   className="border-b border-purple-50/80 dark:border-purple-800/30 last:border-0 hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
                 >
+                  <td className="py-4 px-4 w-10">
+                    {(isAdmin || e.payer_id === userId || e.created_by === userId) ? (
+                      <button
+                        type="button"
+                        title={e.is_paid ? 'Mark as unpaid' : 'Mark as paid'}
+                        onClick={() => togglePaid(e.id, e.is_paid, e)}
+                        className={`flex items-center justify-center w-5 h-5 rounded border-2 transition-colors ${
+                          e.is_paid
+                            ? 'bg-emerald-500 border-emerald-500 text-white'
+                            : 'border-purple-300 dark:border-purple-600 hover:border-purple-500 dark:hover:border-purple-400'
+                        }`}
+                      >
+                        {e.is_paid && (
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    ) : (
+                      <span
+                        className={`flex items-center justify-center w-5 h-5 rounded border-2 ${
+                          e.is_paid
+                            ? 'bg-emerald-500 border-emerald-500 text-white'
+                            : 'border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        {e.is_paid && (
+                          <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-4 px-4 font-semibold text-purple-900 dark:text-purple-100">{e.description}</td>
                   <td className="py-4 px-4"><Badge variant="purple">{e.profiles?.name ?? 'Unknown'}</Badge></td>
                   <td className="py-4 px-4 text-purple-700/70 dark:text-purple-200/70 whitespace-nowrap">{e.date}</td>
@@ -230,6 +274,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
 
                   {/* Fixed-width action cell */}
                   <td className="py-4 px-4 w-[140px] min-w-[140px]">
+                    {(isAdmin || e.created_by === userId || e.payer_id === userId) && (
                     <div className="flex items-center justify-end gap-1.5">
                       
                       {/* Edit */}
@@ -260,6 +305,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                         </svg>
                       </button>
                     </div>
+                    )}
                   </td>
                 </tr>
               ))}
