@@ -88,3 +88,15 @@
     animation: none !important;
   }
 }
+body.modal-open > #root > * {
+  filter: drop-shadow(50px 50px 50px rgba(0, 0, 0, 0.642));
+  transition: filter 0.2s ease;
+}
+
+body.modal-open .modal-layer {
+  filter: none !important;
+}
+input[type="date"] {
+  color-scheme: light;
+}
+

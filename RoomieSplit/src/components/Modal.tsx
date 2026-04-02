@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 interface ModalProps {
   title: string;
   onClose: () => void;
@@ -5,11 +6,16 @@ interface ModalProps {
 }
 
 export default function Modal({ title, onClose, children }: ModalProps) {
+   useEffect(() => {
+    document.body.classList.add('modal-open');
+    return () => document.body.classList.remove('modal-open');
+  }, []);
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm grid place-items-center z-50 p-5 sm:p-6 animate-fade-in"
       onClick={onClose}
+      className="modal-layer fixed inset-0 grid place-items-center z-50 p-5 sm:p-6 animate-fade-in"
     >
+      
       <div
         role="dialog"
         aria-modal="true"
