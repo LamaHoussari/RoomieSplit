@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout      from '../layouts/MainLayout';
 import LoginPage       from '../pages/LoginPage';
 import DashboardPage   from '../pages/DashboardPage';
@@ -12,7 +12,6 @@ import ProfilePage     from '../pages/ProfilePage';
 import { useAuth } from "../hooks/useAuth";
 
 function AnimatedRoutes() {
-  const location = useLocation(); // to know where they are in the app and how they got there
   
     const {
     user, // current user
@@ -25,8 +24,9 @@ function AnimatedRoutes() {
   } = useAuth();
   
   return (
-    <div key={location.pathname} className="page-transition">
-      <Routes location={location}>
+    <div className="page-transition">
+      <Routes>
+        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
         <Route path="/login" element={<LoginPage 
           onSignUp={signUp}
           onSignIn={signIn}
@@ -42,7 +42,7 @@ function AnimatedRoutes() {
           <Route path="/expenses"   element={<ExpensesPage userId={user.id} />} />
           <Route path="/balances"   element={<BalancesPage userId={user.id} />} />
           <Route path="/chores"     element={<ChoresPage userId={user.id} />} />
-          <Route path="/profile"    element={<ProfilePage />} />
+          <Route path="/profile"    element={<ProfilePage user={user} />} />
         </Route>
         )}
         {!user && !loading && (
