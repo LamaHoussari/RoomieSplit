@@ -9,9 +9,8 @@ import { useGroups } from '../hooks/useGroups';
 import { useExpenses } from '../hooks/useExpenses';
 import { useMembers } from '../hooks/useMembers';
 import { useSettlements } from '../hooks/useSettlements';
-import type { Expense } from '../types/Expense';
-import type { Settlement } from '../types/Settlement';
 import { useProfile } from '../hooks/useProfile';
+import { computeMemberBalance } from '../lib/finance';
 
 interface StatCardProps {
   label: string;
@@ -23,10 +22,9 @@ interface StatCardProps {
 function StatCard({ label, value, colorClass, accentClass }: StatCardProps) {
   return (
     <div
-      className={`bg-white/90 dark:bg-purple-950/70 border border-purple-100/80 dark:border-purple-900/60 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-shadow
-      border-l-4 ${accentClass}`}
+      className={`rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] transition-shadow hover:shadow-[0_24px_56px_-34px_rgba(28,25,23,0.5)] dark:border-slate-800/70 dark:bg-slate-900/78 sm:p-7 border-l-4 ${accentClass}`}
     >
-      <p className="text-sm font-semibold text-purple-700/70 dark:text-purple-200/70 mb-2">
+      <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">
         {label}
       </p>
       <p className={`font-display text-4xl font-extrabold tracking-tight ${colorClass}`}>
@@ -39,20 +37,6 @@ function StatCard({ label, value, colorClass, accentClass }: StatCardProps) {
 const getInitials = (name?: string) =>
   (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-function computeBalance(userId: string, expenses: Expense[], settlements: Settlement[]): number {
-  let balance = 0;
-  for (const e of expenses) {
-    if (e.payer_id === userId) balance += e.amount;
-    const mySplit = e.expense_splits?.find(s => s.user_id === userId);
-    if (mySplit?.share_amount) balance -= mySplit.share_amount;
-  }
-  for (const s of settlements) {
-    if (s.from_user_id === userId) balance += s.paid;
-    if (s.to_user_id === userId) balance -= s.paid;
-  }
-  return balance;
-}
-
 interface DashboardPageProps {
   userId: string;
   chosenGroup: string;
@@ -64,112 +48,111 @@ export default function DashboardPage({ userId, chosenGroup, setChosenGroup }: D
   const { groups } = useGroups(userId);
   const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
-  
   const { name } = useProfile(userId);
 
   const { expenses } = useExpenses(groupId, allGroupIds);
   const { members } = useMembers(groupId, allGroupIds);
   const { settlements } = useSettlements(groupId, allGroupIds);
 
-  const totalSpend = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const myBalance = computeBalance(userId, expenses, settlements);
-  const formatMoney = (v: number) => '$' + Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const totalSpend = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  const myBalance = computeMemberBalance(userId, settlements);
+  const formatMoney = (value: number) =>
+    '$' + Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (
     <>
       <PageHeader
         title="Dashboard"
-         subtitle={name ? `Welcome, ${name} 👋 
-          Overview of your shared expenses` : "Overview of your shared expenses"}
+        subtitle={name ? `Welcome, ${name}. Overview of your shared expenses.` : 'Overview of your shared expenses.'}
         actions={
           <div className="w-44">
             <Select value={chosenGroup} onChange={e => setChosenGroup(e.target.value)} className="py-2.5 text-sm">
               <option value="">All Groups</option>
-              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              {groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
             </Select>
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label={myBalance >= 0 ? 'You are owed' : 'You owe'}
+          label={myBalance > 0 ? 'You are owed' : myBalance < 0 ? 'You owe' : 'You are settled'}
           value={formatMoney(myBalance)}
-          colorClass={myBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}
-          accentClass={myBalance >= 0 ? 'border-l-emerald-400/60 dark:border-l-emerald-400/40' : 'border-l-red-400/60 dark:border-l-red-400/40'}
+          colorClass={myBalance > 0 ? 'text-emerald-600 dark:text-emerald-400' : myBalance < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-900 dark:text-slate-100'}
+          accentClass={myBalance > 0 ? 'border-l-emerald-400/60 dark:border-l-emerald-400/40' : myBalance < 0 ? 'border-l-red-400/60 dark:border-l-red-400/40' : 'border-l-stone-400/70 dark:border-l-slate-500/50'}
         />
         <StatCard
           label="Total group spend"
           value={formatMoney(totalSpend)}
-          colorClass="text-purple-800 dark:text-purple-200"
-          accentClass="border-l-purple-400/60 dark:border-l-purple-400/40"
+          colorClass="text-stone-900 dark:text-slate-100"
+          accentClass="border-l-[#8c74aa]/70 dark:border-l-[#b59ad6]/45"
         />
         <StatCard
           label="Active groups"
           value={String(groups.length)}
-          colorClass="text-purple-900 dark:text-purple-100"
-          accentClass="border-l-violet-400/60 dark:border-l-violet-400/40"
+          colorClass="text-stone-900 dark:text-slate-100"
+          accentClass="border-l-amber-400/70 dark:border-l-amber-300/40"
         />
         <StatCard
           label="Total expenses"
           value={String(expenses.length)}
-          colorClass="text-purple-700 dark:text-purple-300"
-          accentClass="border-l-fuchsia-400/60 dark:border-l-fuchsia-400/40"
+          colorClass="text-stone-700 dark:text-slate-300"
+          accentClass="border-l-slate-400/70 dark:border-l-slate-500/50"
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card title="My Expenses" className="overflow-hidden">
           <div className="-mx-2">
-            {expenses.slice(0, 3).map(e => (
+            {expenses.slice(0, 3).map(expense => (
               <div
-                key={e.id}
-                className="flex items-center justify-between px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
+                key={expense.id}
+                className="flex items-center justify-between rounded-2xl px-2 py-3 transition-colors hover:bg-stone-100/80 dark:hover:bg-white/5"
               >
                 <div className="min-w-0">
-                  <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
-                    {e.description}
+                  <p className="truncate text-base font-semibold text-stone-900 dark:text-slate-100">
+                    {expense.description}
                   </p>
-                  <p className="text-sm text-purple-600/70 dark:text-purple-300/70 mt-0.5">
-                    {e.date} · paid by {e.profiles?.name ?? 'Unknown'}
+                  <p className="mt-0.5 text-sm text-stone-500 dark:text-slate-400">
+                    {expense.date} - paid by {expense.profiles?.name ?? 'Unknown'}
                   </p>
                 </div>
-                <span className="font-semibold text-base text-purple-800 dark:text-purple-200">
-                  ${e.amount}
+                <span className="text-base font-semibold text-stone-800 dark:text-slate-200">
+                  ${expense.amount}
                 </span>
               </div>
             ))}
           </div>
           <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/expenses')}>
-            View all →
+            View all -&gt;
           </Button>
         </Card>
 
         <Card title="Balances" className="overflow-hidden">
           <div className="-mx-2">
-            {members.map(m => {
-              const balance = computeBalance(m.user_id, expenses, settlements);
-              const name = m.profiles?.name ?? 'Unknown';
+            {members.map(member => {
+              const balance = computeMemberBalance(member.user_id, settlements);
+              const memberName = member.profiles?.name ?? 'Unknown';
               return (
                 <div
-                  key={m.id}
-                  className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
+                  key={member.id}
+                  className="flex items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-stone-100/80 dark:hover:bg-white/5"
                 >
-                  <Avatar initials={getInitials(name)} colorClass={m.color_class || ''} />
+                  <Avatar initials={getInitials(memberName)} colorClass={member.color_class || ''} />
                   <div className="min-w-0">
-                    <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
-                      {name}
+                    <p className="truncate text-base font-semibold text-stone-900 dark:text-slate-100">
+                      {memberName}
                     </p>
-                    <p className="text-sm text-purple-600/70 dark:text-purple-300/70">
-                      {balance > 0 ? 'is owed' : 'owes'}
+                    <p className="text-sm text-stone-500 dark:text-slate-400">
+                      {balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'all settled'}
                     </p>
                   </div>
                   <span
-                    className={`ml-auto font-semibold text-base ${
-                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
+                    className={`ml-auto text-base font-semibold ${
+                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-500 dark:text-slate-400'
                     }`}
                   >
-                    {balance > 0 ? '+' : ''}${Math.abs(balance)}
+                    {balance > 0 ? '+' : balance < 0 ? '-' : ''}${Math.abs(balance).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </span>
                 </div>
               );

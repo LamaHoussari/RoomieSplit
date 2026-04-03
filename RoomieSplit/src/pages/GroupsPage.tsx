@@ -5,15 +5,14 @@ import Modal from '../components/Modal';
 import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
-import { getGroupByCode } from '../services/groupService';
 import { lookupUserByEmail, addMemberByEmail, sendInviteEmail } from '../services/inviteService';
 
 interface GroupsPageProps {
   userId: string;
 }
 
-export default function GroupsPage({ userId}: GroupsPageProps) {
-  const { groups, addGroup, joinGroup } = useGroups(userId);
+export default function GroupsPage({ userId }: GroupsPageProps) {
+  const { groups, error, successMessage, addGroup, joinGroup } = useGroups(userId);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const navigate = useNavigate();
@@ -23,8 +22,9 @@ export default function GroupsPage({ userId}: GroupsPageProps) {
   const [emailInput, setEmailInput] = useState('');
   const [emailError, setEmailError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [pageFeedback, setPageFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
-  const canCreate = groupName.trim() !== '' && inviteEmails.length > 0 && !creating;
+  const canCreate = groupName.trim() !== '' && !creating;
 
   const handleAddEmail = () => {
     const email = emailInput.trim().toLowerCase();
@@ -45,20 +45,56 @@ export default function GroupsPage({ userId}: GroupsPageProps) {
   const handleCreate = async () => {
     if (!canCreate) return;
     setCreating(true);
-    const code = groupName.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 4) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
-    const success = await addGroup({ name: groupName.trim(), code });
-    if (success) {
-      const { data: newGroup } = await getGroupByCode(code);
-      if (newGroup) {
-        for (const email of inviteEmails) {
-          const { data: user } = await lookupUserByEmail(email);
-          if (user) {
-            await addMemberByEmail(newGroup.id, user.id);
-          } else {
-            await sendInviteEmail(email, groupName.trim(), code, 'A group admin');
-          }
+    setPageFeedback(null);
+    const trimmedGroupName = groupName.trim();
+    const code = trimmedGroupName.toUpperCase().replace(/\s+/g, '-').slice(0, 4) + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const newGroup = await addGroup({ name: trimmedGroupName, code });
+    if (newGroup) {
+      let addedCount = 0;
+      let emailCount = 0;
+      const inviteFailures: string[] = [];
+
+      for (const email of inviteEmails) {
+        const { data: user, error: lookupError } = await lookupUserByEmail(email);
+
+        if (lookupError) {
+          inviteFailures.push(`${email}: ${lookupError.message}`);
+          continue;
         }
+
+        if (user) {
+          const { error: memberError } = await addMemberByEmail(newGroup.id, user.id);
+          if (memberError) {
+            inviteFailures.push(`${email}: ${memberError.message}`);
+            continue;
+          }
+          addedCount += 1;
+          continue;
+        }
+
+        const { error: inviteError } = await sendInviteEmail(email, trimmedGroupName, code, 'A group admin');
+        if (inviteError) {
+          inviteFailures.push(`${email}: ${inviteError}`);
+          continue;
+        }
+        emailCount += 1;
       }
+
+      if (inviteFailures.length > 0) {
+        setPageFeedback({
+          type: 'error',
+          message: `Group created, but some invites failed: ${inviteFailures.join(' ')}`,
+        });
+      } else {
+        const details: string[] = [];
+        if (addedCount > 0) details.push(`${addedCount} member${addedCount === 1 ? '' : 's'} added`);
+        if (emailCount > 0) details.push(`${emailCount} invite email${emailCount === 1 ? '' : 's'} sent`);
+        setPageFeedback({
+          type: 'success',
+          message: details.length ? `Group created. ${details.join(' and ')}.` : 'Group created successfully.',
+        });
+      }
+
       setShowCreate(false);
       setGroupName('');
       setInviteEmails([]);
@@ -70,6 +106,7 @@ export default function GroupsPage({ userId}: GroupsPageProps) {
 
   const handleJoin = async () => {
     if (!joinCode.trim()) return;
+    setPageFeedback(null);
     const success = await joinGroup(joinCode.trim());
     if (success) {
       setShowJoin(false);
@@ -103,53 +140,60 @@ export default function GroupsPage({ userId}: GroupsPageProps) {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        {groups.map(g => {
-          return (
-            <div
-              key={g.id}
-              className="bg-white/90 dark:bg-purple-950/70 border border-purple-100/80 dark:border-purple-900/60 rounded-3xl p-6 sm:p-7 cursor-pointer hover:border-purple-300 dark:hover:border-purple-700 hover:-translate-y-0.5 transition-all shadow-sm hover:shadow-md"
-              onClick={() => navigate(`/groups/${g.id}`)}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="font-display font-extrabold text-purple-900 dark:text-purple-100 text-xl leading-tight truncate">
-                    {g.name}
-                  </h3>
-                  <p className="text-sm text-purple-700/70 dark:text-purple-200/70 mt-1">
-                    Since {g.created_at}
-                  </p>
-                </div>
-                <span className="h-10 w-10 rounded-2xl bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-200 flex items-center justify-center flex-shrink-0">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 21a8 8 0 0 1 16 0" />
-                  </svg>
-                </span>
-              </div>
+      {(error || pageFeedback || successMessage) && (
+        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
+          error || pageFeedback?.type === 'error'
+            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
+            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
+        }`}>
+          {error || pageFeedback?.message || successMessage}
+        </div>
+      )}
 
-              <div className="mt-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/70 dark:text-purple-200/70">
-                  Invite Code
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {groups.map(group => (
+          <div
+            key={group.id}
+            className="cursor-pointer rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] transition-all hover:-translate-y-0.5 hover:border-stone-300 hover:shadow-[0_24px_56px_-34px_rgba(28,25,23,0.5)] dark:border-slate-800/70 dark:bg-slate-900/78 dark:hover:border-slate-700 sm:p-7"
+            onClick={() => navigate(`/groups/${group.id}`)}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate font-display text-xl font-extrabold leading-tight text-stone-900 dark:text-slate-100">
+                  {group.name}
+                </h3>
+                <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">
+                  Since {group.created_at}
                 </p>
-                <p className="mt-1 text-sm font-mono font-semibold text-purple-900 dark:text-purple-100">{g.code}</p>
               </div>
-
-              <div className="flex items-center justify-end mt-6">
-                <span className="text-sm font-semibold text-purple-700 dark:text-purple-200">
-                  Open →
-                </span>
-              </div>
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-[#f4eef8] text-[#6f4f8b] dark:bg-[#2b2136] dark:text-[#d4c0ea]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 21a8 8 0 0 1 16 0" />
+                </svg>
+              </span>
             </div>
-          );
-        })}
 
-        {/* Add card */}
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400">
+                Invite code
+              </p>
+              <p className="mt-1 font-mono text-sm font-semibold text-stone-900 dark:text-slate-100">{group.code}</p>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end">
+              <span className="text-sm font-semibold text-[#6f4f8b] dark:text-[#d4c0ea]">
+                Open -&gt;
+              </span>
+            </div>
+          </div>
+        ))}
+
         <div
-          className="border-2 border-dashed border-purple-200/80 dark:border-purple-800 rounded-3xl p-6 sm:p-7 flex items-center justify-center cursor-pointer hover:border-purple-300 dark:hover:border-purple-700 transition-colors min-h-[140px] bg-white/50 dark:bg-purple-950/30"
+          className="flex min-h-[140px] cursor-pointer items-center justify-center rounded-3xl border-2 border-dashed border-stone-300/80 bg-white/50 p-6 transition-colors hover:border-stone-400 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-slate-600 sm:p-7"
           onClick={() => setShowCreate(true)}
         >
-          <span className="text-base font-semibold text-purple-700/70 dark:text-purple-200/70">
+          <span className="text-base font-semibold text-stone-600 dark:text-slate-300">
             + Create new group
           </span>
         </div>
@@ -166,36 +210,47 @@ export default function GroupsPage({ userId}: GroupsPageProps) {
           </FormField>
 
           <div className="mt-4">
-            <FormField label="Invite members by email (at least 1)">
+            <FormField label="Invite members by email (optional)">
               <div className="flex gap-2">
                 <Input
                   placeholder="e.g. roomie@email.com"
                   value={emailInput}
-                  onChange={e => { setEmailInput(e.target.value); setEmailError(''); }}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); } }}
+                  onChange={e => {
+                    setEmailInput(e.target.value);
+                    setEmailError('');
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddEmail();
+                    }
+                  }}
                 />
                 <Button variant="outline" size="sm" type="button" onClick={handleAddEmail}>
                   Add
                 </Button>
               </div>
             </FormField>
+            <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">
+              You will be added as the admin automatically. Invite roommates now or later.
+            </p>
             {emailError && (
-              <p className="text-sm text-red-500 mt-1">{emailError}</p>
+              <p className="mt-1 text-sm text-red-500">{emailError}</p>
             )}
             {inviteEmails.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {inviteEmails.map(email => (
                   <span
                     key={email}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 px-3 py-1 text-sm font-medium text-purple-800 dark:text-purple-200"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-stone-200/70 bg-stone-100 px-3 py-1 text-sm font-medium text-stone-700 dark:border-white/10 dark:bg-slate-800 dark:text-slate-100"
                   >
                     {email}
                     <button
                       type="button"
-                      className="text-purple-400 hover:text-purple-700 dark:hover:text-purple-100"
-                      onClick={() => setInviteEmails(prev => prev.filter(e => e !== email))}
+                      className="text-stone-400 transition-colors hover:text-stone-700 dark:hover:text-white"
+                      onClick={() => setInviteEmails(prev => prev.filter(item => item !== email))}
                     >
-                      ×
+                      x
                     </button>
                   </span>
                 ))}
@@ -203,7 +258,7 @@ export default function GroupsPage({ userId}: GroupsPageProps) {
             )}
           </div>
 
-          <div className="flex justify-end gap-2 mt-6">
+          <div className="mt-6 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={handleClose}>
               Cancel
             </Button>
@@ -219,7 +274,7 @@ export default function GroupsPage({ userId}: GroupsPageProps) {
           <FormField label="Invite code">
             <Input placeholder="e.g. FLAT-4KX2" value={joinCode} onChange={e => setJoinCode(e.target.value)} />
           </FormField>
-          <div className="flex justify-end gap-2 mt-6">
+          <div className="mt-6 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowJoin(false)}>
               Cancel
             </Button>

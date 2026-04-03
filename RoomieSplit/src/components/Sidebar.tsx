@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import type { SVGProps } from 'react';
+import type { AppUser } from '../types/auth';
 
 interface NavItem {
   label: string;
@@ -62,7 +63,21 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  {
+    label: 'Admin',
+    path: '/admin',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 4.971-2.91 8.963-7 10-4.09-1.037-7-5.029-7-10V7l7-4Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12.5l1.75 1.75L14.5 10" />
+      </svg>
+    ),
+  },
+];
+
 interface SidebarProps {
+  user: AppUser;
   mobileOpen?: boolean;
   setMobileOpen?: (open: boolean) => void;
   collapsed?: boolean;
@@ -70,59 +85,49 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
+  user,
   mobileOpen = false,
   setMobileOpen,
   collapsed = false,
   onToggleCollapsed,
 }: SidebarProps) {
   const closeMobile = () => setMobileOpen?.(false);
+  const navItems = user.isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
 
   return (
     <>
-      {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm md:hidden"
           onClick={closeMobile}
         />
       )}
 
-      
-      {/* Sidebar — fixed on mobile, static full-height on desktop */}
       <aside
         className={[
-          // Positioning: fixed full-screen on mobile, static column on desktop
           'fixed inset-y-0 left-0 z-50',
           'md:static md:inset-auto md:z-auto',
-          // Height: fill the entire viewport on desktop
           'md:h-screen md:min-h-screen',
-          // Width
           collapsed ? 'w-20' : 'w-64',
-          // Layout
           'flex flex-col flex-shrink-0',
-          // Surface
-          'bg-white dark:bg-purple-950',
-          // Border
-          'border-r border-purple-100 dark:border-purple-900/60',
-          // Transition
+          'border-r border-stone-200/80 bg-white/78 shadow-[0_20px_48px_-36px_rgba(28,25,23,0.5)] backdrop-blur-xl',
+          'dark:border-slate-800/80 dark:bg-slate-950/78',
           'transition-[transform,width] duration-200 ease-in-out',
-          // Mobile slide
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
         ].join(' ')}
       >
-        {/* Toggle / hamburger button */}
-        <div className="flex items-center h-14 px-3 shrink-0 border-b border-purple-100 dark:border-purple-900/60">
+        <div
+          className={[
+            'flex h-14 items-center border-b border-stone-200/80 dark:border-slate-800/80',
+            collapsed ? 'justify-center px-0' : 'px-3',
+          ].join(' ')}
+        >
           <button
             type="button"
             onClick={() => (mobileOpen ? closeMobile() : onToggleCollapsed?.())}
             title={mobileOpen ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={mobileOpen ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className={`
-              flex items-center justify-center h-9 w-9 rounded-xl
-              text-purple-600 dark:text-purple-300
-              hover:bg-purple-100 dark:hover:bg-purple-900/50
-              transition-colors duration-150
-            `}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-700 transition-colors duration-150 hover:bg-stone-100/80 dark:text-slate-200 dark:hover:bg-white/5"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
               <path
@@ -134,15 +139,14 @@ export default function Sidebar({
           </button>
 
           {!collapsed && (
-            <span className="ml-2 text-sm font-semibold text-purple-900 dark:text-purple-100 truncate">
+            <span className="ml-2 truncate text-sm font-semibold text-stone-900 dark:text-slate-100">
               Menu
             </span>
           )}
         </div>
 
-        {/* Nav links */}
-        <nav className="flex flex-col gap-0.5 flex-1 px-2 py-3 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-3">
+          {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -150,22 +154,19 @@ export default function Sidebar({
               title={collapsed ? item.label : undefined}
               className={({ isActive }) =>
                 [
-                  'flex items-center gap-3 rounded-xl text-base font-medium transition-colors duration-150',
-                  // Fixed padding so icon always lands at the same x position
-                  'px-3 py-3',
+                  'flex items-center gap-3 rounded-xl px-3 py-3 text-base font-medium transition-colors duration-150',
                   collapsed && 'justify-center',
                   isActive
-                    ? 'bg-purple-600 text-white'
-                    : 'text-purple-700/80 dark:text-purple-200/70 hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:text-purple-900 dark:hover:text-purple-100',
+                    ? 'bg-[#6f4f8b] text-white shadow-sm dark:bg-[#2b2136] dark:text-[#e2d4f0]'
+                    : 'text-stone-700/85 hover:bg-stone-100/80 hover:text-stone-950 dark:text-slate-300/80 dark:hover:bg-white/5 dark:hover:text-white',
                 ].filter(Boolean).join(' ')
               }
             >
               {({ isActive }) => (
                 <>
-                  {/* Icon wrapper — no hover background, just consistent size & centering */}
-                  <span className="flex items-center justify-center w-[22px] h-[22px] shrink-0">
+                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center">
                     {item.icon({
-                      className: `h-[22px] w-[22px] ${isActive ? 'text-white' : 'text-purple-600/80 dark:text-purple-300/80'}`,
+                      className: `h-[22px] w-[22px] ${isActive ? 'text-white dark:text-[#e2d4f0]' : 'text-stone-500 dark:text-slate-400'}`,
                       'aria-hidden': true,
                     })}
                   </span>

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout      from '../layouts/MainLayout';
 import LoginPage       from '../pages/LoginPage';
+import AdminDashboardPage from '../pages/AdminDashboardPage';
 import DashboardPage   from '../pages/DashboardPage';
 import GroupsPage      from '../pages/GroupsPage';
 import GroupDetailPage from '../pages/GroupDetailPage';
@@ -29,27 +30,41 @@ function AnimatedRoutes() {
   return (
     <div className="page-transition">
       <Routes>
-        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
-        <Route path="/login" element={<LoginPage 
-          onSignUp={signUp}
-          onSignIn={signIn}
-          error={error}
-          successMessage={successMessage}
-          loading={loading}
-        />} />
+        <Route path="/" element={<Navigate to={user ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} replace />} />
+        <Route path="/login" element={user ? (
+          <Navigate to={user.isAdmin ? "/admin" : "/dashboard"} replace />
+        ) : (
+          <LoginPage 
+            onSignUp={signUp}
+            onSignIn={signIn}
+            error={error}
+            successMessage={successMessage}
+            loading={loading}
+          />
+        )} />
         {user && (
-        <Route element={<MainLayout onSignOut={signOut}/>}>
-          <Route path="/dashboard"  element={<DashboardPage userId={user.id} 
-          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup} />} />
-          <Route path="/groups"     element={<GroupsPage userId={user.id} />} />
-          <Route path="/groups/:id" element={<GroupDetailPage userId={user.id} />} />
-          <Route path="/expenses"   element={<ExpensesPage userId={user.id} 
-          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
-          <Route path="/balances"   element={<BalancesPage userId={user.id} 
-          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
-          <Route path="/chores"     element={<ChoresPage userId={user.id} 
-          chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
-          <Route path="/profile"    element={<ProfilePage user={user} />} />
+        <Route element={<MainLayout onSignOut={signOut} user={user}/>}>
+          {user.isAdmin ? (
+            <>
+              <Route path="/admin" element={<AdminDashboardPage user={user} />} />
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </>
+          ) : (
+            <>
+              <Route path="/dashboard"  element={<DashboardPage userId={user.id} 
+              chosenGroup={chosenGroup} setChosenGroup={setChosenGroup} />} />
+              <Route path="/groups"     element={<GroupsPage userId={user.id} />} />
+              <Route path="/groups/:id" element={<GroupDetailPage userId={user.id} />} />
+              <Route path="/expenses"   element={<ExpensesPage userId={user.id} 
+              chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
+              <Route path="/balances"   element={<BalancesPage userId={user.id} 
+              chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
+              <Route path="/chores"     element={<ChoresPage userId={user.id} 
+              chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
+              <Route path="/profile"    element={<ProfilePage user={user} />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </>
+          )}
         </Route>
         )}
         {!user && !loading && (

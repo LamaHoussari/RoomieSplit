@@ -10,25 +10,10 @@ import { useSettlements } from '../hooks/useSettlements';
 import { getGroupById, deleteGroup } from '../services/groupService';
 import { removeMember } from '../services/memberService';
 import type { Group } from '../types/Group';
-import type { Expense } from '../types/Expense';
-import type { Settlement } from '../types/Settlement';
+import { computeMemberBalance } from '../lib/finance';
 
 const getInitials = (name?: string) =>
   (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
-function computeBalance(userId: string, expenses: Expense[], settlements: Settlement[]): number {
-  let balance = 0;
-  for (const e of expenses) {
-    if (e.payer_id === userId) balance += e.amount;
-    const mySplit = e.expense_splits?.find(s => s.user_id === userId);
-    if (mySplit != null && mySplit.share_amount != null) balance -= mySplit.share_amount;
-  }
-  for (const s of settlements) {
-    if (s.from_user_id === userId) balance += s.paid;
-    if (s.to_user_id === userId) balance -= s.paid;
-  }
-  return balance;
-}
 
 interface GroupDetailPageProps {
   userId: string;
@@ -48,15 +33,14 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
   }, [groupId]);
 
   const { members, loading: membersLoading, loadMembers } = useMembers(groupId);
-
-  const currentMember = members.find(m => m.user_id === userId);
+  const currentMember = members.find(member => member.user_id === userId);
   const isAdmin = currentMember?.role === 'admin';
   const { expenses } = useExpenses(groupId);
   const { settlements } = useSettlements(groupId);
 
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalSettled = settlements.reduce((s, st) => s + Number(st.paid || 0), 0);
-  const formatMoney = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const totalExpenses = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  const totalSettled = settlements.reduce((sum, settlement) => sum + Number(settlement.paid || 0), 0);
+  const formatMoney = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (
     <>
@@ -76,10 +60,10 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
 
       <button
         type="button"
-        className="inline-flex items-center gap-2 text-base font-semibold text-purple-700 hover:text-purple-900 dark:text-purple-200 dark:hover:text-white mb-6 transition-colors"
+        className="mb-6 inline-flex items-center gap-2 text-base font-semibold text-stone-700 transition-colors hover:text-stone-950 dark:text-slate-300 dark:hover:text-white"
         onClick={() => navigate('/groups')}
       >
-        <span className="h-9 w-9 rounded-2xl bg-white/70 dark:bg-purple-950/40 border border-purple-100/80 dark:border-purple-900/60 shadow-sm flex items-center justify-center">
+        <span className="flex h-9 w-9 items-center justify-center rounded-2xl border border-stone-200/80 bg-white/70 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/60">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
             <path
               fillRule="evenodd"
@@ -92,54 +76,54 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
       </button>
 
       <div className="mb-8">
-        <h1 className="font-display text-4xl font-extrabold text-purple-900 dark:text-purple-100 tracking-tight">
+        <h1 className="font-display text-4xl font-extrabold tracking-tight text-stone-900 dark:text-slate-100">
           {group?.name ?? 'Loading...'}
         </h1>
-        <p className="text-base text-purple-700/70 dark:text-purple-200/70 mt-2">
-          {members.length} members · Created {group?.created_at ? new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+        <p className="mt-2 text-base text-stone-500 dark:text-slate-400">
+          {members.length} members - Created {group?.created_at ? new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card title="Members" className="overflow-hidden">
           <div className="-mx-2">
-            {members.map(m => {
-              const balance = computeBalance(m.user_id, expenses, settlements);
-              const name = m.profiles?.name ?? 'Unknown';
+            {members.map(member => {
+              const balance = computeMemberBalance(member.user_id, settlements);
+              const memberName = member.profiles?.name ?? 'Unknown';
               return (
                 <div
-                  key={m.id}
-                  className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors"
+                  key={member.id}
+                  className="flex items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-stone-100/80 dark:hover:bg-white/5"
                 >
-                  <Avatar initials={getInitials(name)} colorClass={m.color_class || ''} />
+                  <Avatar initials={getInitials(memberName)} colorClass={member.color_class || ''} />
                   <div className="min-w-0">
-                    <p className="text-base font-semibold text-purple-900 dark:text-purple-100 truncate">
-                      {name}
+                    <p className="truncate text-base font-semibold text-stone-900 dark:text-slate-100">
+                      {memberName}
                     </p>
-                    <p className="text-sm text-purple-700/70 dark:text-purple-200/70">
-                      {m.role === 'admin' ? 'Admin' : 'Member'}
+                    <p className="text-sm text-stone-500 dark:text-slate-400">
+                      {member.role === 'admin' ? 'Admin' : 'Member'}
                     </p>
                   </div>
                   <span
-                    className={`ml-auto font-semibold text-base ${
-                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-purple-900/60 dark:text-purple-100/60'
+                    className={`ml-auto text-base font-semibold ${
+                      balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-500 dark:text-slate-400'
                     }`}
                   >
                     {balance > 0 ? '+' : balance < 0 ? '-' : ''}${Math.abs(balance).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </span>
-                  {isAdmin && m.role !== 'admin' && (
-                    <div className="relative ml-2 group/remove">
+                  {isAdmin && member.role !== 'admin' && (
+                    <div className="group/remove relative ml-2">
                       <button
                         type="button"
                         disabled={balance !== 0}
-                        className={`p-1.5 rounded-xl transition-colors ${
+                        className={`rounded-xl p-1.5 transition-colors ${
                           balance !== 0
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            : 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                            ? 'cursor-not-allowed text-gray-300 dark:text-gray-600'
+                            : 'text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20'
                         }`}
                         onClick={async () => {
-                          if (!confirm(`Remove ${name} from the group?`)) return;
-                          const { error } = await removeMember(m.id);
+                          if (!confirm(`Remove ${memberName} from the group?`)) return;
+                          const { error } = await removeMember(member.id);
                           if (error) alert(error.message);
                           else loadMembers();
                         }}
@@ -148,7 +132,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                           <path d="M6.28 5.22a.75.75 0 0 1 1.06 0L10 7.94l2.66-2.72a.75.75 0 1 1 1.08 1.04L11.06 9l2.68 2.74a.75.75 0 1 1-1.08 1.04L10 10.06l-2.66 2.72a.75.75 0 0 1-1.08-1.04L8.94 9 6.28 6.26a.75.75 0 0 1 0-1.04Z" />
                         </svg>
                       </button>
-                      <span className="pointer-events-none absolute -top-9 right-0 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-700 px-2.5 py-1 text-xs font-medium text-white opacity-0 group-hover/remove:opacity-100 transition-opacity shadow-lg">
+                      <span className="pointer-events-none absolute -top-9 right-0 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/remove:opacity-100 dark:bg-gray-700">
                         {balance !== 0 ? 'Settle all balances before removing' : 'Remove member'}
                       </span>
                     </div>
@@ -167,20 +151,20 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
 
         <Card title="Group Stats">
           {[
-            { label: 'Total Expenses', value: `$${formatMoney(totalExpenses)}`, color: 'text-purple-900 dark:text-purple-100' },
-            { label: 'Expenses Count', value: String(expenses.length), color: 'text-purple-900 dark:text-purple-100' },
+            { label: 'Total Expenses', value: `$${formatMoney(totalExpenses)}`, color: 'text-stone-900 dark:text-slate-100' },
+            { label: 'Expenses Count', value: String(expenses.length), color: 'text-stone-900 dark:text-slate-100' },
             { label: 'Settled', value: `$${formatMoney(totalSettled)}`, color: 'text-emerald-600 dark:text-emerald-400' },
-          ].map(s => (
-            <div key={s.label} className="flex justify-between py-3">
-              <span className="text-base text-purple-700/70 dark:text-purple-200/70">{s.label}</span>
-              <span className={`font-semibold text-base ${s.color}`}>{s.value}</span>
+          ].map(stat => (
+            <div key={stat.label} className="flex justify-between py-3">
+              <span className="text-base text-stone-500 dark:text-slate-400">{stat.label}</span>
+              <span className={`text-base font-semibold ${stat.color}`}>{stat.value}</span>
             </div>
           ))}
 
-          <div className="mt-6 pt-5 border-t border-purple-100/80 dark:border-purple-900/60">
-            <p className="text-sm font-medium text-purple-700/70 dark:text-purple-200/70">Invite code</p>
-            <div className="mt-2 inline-flex items-center rounded-2xl px-4 py-2 bg-purple-100/70 dark:bg-purple-900/30 border border-purple-200/70 dark:border-purple-900/60 text-purple-900 dark:text-purple-100 font-semibold">
-              {group?.code ?? '—'}
+          <div className="mt-6 border-t border-stone-200/80 pt-5 dark:border-slate-800">
+            <p className="text-sm font-medium text-stone-500 dark:text-slate-400">Invite code</p>
+            <div className="mt-2 inline-flex items-center rounded-2xl border border-stone-200/80 bg-stone-100 px-4 py-2 font-semibold text-stone-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+              {group?.code ?? '-'}
             </div>
           </div>
         </Card>

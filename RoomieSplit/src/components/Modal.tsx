@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
 interface ModalProps {
   title: string;
   onClose: () => void;
@@ -6,30 +8,30 @@ interface ModalProps {
 }
 
 export default function Modal({ title, onClose, children }: ModalProps) {
-   useEffect(() => {
+  useEffect(() => {
     document.body.classList.add('modal-open');
     return () => document.body.classList.remove('modal-open');
   }, []);
-  return (
+
+  return createPortal(
     <div
       onClick={onClose}
-      className="modal-layer fixed inset-0 grid place-items-center z-50 p-5 sm:p-6 animate-fade-in"
+      className="modal-layer fixed inset-0 z-50 grid place-items-center bg-stone-950/15 p-5 backdrop-blur-[2px] animate-fade-in dark:bg-slate-950/70 sm:p-6"
     >
-      
       <div
         role="dialog"
         aria-modal="true"
-        className="bg-white dark:bg-purple-950 border border-purple-100/80 dark:border-purple-900/70 rounded-3xl p-6 sm:p-7 w-full max-w-lg shadow-2xl animate-pop-in"
+        className="w-full max-w-lg rounded-3xl border border-stone-200/80 bg-white/96 p-6 shadow-2xl animate-pop-in dark:border-slate-800 dark:bg-slate-900/96 sm:p-7"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <h2 className="font-display text-xl font-semibold text-purple-900 dark:text-purple-100">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <h2 className="font-display text-xl font-semibold text-stone-900 dark:text-slate-100">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center justify-center rounded-2xl p-2 text-purple-500/80 hover:text-purple-700 hover:bg-purple-50/80 dark:text-purple-300/80 dark:hover:text-purple-100 dark:hover:bg-purple-900/40 transition"
+            className="inline-flex items-center justify-center rounded-2xl p-2 text-stone-500 transition hover:bg-stone-100/80 hover:text-stone-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
             aria-label="Close"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
@@ -41,6 +43,7 @@ export default function Modal({ title, onClose, children }: ModalProps) {
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

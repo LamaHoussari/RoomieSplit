@@ -1,33 +1,35 @@
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import type { AppUser } from '../types/auth';
 
 type NavProps = {
   onSignOut: () => Promise<boolean>;
   onMenuClick?: () => void;
+  user: AppUser;
 };
 
-export default function Navbar({ onSignOut, onMenuClick }: NavProps) {
+export default function Navbar({ onSignOut, onMenuClick, user }: NavProps) {
   const { dark, toggle } = useTheme();
+  const homePath = user.isAdmin ? '/admin' : '/dashboard';
 
   return (
-    <header className="sticky top-0 z-30 bg-white/75 dark:bg-[#110e1c]/85 backdrop-blur border-b border-purple-100/70 dark:border-purple-900/50 shadow-sm shadow-purple-900/5 dark:shadow-black/20">
+    <header className="sticky top-0 z-30 border-b border-stone-200/70 bg-white/72 backdrop-blur-xl shadow-sm shadow-stone-900/5 dark:border-slate-800/70 dark:bg-slate-950/78 dark:shadow-black/20">
       <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
-        <div className="flex items-center gap-2 min-w-0">
-           
-            <button
-              type="button"
-              onClick={onMenuClick}
-              aria-label="Open menu"
-              className="md:hidden inline-flex items-center justify-center rounded-xl p-2 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/40 transition"
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-                <path fillRule="evenodd" d="M3 5.5A.75.75 0 0 1 3.75 4.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 5.5Zm0 4.5a.75.75 0 0 1 .75-.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 10Zm.75 3.75a.75.75 0 0 0 0 1.5h12.5a.75.75 0 0 0 0-1.5H3.75Z" clipRule="evenodd" />
-              </svg>
-            </button>
-          <NavLink to="/dashboard" className="flex items-center gap-3 min-w-0 group">
-            
-            <span className="font-display text-lg font-extrabold text-purple-900 dark:text-purple-100 tracking-tight truncate group-hover:text-purple-950 dark:group-hover:text-white transition-colors">
-              Roomie<span className="text-purple-600 dark:text-purple-300">Split</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label="Open menu"
+            className="inline-flex items-center justify-center rounded-xl p-2 text-stone-700 transition hover:bg-stone-100/80 dark:text-slate-300 dark:hover:bg-white/5 md:hidden"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+              <path fillRule="evenodd" d="M3 5.5A.75.75 0 0 1 3.75 4.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 5.5Zm0 4.5a.75.75 0 0 1 .75-.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 10Zm.75 3.75a.75.75 0 0 0 0 1.5h12.5a.75.75 0 0 0 0-1.5H3.75Z" clipRule="evenodd" />
+            </svg>
+          </button>
+
+          <NavLink to={homePath} className="group flex min-w-0 items-center gap-3">
+            <span className="truncate font-display text-lg font-extrabold tracking-tight text-stone-900 transition-colors group-hover:text-black dark:text-slate-100 dark:group-hover:text-white">
+              Roomie<span className="text-[#6f4f8b] dark:text-[#d4c0ea]">Split</span>
             </span>
           </NavLink>
         </div>
@@ -36,10 +38,9 @@ export default function Navbar({ onSignOut, onMenuClick }: NavProps) {
           <button
             type="button"
             onClick={onSignOut}
-            className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold transition border
-            bg-red-50/70 hover:bg-red-50 border-red-200/70 text-red-700 hover:text-red-800
-            dark:bg-red-950/20 dark:hover:bg-red-950/30 dark:border-red-900/60 dark:text-red-300
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#110e1c]"
+            className="inline-flex items-center gap-2 rounded-2xl border border-red-200/70 bg-red-50/70 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 hover:text-red-800
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white
+            dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-950/30 dark:focus-visible:ring-offset-slate-950"
             aria-label="Sign out"
             title="Sign out"
           >
@@ -53,9 +54,9 @@ export default function Navbar({ onSignOut, onMenuClick }: NavProps) {
           <button
             type="button"
             onClick={toggle}
-            className="inline-flex items-center justify-center rounded-2xl p-2 border border-purple-200/70 bg-white/70 hover:bg-white text-purple-800 hover:text-purple-950 transition
-            dark:bg-purple-950/40 dark:hover:bg-purple-950 dark:border-purple-900/60 dark:text-purple-100
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#110e1c]"
+            className="inline-flex items-center justify-center rounded-2xl border border-stone-300/80 bg-white/70 p-2 text-stone-700 transition hover:bg-stone-100/80 hover:text-stone-950
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c74aa]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white
+            dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:hover:bg-slate-800/80 dark:focus-visible:ring-offset-slate-950"
             aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             title={dark ? 'Light mode' : 'Dark mode'}
           >
@@ -70,24 +71,34 @@ export default function Navbar({ onSignOut, onMenuClick }: NavProps) {
             )}
           </button>
 
-          <NavLink
-            to="/profile"
-            className={({ isActive }) =>
-              `inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold transition border
-              ${isActive
-                ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                : 'bg-white/70 hover:bg-white border-purple-200/70 text-purple-800 hover:text-purple-950 dark:bg-purple-950/40 dark:hover:bg-purple-950 dark:border-purple-900/60 dark:text-purple-100'
+          {user.isAdmin ? (
+            <span className="inline-flex items-center gap-2 rounded-2xl border border-[#ddd0e9] bg-white/70 px-3 py-2 text-sm font-semibold text-[#6f4f8b] dark:border-[#4a375e] dark:bg-slate-900/50 dark:text-[#d4c0ea]">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 4.971-2.91 8.963-7 10-4.09-1.037-7-5.029-7-10V7l7-4Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12.5l1.75 1.75L14.5 10" />
+              </svg>
+              <span className="hidden sm:inline">Admin Mode</span>
+            </span>
+          ) : (
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition
+                ${isActive
+                  ? 'border-[#6f4f8b] bg-[#6f4f8b] text-white shadow-sm dark:border-[#4a375e] dark:bg-[#2b2136] dark:text-[#e2d4f0]'
+                  : 'border-[#ddd0e9] bg-white/70 text-[#6f4f8b] hover:bg-[#f4eef8] hover:text-[#5c426f] dark:border-[#4a375e] dark:bg-slate-900/50 dark:text-[#d4c0ea] dark:hover:bg-[#2b2136]'
+                }
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8c74aa]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950`
               }
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#110e1c]`
-            }
-            aria-label="Open profile"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 21a8 8 0 0 1 16 0" />
-            </svg>
-            <span className="hidden sm:inline">Profile</span>
-          </NavLink>
+              aria-label="Open profile"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 21a8 8 0 0 1 16 0" />
+              </svg>
+              <span className="hidden sm:inline">Profile</span>
+            </NavLink>
+          )}
         </div>
       </div>
     </header>

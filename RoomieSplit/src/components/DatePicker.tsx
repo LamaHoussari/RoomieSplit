@@ -7,8 +7,8 @@ interface DatePickerProps {
 }
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function DatePicker({ value, onChange, placeholder = 'Select a date' }: DatePickerProps) {
   const today = new Date();
@@ -19,7 +19,6 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
   const [mode, setMode] = useState<'day' | 'month' | 'year'>('day');
   const ref = useRef<HTMLDivElement>(null);
 
-  // year range: 10 years back, 10 forward
   const yearStart = view.year - 10;
   const years = Array.from({ length: 21 }, (_, i) => yearStart + i);
 
@@ -41,105 +40,123 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
   const cells: { day: number; type: 'prev' | 'cur' | 'next' }[] = [];
   for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: daysInPrev - i, type: 'prev' });
   for (let i = 1; i <= daysInMonth; i++) cells.push({ day: i, type: 'cur' });
-  let next = 1;
-  while (cells.length % 7 !== 0) cells.push({ day: next++, type: 'next' });
+  let nextDay = 1;
+  while (cells.length % 7 !== 0) cells.push({ day: nextDay++, type: 'next' });
 
   const isSelected = (day: number) =>
     parsed && parsed.getFullYear() === view.year && parsed.getMonth() === view.month && parsed.getDate() === day;
+
   const isToday = (day: number) =>
     today.getFullYear() === view.year && today.getMonth() === view.month && today.getDate() === day;
 
   const select = (day: number) => {
-    const m = String(view.month + 1).padStart(2, '0');
-    const d = String(day).padStart(2, '0');
-    onChange(`${view.year}-${m}-${d}`);
+    const month = String(view.month + 1).padStart(2, '0');
+    const date = String(day).padStart(2, '0');
+    onChange(`${view.year}-${month}-${date}`);
     setOpen(false);
     setMode('day');
   };
 
-  const prev = () => setView(v => v.month === 0 ? { month: 11, year: v.year - 1 } : { ...v, month: v.month - 1 });
-  const next2 = () => setView(v => v.month === 11 ? { month: 0, year: v.year + 1 } : { ...v, month: v.month + 1 });
+  const previousMonth = () =>
+    setView(v => (v.month === 0 ? { month: 11, year: v.year - 1 } : { ...v, month: v.month - 1 }));
+
+  const nextMonth = () =>
+    setView(v => (v.month === 11 ? { month: 0, year: v.year + 1 } : { ...v, month: v.month + 1 }));
 
   const displayValue = parsed
     ? parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : '';
 
   const NavBtn = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
-    <button type="button" onClick={onClick}
-      className="flex items-center justify-center w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/40 hover:bg-purple-100 dark:hover:bg-purple-800/60 text-purple-600 dark:text-purple-300 transition">
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-700 transition hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+    >
       {children}
     </button>
   );
 
   return (
     <div ref={ref} className="relative">
-      {/* Trigger */}
       <button
         type="button"
-        onClick={() => { setOpen(o => !o); setMode('day'); }}
-        className="w-full flex items-center justify-between bg-white/90 dark:bg-purple-950/60 border border-purple-200/80 dark:border-purple-800/80 rounded-2xl px-4 py-3.5 text-base outline-none shadow-sm
-          hover:border-purple-400 dark:hover:border-purple-500
-          focus:border-purple-400 dark:focus:border-purple-500 focus:ring-2 focus:ring-purple-200/60 dark:focus:ring-purple-700/40 transition"
+        onClick={() => {
+          setOpen(o => !o);
+          setMode('day');
+        }}
+        className="flex w-full items-center justify-between rounded-2xl border border-stone-300/80 bg-white/88 px-4 py-3.5 text-base outline-none shadow-sm transition
+          hover:border-stone-400 dark:hover:border-slate-500
+          focus:border-[#8c74aa] focus:ring-2 focus:ring-[#8c74aa]/15 dark:border-slate-700 dark:bg-slate-900/60 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/20"
       >
-        <span className={displayValue ? 'text-purple-900 dark:text-purple-100' : 'text-purple-400/90 dark:text-purple-300/60'}>
+        <span className={displayValue ? 'text-stone-900 dark:text-slate-100' : 'text-stone-400 dark:text-slate-500'}>
           {displayValue || placeholder}
         </span>
-        <svg className="w-5 h-5 text-purple-500/80 dark:text-purple-300/70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <svg className="h-5 w-5 shrink-0 text-stone-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
           <rect x="3" y="4" width="18" height="18" rx="4" strokeLinecap="round" strokeLinejoin="round" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M16 2v4M8 2v4M3 10h18" />
         </svg>
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-2 bg-white dark:bg-purple-950 border border-purple-200/80 dark:border-purple-800/80 rounded-2xl shadow-lg p-4 w-72">
-
-          {/* ── DAY VIEW ── */}
+        <div className="absolute z-50 mt-2 w-72 rounded-2xl border border-stone-300/80 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-slate-950">
           {mode === 'day' && (
             <>
-              <div className="flex items-center justify-between mb-3">
-                <NavBtn onClick={prev}>
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <div className="mb-3 flex items-center justify-between">
+                <NavBtn onClick={previousMonth}>
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z" />
                   </svg>
                 </NavBtn>
 
                 <div className="flex items-center gap-1">
-                  {/* Clickable month */}
-                  <button type="button" onClick={() => setMode('month')}
-                    className="text-sm font-semibold text-purple-900 dark:text-purple-100 px-2 py-1 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/40 transition">
+                  <button
+                    type="button"
+                    onClick={() => setMode('month')}
+                    className="rounded-lg px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
+                  >
                     {MONTHS[view.month]}
                   </button>
-                  {/* Clickable year */}
-                  <button type="button" onClick={() => setMode('year')}
-                    className="text-sm font-semibold text-purple-900 dark:text-purple-100 px-2 py-1 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/40 transition">
+                  <button
+                    type="button"
+                    onClick={() => setMode('year')}
+                    className="rounded-lg px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
+                  >
                     {view.year}
                   </button>
                 </div>
 
-                <NavBtn onClick={next2}>
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <NavBtn onClick={nextMonth}>
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z" />
                   </svg>
                 </NavBtn>
               </div>
 
-              <div className="grid grid-cols-7 mb-1">
-                {DAYS.map(d => (
-                  <div key={d} className="text-center text-xs font-semibold text-purple-400/80 dark:text-purple-300/60 py-1">{d}</div>
+              <div className="mb-1 grid grid-cols-7">
+                {DAYS.map(day => (
+                  <div key={day} className="py-1 text-center text-xs font-semibold text-stone-400 dark:text-slate-500">
+                    {day}
+                  </div>
                 ))}
               </div>
 
               <div className="grid grid-cols-7 gap-0.5">
                 {cells.map((cell, i) => (
-                  <button key={i} type="button"
+                  <button
+                    key={i}
+                    type="button"
                     disabled={cell.type !== 'cur'}
                     onClick={() => cell.type === 'cur' && select(cell.day)}
                     className={[
                       'aspect-square flex items-center justify-center rounded-full text-sm transition',
-                      cell.type !== 'cur' ? 'text-purple-300/50 dark:text-purple-700/50 cursor-default' :
-                      isSelected(cell.day) ? 'bg-purple-600 text-white font-semibold' :
-                      isToday(cell.day) ? 'text-purple-600 dark:text-purple-300 font-bold hover:bg-purple-50 dark:hover:bg-purple-900/40' :
-                      'text-purple-900 dark:text-purple-100 hover:bg-purple-50 dark:hover:bg-purple-900/40',
+                      cell.type !== 'cur'
+                        ? 'cursor-default text-stone-300 dark:text-slate-700'
+                        : isSelected(cell.day)
+                        ? 'bg-[#6f4f8b] text-white font-semibold dark:bg-[#2b2136] dark:text-[#e2d4f0]'
+                        : isToday(cell.day)
+                          ? 'font-bold text-[#6f4f8b] hover:bg-stone-100 dark:text-[#d4c0ea] dark:hover:bg-white/5'
+                            : 'text-stone-900 hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5',
                     ].join(' ')}
                   >
                     {cell.day}
@@ -149,79 +166,91 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
             </>
           )}
 
-          {/* ── MONTH VIEW ── */}
           {mode === 'month' && (
             <>
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3 flex items-center justify-between">
                 <NavBtn onClick={() => setView(v => ({ ...v, year: v.year - 1 }))}>
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z" />
                   </svg>
                 </NavBtn>
-                <button type="button" onClick={() => setMode('year')}
-                  className="text-sm font-semibold text-purple-900 dark:text-purple-100 px-2 py-1 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/40 transition">
+                <button
+                  type="button"
+                  onClick={() => setMode('year')}
+                  className="rounded-lg px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
+                >
                   {view.year}
                 </button>
                 <NavBtn onClick={() => setView(v => ({ ...v, year: v.year + 1 }))}>
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z" />
                   </svg>
                 </NavBtn>
               </div>
+
               <div className="grid grid-cols-3 gap-2">
-                {SHORT_MONTHS.map((m, i) => (
-                  <button key={m} type="button"
-                    onClick={() => { setView(v => ({ ...v, month: i })); setMode('day'); }}
+                {SHORT_MONTHS.map((month, i) => (
+                  <button
+                    key={month}
+                    type="button"
+                    onClick={() => {
+                      setView(v => ({ ...v, month: i }));
+                      setMode('day');
+                    }}
                     className={[
-                      'py-2 rounded-xl text-sm font-medium transition',
+                      'rounded-xl py-2 text-sm font-medium transition',
                       i === view.month
-                        ? 'bg-purple-600 text-white'
-                        : 'text-purple-900 dark:text-purple-100 hover:bg-purple-50 dark:hover:bg-purple-900/40',
+                        ? 'bg-[#6f4f8b] text-white dark:bg-[#2b2136] dark:text-[#e2d4f0]'
+                        : 'text-stone-900 hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5',
                     ].join(' ')}
                   >
-                    {m}
+                    {month}
                   </button>
                 ))}
               </div>
             </>
           )}
 
-          {/* ── YEAR VIEW ── */}
           {mode === 'year' && (
             <>
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3 flex items-center justify-between">
                 <NavBtn onClick={() => setView(v => ({ ...v, year: v.year - 21 }))}>
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z" />
                   </svg>
                 </NavBtn>
-                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                  {yearStart} – {yearStart + 20}
+                <span className="text-sm font-semibold text-stone-900 dark:text-slate-100">
+                  {yearStart} - {yearStart + 20}
                 </span>
                 <NavBtn onClick={() => setView(v => ({ ...v, year: v.year + 21 }))}>
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z" />
                   </svg>
                 </NavBtn>
               </div>
-              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                {years.map(y => (
-                  <button key={y} type="button"
-                    onClick={() => { setView(v => ({ ...v, year: y })); setMode('month'); }}
+
+              <div className="grid max-h-48 grid-cols-3 gap-2 overflow-y-auto">
+                {years.map(year => (
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => {
+                      setView(v => ({ ...v, year }));
+                      setMode('month');
+                    }}
                     className={[
-                      'py-2 rounded-xl text-sm font-medium transition',
-                      y === view.year
-                        ? 'bg-purple-600 text-white'
-                        : 'text-purple-900 dark:text-purple-100 hover:bg-purple-50 dark:hover:bg-purple-900/40',
+                      'rounded-xl py-2 text-sm font-medium transition',
+                      year === view.year
+                        ? 'bg-[#6f4f8b] text-white dark:bg-[#2b2136] dark:text-[#e2d4f0]'
+                        : 'text-stone-900 hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5',
                     ].join(' ')}
                   >
-                    {y}
+                    {year}
                   </button>
                 ))}
               </div>
             </>
           )}
-
         </div>
       )}
     </div>

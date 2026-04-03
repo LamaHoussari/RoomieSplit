@@ -1,59 +1,82 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
     color-scheme: light;
+    --rs-bg-light: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 50%, #ffffff 100%);
+    --rs-bg-dark:
+      radial-gradient(circle at top, rgba(111, 79, 139, 0.1), transparent 28%),
+      linear-gradient(180deg, #0f1720 0%, #111827 55%, #0b1220 100%);
   }
+
   .dark {
     color-scheme: dark;
   }
-  html, body {
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  html,
+  body {
     transition: background-color 200ms ease, color 200ms ease;
   }
+
   body {
     font-family: 'DM Sans', system-ui, sans-serif;
     line-height: 1.6;
     text-rendering: geometricPrecision;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: var(--rs-bg-light);
+    color: #1c1917;
   }
-  h1, h2, h3, h4, h5 {
+
+  .dark body {
+    background: var(--rs-bg-dark);
+    color: #f8fafc;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
     font-family: 'Syne', system-ui, sans-serif;
     letter-spacing: -0.015em;
     line-height: 1.15;
   }
 
-  /* Improve native select dropdown readability in dark mode (browser/OS dependent). */
   select option {
     background: #ffffff;
-    color: #2e2040;
+    color: #1f2937;
   }
+
   .dark select option {
-    background: #1a1228;
-    color: #f8f6fb;
+    background: #111827;
+    color: #f8fafc;
   }
 }
 
-/* 1. Width of the scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
-/* 2. Background (track) */
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #e7e5e4;
   border-radius: 10px;
 }
 
-/* 3. Draggable part (thumb) */
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #a8a29e;
   border-radius: 10px;
 }
 
-/* 4. Hover effect for thumb */
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #78716c;
 }
 
 @layer utilities {
@@ -61,10 +84,12 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
   @keyframes popIn {
     from { opacity: 0; transform: scale(0.98); }
     to { opacity: 1; transform: scale(1); }
   }
+
   @keyframes slideUpSoft {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -73,9 +98,11 @@
   .animate-fade-in {
     animation: fadeIn 180ms ease-out both;
   }
+
   .animate-pop-in {
     animation: popIn 200ms ease-out both;
   }
+
   .animate-slide-up-soft {
     animation: slideUpSoft 260ms cubic-bezier(.2,.8,.2,1) both;
   }
@@ -88,15 +115,16 @@
     animation: none !important;
   }
 }
+
 body.modal-open > #root > * {
-  filter: drop-shadow(50px 50px 50px rgba(0, 0, 0, 0.642));
+  filter: blur(1px) saturate(0.94);
   transition: filter 0.2s ease;
 }
 
 body.modal-open .modal-layer {
   filter: none !important;
 }
+
 input[type="date"] {
   color-scheme: light;
 }
-

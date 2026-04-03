@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NewGroup, Group } from "../types/Group";
-import { getGroupsByUser, createGroup, joinGroupByCode } from "../services/groupService";
+import { getGroupsByUser, createGroup, joinGroupByCodeWithFallback } from "../services/groupService";
 
 // Custom hook for loading and adding groups for one specific user
 export function useGroups(userId: string | null) {
@@ -16,7 +16,7 @@ export function useGroups(userId: string | null) {
     // If there is no user, clear groups and stop
     if (!userId) {
       setGroups([]);
-      return;
+      return [] as Group[];
     }
     setLoading(true);
     setError("");
@@ -26,12 +26,14 @@ export function useGroups(userId: string | null) {
     if (error) {
       setError(error.message);
       setLoading(false);
-      return;
+      return [] as Group[];
     }
 
-    setGroups(data ?? []);
+    const nextGroups = data ?? [];
+    setGroups(nextGroups);
 
     setLoading(false);
+    return nextGroups;
   }
 
   // Reload groups whenever userId changes
@@ -47,24 +49,24 @@ export function useGroups(userId: string | null) {
     setError("");
     setSuccessMessage("");
 
-    const { error } = await createGroup(group);
+    const { data, error } = await createGroup(group, userId);
 
     if (error) {
       setError(error.message);
-      return false;
+      return null;
     }
 
     setSuccessMessage("Group added successfully.");
 
-    await loadGroups();
+    const nextGroups = await loadGroups();
 
-    return true;
+    return data ?? nextGroups.find(existingGroup => existingGroup.code === group.code) ?? null;
   }
 
   async function joinGroup(code: string) {
     setError("");
     setSuccessMessage("");
-    const { error } = await joinGroupByCode(code);
+    const { error } = await joinGroupByCodeWithFallback(code, userId);
     if (error) {
       setError(error.message);
       return false;

@@ -6,18 +6,18 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h1 className="font-display text-3xl sm:text-4xl font-bold text-purple-900 dark:text-purple-100 tracking-tight">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-stone-900 dark:text-slate-100 sm:text-4xl">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-base text-purple-500/90 dark:text-purple-300/70 mt-1">
+          <p className="mt-1 text-base text-stone-500 dark:text-slate-400">
             {subtitle}
           </p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }

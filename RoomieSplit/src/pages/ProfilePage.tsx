@@ -19,17 +19,17 @@ export default function ProfilePage({ user }: { user: AppUser }) {
     <>
       <PageHeader title="Profile" subtitle="Manage your account" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card
           title="Account Info"
-          className={isEditing ? 'ring-2 ring-purple-400/25 dark:ring-purple-400/20' : ''}
+          className={isEditing ? 'ring-2 ring-[#8c74aa]/20 dark:ring-[#b59ad6]/20' : ''}
         >
           <FormField label="Full Name">
             <Input
               value={draft.name}
               onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
               readOnly={!isEditing}
-              className={!isEditing ? 'cursor-default bg-purple-50/70 dark:bg-purple-950/40' : ''}
+              className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
             />
           </FormField>
           <FormField label="Email">
@@ -38,12 +38,12 @@ export default function ProfilePage({ user }: { user: AppUser }) {
               onChange={e => setDraft(d => ({ ...d, email: e.target.value }))}
               type="email"
               readOnly={!isEditing}
-              className={!isEditing ? 'cursor-default bg-purple-50/70 dark:bg-purple-950/40' : ''}
+              className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
             />
           </FormField>
 
-          <div className="flex items-center justify-between gap-3 mt-5">
-            <span className="text-sm text-purple-600/70 dark:text-purple-300/70">
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <span className="text-sm text-stone-500 dark:text-slate-400">
               {isEditing ? 'Editing enabled' : 'Click edit to update your info.'}
             </span>
             {!isEditing ? (
@@ -87,11 +87,11 @@ export default function ProfilePage({ user }: { user: AppUser }) {
         <Card title="Security">
           <FormField label="Current password">
             <div className="relative">
-              <Input type={showCurrent ? 'text' : 'password'} placeholder="••••••••" className="pr-10" />
+              <Input type={showCurrent ? 'text' : 'password'} placeholder="Current password" className="pr-10" />
               <button
                 type="button"
                 onClick={() => setShowCurrent(v => !v)}
-                className="absolute inset-y-0 right-3 flex items-center text-purple-400 hover:text-purple-600 dark:hover:text-purple-200 transition-colors"
+                className="absolute inset-y-0 right-3 flex items-center text-stone-400 transition-colors hover:text-stone-700 dark:hover:text-slate-200"
                 aria-label={showCurrent ? 'Hide password' : 'Show password'}
               >
                 {showCurrent ? (
@@ -110,11 +110,11 @@ export default function ProfilePage({ user }: { user: AppUser }) {
 
           <FormField label="New Password">
             <div className="relative">
-              <Input type={showNew ? 'text' : 'password'} placeholder="••••••••" className="pr-10" />
+              <Input type={showNew ? 'text' : 'password'} placeholder="New password" className="pr-10" />
               <button
                 type="button"
                 onClick={() => setShowNew(v => !v)}
-                className="absolute inset-y-0 right-3 flex items-center text-purple-400 hover:text-purple-600 dark:hover:text-purple-200 transition-colors"
+                className="absolute inset-y-0 right-3 flex items-center text-stone-400 transition-colors hover:text-stone-700 dark:hover:text-slate-200"
                 aria-label={showNew ? 'Hide password' : 'Show password'}
               >
                 {showNew ? (

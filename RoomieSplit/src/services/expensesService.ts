@@ -15,6 +15,10 @@ export async function createExpense(expense: NewExpense, splits: NewExpenseSplit
         .from("expense_splits")
         .insert(splitsWithId);
 
+    if (splitError) {
+        await supabase.from("expenses").delete().eq("id", data.id);
+    }
+
     return { data, error: splitError };
 }
 

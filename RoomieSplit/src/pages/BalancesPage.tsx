@@ -4,37 +4,25 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
-import FormField, { Select } from '../components/FormField';
+import FormField, { Input, Select } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { useMembers } from '../hooks/useMembers';
-import { useExpenses } from '../hooks/useExpenses';
 import { useSettlements } from '../hooks/useSettlements';
-import type { Expense } from '../types/Expense';
 import type { Settlement } from '../types/Settlement';
+import {
+  computeMemberBalance,
+  getSettlementRemaining,
+  isSettlementSettled,
+} from '../lib/finance';
 
-// Deterministic hue from name
 const memberHue = (name: string) => {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
-  return h;
+  let hue = 0;
+  for (let i = 0; i < name.length; i++) hue = (hue * 31 + name.charCodeAt(i)) % 360;
+  return hue;
 };
-const initials = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-function computeBalance(userId: string, expenses: Expense[], settlements: Settlement[]): number {
-  let balance = 0;
-  for (const e of expenses) {
-    if (e.payer_id === userId) balance += e.amount;
-    const mySplit = e.expense_splits?.find(s => s.user_id === userId);
-    if (mySplit != null && mySplit.share_amount != null) balance -= mySplit.share_amount;
-  }
-  for (const s of settlements) {
-    if (s.from_user_id === userId) balance += s.paid;
-    if (s.to_user_id === userId) balance -= s.paid;
-  }
-  return balance;
-}
-
-const formatMoney = (v: number) => Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const initials = (name: string) => name.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase();
+const formatMoney = (value: number) => Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 interface BalancesPageProps {
   userId: string;
@@ -48,8 +36,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const groupId = chosenGroup || null;
 
   const { members } = useMembers(groupId, allGroupIds);
-  const { expenses } = useExpenses(groupId, allGroupIds);
-  const { settlements, recordPayment, addSettlement } = useSettlements(groupId, allGroupIds);
+  const {
+    settlements,
+    error,
+    successMessage,
+    recordPayment,
+    addSettlement,
+  } = useSettlements(groupId, allGroupIds);
 
   const [payTarget, setPayTarget] = useState<Settlement | null>(null);
   const [payAmount, setPayAmount] = useState('');
@@ -58,20 +51,20 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const [newTo, setNewTo] = useState('');
   const [newAmount, setNewAmount] = useState('');
 
-  const openPay = (s: Settlement) => {
-    setPayTarget(s);
-    setPayAmount(String(s.amount - s.paid));
+  const openPay = (settlement: Settlement) => {
+    setPayTarget(settlement);
+    setPayAmount(String(getSettlementRemaining(settlement)));
   };
 
   const submitPay = async () => {
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0 || !payTarget) return;
-    const remaining = payTarget.amount - payTarget.paid;
+    const remaining = getSettlementRemaining(payTarget);
     if (amount > remaining) {
       alert(`Amount exceeds the remaining balance of $${formatMoney(remaining)}.`);
       return;
     }
-    const success = await recordPayment(payTarget.id, payTarget.paid + amount);
+    const success = await recordPayment(payTarget, amount);
     if (success) setPayTarget(null);
   };
 
@@ -99,38 +92,46 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
     <>
       <PageHeader
         title="Balances"
-        subtitle={chosenGroup ? (groups.find(g => g.id === chosenGroup)?.name ?? 'Select a group') : 'All Groups'}
+        subtitle={chosenGroup ? (groups.find(group => group.id === chosenGroup)?.name ?? 'Select a group') : 'All Groups'}
         actions={
           <div className="w-44">
             <Select value={chosenGroup} onChange={e => setChosenGroup(e.target.value)} className="py-2.5 text-sm">
               <option value="">All Groups</option>
-              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              {groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
             </Select>
           </div>
         }
       />
 
-      {/* Member balance cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {members.map(m => {
-          const balance = computeBalance(m.user_id, expenses, settlements);
-          const name = m.profiles?.name ?? 'Unknown';
+      {(error || successMessage) && (
+        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
+          error
+            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
+            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
+        }`}>
+          {error || successMessage}
+        </div>
+      )}
+
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {members.map(member => {
+          const balance = computeMemberBalance(member.user_id, settlements);
+          const name = member.profiles?.name ?? 'Unknown';
           return (
             <div
-              key={m.id}
-              className="bg-white/90 dark:bg-purple-950/70 border border-purple-100/80 dark:border-purple-900/60 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-shadow"
+              key={member.id}
+              className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] transition-shadow hover:shadow-[0_24px_56px_-34px_rgba(28,25,23,0.5)] dark:border-slate-800/70 dark:bg-slate-900/78 sm:p-7"
             >
-              <p className="text-sm font-semibold text-purple-700/70 dark:text-purple-200/70 mb-2">{name}</p>
-              <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-purple-900 dark:text-purple-100'}`}>
+              <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">{name}</p>
+              <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-900 dark:text-slate-100'}`}>
                 {balance > 0 ? '+' : balance < 0 ? '-' : ''}${formatMoney(balance)}
               </p>
-              <p className="text-sm text-purple-700/70 dark:text-purple-200/70 mt-1">{balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'all settled'}</p>
+              <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'all settled'}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Settlement table */}
       <Card title="Settlement Plan" className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-base">
@@ -144,45 +145,45 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
               <col className="w-12" />
             </colgroup>
             <thead>
-              <tr className="border-b border-purple-100/80 dark:border-purple-800/60 bg-purple-50/60 dark:bg-purple-900/20">
-                {['From', 'To', 'Amount', 'Paid', 'Status', 'Source', ''].map((h, i) => (
+              <tr className="border-b border-stone-200/80 bg-stone-100/70 dark:border-slate-800 dark:bg-slate-800/60">
+                {['From', 'To', 'Amount', 'Paid', 'Status', 'Source', ''].map((header, i) => (
                   <th
-                    key={h || i}
-                    className="text-left py-3.5 px-4 text-xs font-semibold uppercase tracking-wider text-purple-600/70 dark:text-purple-200/70"
+                    key={header || i}
+                    className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400"
                   >
-                    {h}
+                    {header}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {settlements.map(s => {
-                const settled = s.paid >= s.amount;
-                const fromName = s.from_profile?.name ?? 'Unknown';
-                const toName = s.to_profile?.name ?? 'Unknown';
+              {settlements.map(settlement => {
+                const settled = isSettlementSettled(settlement);
+                const fromName = settlement.from_profile?.name ?? 'Unknown';
+                const toName = settlement.to_profile?.name ?? 'Unknown';
                 return (
-                  <tr key={s.id} className="border-b border-purple-50/80 dark:border-purple-800/30 last:border-0 hover:bg-purple-50/70 dark:hover:bg-purple-900/20 transition-colors">
-                    <td className="py-4 px-4"><Badge variant="red">{fromName}</Badge></td>
-                    <td className="py-4 px-4"><Badge variant="purple">{toName}</Badge></td>
-                    <td className="py-4 px-4 font-semibold text-purple-900 dark:text-purple-100">${formatMoney(s.amount)}</td>
-                    <td className="py-4 px-4 text-purple-700/70 dark:text-purple-200/70 whitespace-nowrap">${formatMoney(s.paid)} / ${formatMoney(s.amount)}</td>
-                    <td className="py-4 px-4">
+                  <tr key={settlement.id} className="border-b border-stone-200/60 transition-colors last:border-0 hover:bg-stone-100/70 dark:border-slate-800/50 dark:hover:bg-white/5">
+                    <td className="px-4 py-4"><Badge variant="red">{fromName}</Badge></td>
+                    <td className="px-4 py-4"><Badge variant="purple">{toName}</Badge></td>
+                    <td className="px-4 py-4 font-semibold text-stone-900 dark:text-slate-100">${formatMoney(settlement.amount)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-stone-500 dark:text-slate-400">${formatMoney(settlement.paid)} / ${formatMoney(settlement.amount)}</td>
+                    <td className="px-4 py-4">
                       {settled ? <Badge variant="green">Settled</Badge> : <Badge variant="orange">Pending</Badge>}
                     </td>
-                    <td className="py-4 px-4">
-                      {s.expense_id
-                        ? <Badge variant="purple">Expenses</Badge>
+                    <td className="px-4 py-4">
+                      {settlement.expense_id
+                        ? <Badge variant="purple">Expense</Badge>
                         : <Badge variant="violet">External</Badge>}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="px-4 py-4">
                       {!settled && (
                         <button
                           type="button"
-                          onClick={() => openPay(s)}
+                          onClick={() => openPay(settlement)}
                           title="Record payment"
-                          className="flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
                         >
-                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-4 h-4">
+                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2 7h16M2 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2M2 7v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M6 11h.01M10 11h.01" />
                           </svg>
                         </button>
@@ -196,105 +197,99 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
         </div>
       </Card>
 
-      {/* New settlement button */}
       <div className="mt-4">
-        <div className="relative group/settle inline-block">
+        <div className="group/settle relative inline-block">
           <Button size="sm" onClick={() => { setShowNewSettlement(true); setNewFrom(''); setNewTo(''); setNewAmount(''); }} disabled={!groupId}>
             + New Settlement
           </Button>
           {!groupId && (
-            <span className="pointer-events-none absolute -bottom-9 left-0 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-700 px-2.5 py-1 text-xs font-medium text-white opacity-0 group-hover/settle:opacity-100 transition-opacity shadow-lg">
+            <span className="pointer-events-none absolute -bottom-9 left-0 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/settle:opacity-100 dark:bg-gray-700">
               Select a group first
             </span>
           )}
         </div>
       </div>
 
-      {/* New settlement modal */}
       {showNewSettlement && (
         <Modal title="New Settlement" onClose={() => setShowNewSettlement(false)}>
           <FormField label="From (who owes)">
             <Select value={newFrom} onChange={e => setNewFrom(e.target.value)}>
               <option value="">Select member</option>
-              {members.map(m => <option key={m.user_id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
+              {members.map(member => <option key={member.user_id} value={member.user_id}>{member.profiles?.name ?? 'Unknown'}</option>)}
             </Select>
           </FormField>
           <FormField label="To (who is owed)">
             <Select value={newTo} onChange={e => setNewTo(e.target.value)}>
               <option value="">Select member</option>
-              {members.filter(m => m.user_id !== newFrom).map(m => <option key={m.user_id} value={m.user_id}>{m.profiles?.name ?? 'Unknown'}</option>)}
+              {members.filter(member => member.user_id !== newFrom).map(member => <option key={member.user_id} value={member.user_id}>{member.profiles?.name ?? 'Unknown'}</option>)}
             </Select>
           </FormField>
           <FormField label="Amount ($)">
-            <input
+            <Input
               type="number"
               min="0"
               step="0.01"
               value={newAmount}
               onChange={e => setNewAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full px-4 py-3 rounded-2xl border border-purple-100 dark:border-purple-800 bg-white dark:bg-purple-900/20 text-purple-900 dark:text-purple-100 text-base font-semibold placeholder:text-purple-300 dark:placeholder:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-600 transition"
+              className="font-semibold"
             />
           </FormField>
           {newFrom && newTo && newFrom === newTo && (
-            <p className="text-sm text-red-500 mt-1">From and To must be different members</p>
+            <p className="mt-1 text-sm text-red-500">From and To must be different members</p>
           )}
-          <div className="flex justify-end gap-2 mt-6">
+          <div className="mt-6 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowNewSettlement(false)}>Cancel</Button>
             <Button size="sm" onClick={submitNewSettlement} disabled={!newFrom || !newTo || newFrom === newTo || !parseFloat(newAmount)}>Create</Button>
           </div>
         </Modal>
       )}
 
-      {/* Pay modal */}
       {payTarget && (
         <Modal title="Record payment" onClose={() => setPayTarget(null)}>
-
-          {/* From → To summary */}
-          <div className="flex items-center gap-3 mb-6">
+          <div className="mb-6 flex items-center gap-3">
             {[payTarget.from_profile?.name ?? 'Unknown', payTarget.to_profile?.name ?? 'Unknown'].map((name, i) => {
-              const h = memberHue(name);
+              const hue = memberHue(name);
               return (
                 <React.Fragment key={name}>
                   <div className="flex items-center gap-2.5">
                     <span
-                      className="flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold shrink-0"
-                      style={{ background: `hsl(${h},55%,88%)`, color: `hsl(${h},45%,35%)` }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                      style={{ background: `hsl(${hue},55%,88%)`, color: `hsl(${hue},45%,35%)` }}
                     >
                       {initials(name)}
                     </span>
-                    <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">{name}</span>
+                    <span className="text-sm font-semibold text-stone-900 dark:text-slate-100">{name}</span>
                   </div>
                   {i === 0 && (
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-4 h-4 text-purple-400 shrink-0">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4 shrink-0 text-stone-400 dark:text-slate-500">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 10h12m0 0l-4-4m4 4l-4 4" />
                     </svg>
                   )}
                 </React.Fragment>
               );
             })}
-            <span className="ml-auto text-sm font-bold text-purple-900 dark:text-purple-100 whitespace-nowrap">
-              ${formatMoney(payTarget.amount - payTarget.paid)} remaining
+            <span className="ml-auto whitespace-nowrap text-sm font-bold text-stone-900 dark:text-slate-100">
+              ${formatMoney(getSettlementRemaining(payTarget))} remaining
             </span>
           </div>
 
-          {/* Amount input */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-purple-400 dark:text-purple-500 mb-2">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500">
             Amount
           </p>
           <div className="relative mb-1">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 dark:text-purple-500 font-semibold text-base pointer-events-none">$</span>
-            <input
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-semibold text-stone-400 dark:text-slate-500">$</span>
+            <Input
               type="number"
               min="0"
               step="0.01"
               value={payAmount}
               onChange={e => setPayAmount(e.target.value)}
-              className="w-full pl-8 pr-4 py-3 rounded-2xl border border-purple-100 dark:border-purple-800 bg-white dark:bg-purple-900/20 text-purple-900 dark:text-purple-100 text-base font-semibold placeholder:text-purple-300 dark:placeholder:text-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-600 transition"
+              className="pl-8 pr-4 font-semibold"
             />
           </div>
-          <p className="text-xs text-purple-400 dark:text-purple-500 mb-6">
-            Full amount: ${formatMoney(payTarget.amount - payTarget.paid)}
+          <p className="mb-6 text-xs text-stone-400 dark:text-slate-500">
+            Remaining balance: ${formatMoney(getSettlementRemaining(payTarget))}
           </p>
 
           <div className="flex justify-end gap-2">
@@ -306,4 +301,3 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
     </>
   );
 }
-

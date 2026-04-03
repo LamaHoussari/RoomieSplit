@@ -1,4 +1,8 @@
-import { supabase } from "../lib/supabaseClient";
+﻿import { supabase } from "../lib/supabaseClient";
+
+function createError(message: string) {
+  return { message };
+}
 
 /** Look up a registered user by email */
 export async function lookupUserByEmail(email: string) {
@@ -14,12 +18,34 @@ export async function lookupUserByEmail(email: string) {
  * Re-uses the existing RPC so the DB-level permission check stays in one place.
  */
 export async function addMemberByEmail(groupId: string, userId: string) {
-  return await supabase.rpc("add_group_member_by_admin", {
+  const rpcResult = await supabase.rpc("add_group_member_by_admin", {
     p_group_id: groupId,
     p_user_id: userId,
     p_role: "member",
     p_nickname: null,
   });
+
+  if (!rpcResult.error) {
+    return rpcResult;
+  }
+
+  const fallbackResult = await supabase
+    .from("group_members")
+    .insert([{
+      group_id: groupId,
+      user_id: userId,
+      role: "member",
+      nickname: null,
+    }]);
+
+  if (!fallbackResult.error) {
+    return fallbackResult;
+  }
+
+  return {
+    data: null,
+    error: createError(`Unable to add the member. RPC failed: ${rpcResult.error.message}. Direct Supabase fallback failed: ${fallbackResult.error.message}.`),
+  };
 }
 
 /**
@@ -36,6 +62,8 @@ export async function sendInviteEmail(
     return { error: "Resend API key is not configured." };
   }
 
+  const endpoint = import.meta.env.DEV ? "/api/resend/emails" : "https://api.resend.com/emails";
+
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
       <h2 style="color:#6b21a8">You're invited to RoomieSplit!</h2>
@@ -46,7 +74,7 @@ export async function sendInviteEmail(
       </div>
       <p style="margin-top:16px">
         1. Sign up or log in to RoomieSplit<br/>
-        2. Go to <strong>Groups → Join Group</strong><br/>
+        2. Go to <strong>Groups -&gt; Join Group</strong><br/>
         3. Enter the code above
       </p>
       <p style="color:#888;font-size:12px;margin-top:24px">
@@ -56,7 +84,7 @@ export async function sendInviteEmail(
   `;
 
   try {
-    const res = await fetch("/api/resend/emails", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,8 +99,13 @@ export async function sendInviteEmail(
     });
 
     if (!res.ok) {
-      const data = await res.json();
-      return { error: data?.message ?? "Failed to send email." };
+      const body = await res.text();
+      try {
+        const data = JSON.parse(body);
+        return { error: data?.message ?? data?.error?.message ?? `Failed to send email (${res.status}).` };
+      } catch {
+        return { error: body || `Failed to send email (${res.status}).` };
+      }
     }
 
     return { error: null };

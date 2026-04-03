@@ -1,7 +1,24 @@
 import { useEffect, useState } from "react";
-import type { NewExpense, Expense, NewExpenseSplit } from "../types/Expense";
-import { createExpense, getExpensesByGroup, getExpensesByGroups, deleteExpense as deleteExpenseService, updateExpenseWithSplits, updateExpense } from "../services/expensesService";
-import { createSettlement, deleteSettlementsByExpense } from "../services/settlementService";
+import type { Expense, NewExpense, NewExpenseSplit } from "../types/Expense";
+import {
+  areSplitConfigsEqual,
+  getSplitTotal,
+  hasRecordedSettlementPayments,
+  roundCurrency,
+} from "../lib/finance";
+import {
+  createExpense,
+  deleteExpense as deleteExpenseService,
+  getExpensesByGroup,
+  getExpensesByGroups,
+  updateExpense,
+  updateExpenseWithSplits,
+} from "../services/expensesService";
+import {
+  createSettlement,
+  deleteSettlementsByExpense,
+  getSettlementsByExpense,
+} from "../services/settlementService";
 
 export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -10,11 +27,88 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  function normalizeSplits(splits: NewExpenseSplit[]) {
+    const shareMap = new Map<string, number>();
+
+    for (const split of splits) {
+      if (!split.user_id) continue;
+
+      shareMap.set(
+        split.user_id,
+        roundCurrency(
+          (shareMap.get(split.user_id) ?? 0) + Number(split.share_amount ?? 0),
+        ),
+      );
+    }
+
+    return [...shareMap.entries()].map(([user_id, share_amount]) => ({
+      user_id,
+      share_amount,
+    }));
+  }
+
+  function validateExpenseSplits(amount: number, splits: NewExpenseSplit[]) {
+    const normalizedAmount = roundCurrency(amount);
+    const normalizedSplits = normalizeSplits(splits).filter(
+      (split) => roundCurrency(split.share_amount ?? 0) > 0,
+    );
+
+    if (!normalizedAmount || normalizedAmount <= 0) {
+      return "Enter a valid expense amount.";
+    }
+
+    if (!normalizedSplits.length) {
+      return "Select at least one member to split this expense with.";
+    }
+
+    if (getSplitTotal(normalizedSplits) !== normalizedAmount) {
+      return "Split amounts must add up to the full expense amount.";
+    }
+
+    return null;
+  }
+
+  async function syncExpenseSettlements(
+    expense: Pick<Expense, "id" | "group_id" | "payer_id" | "created_by">,
+    splits: NewExpenseSplit[],
+  ) {
+    const linkedSplits = normalizeSplits(splits).filter(
+      (split) =>
+        split.user_id !== expense.payer_id &&
+        roundCurrency(split.share_amount ?? 0) > 0,
+    );
+
+    const { error: deleteError } = await deleteSettlementsByExpense(expense.id);
+    if (deleteError) {
+      return { error: deleteError };
+    }
+
+    for (const split of linkedSplits) {
+      const { error: createError } = await createSettlement({
+        group_id: expense.group_id,
+        from_user_id: split.user_id,
+        to_user_id: expense.payer_id,
+        amount: roundCurrency(split.share_amount ?? 0),
+        paid: 0,
+        created_by: expense.created_by,
+        expense_id: expense.id,
+      });
+
+      if (createError) {
+        await deleteSettlementsByExpense(expense.id);
+        return { error: createError };
+      }
+    }
+
+    return { error: null };
+  }
+
   async function loadExpenses() {
     if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setExpenses([]);
       return;
     }
+
     setLoading(true);
     setError("");
 
@@ -29,7 +123,6 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     }
 
     setExpenses(data ?? []);
-
     setLoading(false);
   }
 
@@ -37,6 +130,7 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     async function loadExpensesWrapper() {
       await loadExpenses();
     }
+
     loadExpensesWrapper();
   }, [groupId, allGroupIds?.join()]);
 
@@ -44,93 +138,259 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     setError("");
     setSuccessMessage("");
 
-    const { error } = await createExpense(expense, splits);
+    const normalizedExpense = {
+      ...expense,
+      amount: roundCurrency(expense.amount),
+      is_paid: Boolean(expense.is_paid),
+    };
+    const normalizedSplits = normalizeSplits(splits);
+    const validationError = validateExpenseSplits(
+      normalizedExpense.amount,
+      normalizedSplits,
+    );
+
+    if (validationError) {
+      setError(validationError);
+      return false;
+    }
+
+    const { data, error } = await createExpense(normalizedExpense, normalizedSplits);
 
     if (error) {
       setError(error.message);
       return false;
     }
 
+    if (normalizedExpense.is_paid && data) {
+      const { error: syncError } = await syncExpenseSettlements(
+        data as Expense,
+        normalizedSplits,
+      );
+
+      if (syncError) {
+        await deleteExpenseService(data.id);
+        setError(syncError.message);
+        return false;
+      }
+    }
+
     setSuccessMessage("Expense added successfully.");
-
     await loadExpenses();
-
     return true;
   }
 
   async function removeExpense(expenseId: string) {
     setError("");
     setSuccessMessage("");
-    // Remove auto-settlements linked to this expense first
-    await deleteSettlementsByExpense(expenseId);
+
+    const expense = expenses.find((item) => item.id === expenseId);
+    if (!expense) {
+      setError("Expense not found.");
+      return false;
+    }
+
+    const { data: linkedSettlements, error: linkedError } =
+      await getSettlementsByExpense(expenseId);
+
+    if (linkedError) {
+      setError(linkedError.message);
+      return false;
+    }
+
+    if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
+      setError(
+        "This expense already has recorded payments. Remove or adjust those payments before deleting the expense.",
+      );
+      return false;
+    }
+
+    const { error: settlementError } = await deleteSettlementsByExpense(expenseId);
+    if (settlementError) {
+      setError(settlementError.message);
+      return false;
+    }
+
     const { error } = await deleteExpenseService(expenseId);
     if (error) {
+      if (expense.is_paid) {
+        await syncExpenseSettlements(expense, expense.expense_splits ?? []);
+      }
+
       setError(error.message);
       return false;
     }
+
     setSuccessMessage("Expense deleted.");
     await loadExpenses();
     return true;
   }
 
-  async function editExpense(expenseId: string, updates: Partial<NewExpense>, splits: NewExpenseSplit[]) {
+  async function editExpense(
+    expenseId: string,
+    updates: Partial<NewExpense>,
+    splits: NewExpenseSplit[],
+  ) {
     setError("");
     setSuccessMessage("");
-    const { error } = await updateExpenseWithSplits(expenseId, updates, splits);
+
+    const expense = expenses.find((item) => item.id === expenseId);
+    if (!expense) {
+      setError("Expense not found.");
+      return false;
+    }
+
+    const normalizedUpdates = {
+      ...updates,
+      amount:
+        updates.amount == null ? expense.amount : roundCurrency(updates.amount),
+    };
+    const normalizedSplits = normalizeSplits(splits);
+    const validationError = validateExpenseSplits(
+      normalizedUpdates.amount,
+      normalizedSplits,
+    );
+
+    if (validationError) {
+      setError(validationError);
+      return false;
+    }
+
+    const nextPayerId = normalizedUpdates.payer_id ?? expense.payer_id;
+    const financialChanged =
+      roundCurrency(expense.amount) !== normalizedUpdates.amount ||
+      expense.payer_id !== nextPayerId ||
+      !areSplitConfigsEqual(expense.expense_splits ?? [], normalizedSplits);
+
+    if (expense.is_paid && financialChanged) {
+      const { data: linkedSettlements, error: linkedError } =
+        await getSettlementsByExpense(expenseId);
+
+      if (linkedError) {
+        setError(linkedError.message);
+        return false;
+      }
+
+      if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
+        setError(
+          "You cannot change the amount, payer, or split members after payments have been recorded for this expense.",
+        );
+        return false;
+      }
+    }
+
+    const { error } = await updateExpenseWithSplits(
+      expenseId,
+      normalizedUpdates,
+      normalizedSplits,
+    );
+
     if (error) {
       setError(error.message);
       return false;
     }
-    // If this expense was marked paid, re-sync auto-settlements with new splits
-    const expense = expenses.find(e => e.id === expenseId);
-    if (expense?.is_paid) {
-      await deleteSettlementsByExpense(expenseId);
-      const payerId = updates.payer_id ?? expense.payer_id;
-      const groupId = expense.group_id;
-      for (const split of splits) {
-        if (split.user_id === payerId || !split.share_amount) continue;
-        await createSettlement({
-          group_id: groupId,
-          from_user_id: split.user_id,
-          to_user_id: payerId,
-          amount: split.share_amount,
-          paid: 0,
-          created_by: payerId,
-          expense_id: expenseId,
-        });
+
+    if (expense.is_paid && financialChanged) {
+      const { error: syncError } = await syncExpenseSettlements(
+        {
+          ...expense,
+          payer_id: nextPayerId,
+          created_by: normalizedUpdates.created_by ?? expense.created_by,
+        },
+        normalizedSplits,
+      );
+
+      if (syncError) {
+        setError(syncError.message);
+        return false;
       }
     }
+
     setSuccessMessage("Expense updated.");
     await loadExpenses();
     return true;
   }
 
-  async function togglePaid(expenseId: string, currentlyPaid: boolean, expense?: Expense) {
+  async function togglePaid(
+    expenseId: string,
+    currentlyPaid: boolean,
+    expense?: Expense,
+  ) {
     setError("");
-    const { error } = await updateExpense(expenseId, { is_paid: !currentlyPaid });
-    if (error) {
-      setError(error.message);
+    setSuccessMessage("");
+
+    const targetExpense = expense ?? expenses.find((item) => item.id === expenseId);
+    if (!targetExpense) {
+      setError("Expense not found.");
       return false;
     }
 
-    if (!currentlyPaid && expense) {
-      // Marking as paid → auto-create settlements for each split member (except payer)
-      const splits = expense.expense_splits ?? [];
-      for (const split of splits) {
-        if (split.user_id === expense.payer_id || !split.share_amount) continue;
-        await createSettlement({
-          group_id: expense.group_id,
-          from_user_id: split.user_id,
-          to_user_id: expense.payer_id,
-          amount: split.share_amount,
-          paid: 0,
-          created_by: expense.payer_id,
-          expense_id: expenseId,
-        });
+    const currentSplits = targetExpense.expense_splits ?? [];
+    const { data: linkedSettlements, error: linkedError } =
+      await getSettlementsByExpense(expenseId);
+
+    if (linkedError) {
+      setError(linkedError.message);
+      return false;
+    }
+
+    if (!currentlyPaid) {
+      const validationError = validateExpenseSplits(
+        targetExpense.amount,
+        currentSplits,
+      );
+
+      if (validationError) {
+        setError(validationError);
+        return false;
       }
-    } else if (currentlyPaid) {
-      // Marking as unpaid → remove auto-created settlements for this expense
-      await deleteSettlementsByExpense(expenseId);
+
+      if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
+        setError(
+          "This expense already has recorded payments attached. Refresh the page before changing its paid state.",
+        );
+        return false;
+      }
+
+      const { error } = await updateExpense(expenseId, { is_paid: true });
+      if (error) {
+        setError(error.message);
+        return false;
+      }
+
+      const { error: syncError } = await syncExpenseSettlements(
+        targetExpense,
+        currentSplits,
+      );
+
+      if (syncError) {
+        await updateExpense(expenseId, { is_paid: false });
+        setError(syncError.message);
+        return false;
+      }
+
+      setSuccessMessage("Expense marked paid.");
+    } else {
+      if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
+        setError(
+          "You cannot mark this expense as unpaid after payments have been recorded against it.",
+        );
+        return false;
+      }
+
+      const { error: settlementError } = await deleteSettlementsByExpense(expenseId);
+      if (settlementError) {
+        setError(settlementError.message);
+        return false;
+      }
+
+      const { error } = await updateExpense(expenseId, { is_paid: false });
+      if (error) {
+        await syncExpenseSettlements(targetExpense, currentSplits);
+        setError(error.message);
+        return false;
+      }
+
+      setSuccessMessage("Expense marked unpaid.");
     }
 
     await loadExpenses();

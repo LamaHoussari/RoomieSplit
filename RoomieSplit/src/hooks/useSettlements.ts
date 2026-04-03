@@ -1,4 +1,9 @@
 import { useEffect, useState } from "react";
+import {
+  getSettlementPaidAmount,
+  getSettlementRemaining,
+  roundCurrency,
+} from "../lib/finance";
 import type { NewSettlement, Settlement } from "../types/Settlement";
 import { createSettlement, getSettlementsByGroup, getSettlementsByGroups, updateSettlement as updateSettlementService } from "../services/settlementService";
 
@@ -43,7 +48,29 @@ export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
     setError("");
     setSuccessMessage("");
 
-    const { error } = await createSettlement(settlement);
+    const amount = roundCurrency(settlement.amount);
+    const paid = roundCurrency(settlement.paid ?? 0);
+
+    if (!amount || amount <= 0) {
+      setError("Enter a valid settlement amount.");
+      return false;
+    }
+
+    if (settlement.from_user_id === settlement.to_user_id) {
+      setError("The payer and recipient must be different members.");
+      return false;
+    }
+
+    if (paid > amount) {
+      setError("Paid amount cannot exceed the total settlement amount.");
+      return false;
+    }
+
+    const { error } = await createSettlement({
+      ...settlement,
+      amount,
+      paid,
+    });
 
     if (error) {
       setError(error.message);
@@ -57,10 +84,27 @@ export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
     return true;
   }
 
-  async function recordPayment(settlementId: string, paidAmount: number) {
+  async function recordPayment(settlement: Settlement, paymentAmount: number) {
     setError("");
     setSuccessMessage("");
-    const { error } = await updateSettlementService(settlementId, { paid: paidAmount });
+
+    const amount = roundCurrency(paymentAmount);
+    const remaining = getSettlementRemaining(settlement);
+
+    if (!amount || amount <= 0) {
+      setError("Enter a valid payment amount.");
+      return false;
+    }
+
+    if (amount > remaining) {
+      setError("Payment amount cannot exceed the remaining settlement balance.");
+      return false;
+    }
+
+    const { error } = await updateSettlementService(settlement.id, {
+      paid: roundCurrency(getSettlementPaidAmount(settlement) + amount),
+    });
+
     if (error) {
       setError(error.message);
       return false;
