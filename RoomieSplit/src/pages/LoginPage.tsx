@@ -74,6 +74,8 @@ export default function LoginPage({
     void handleSubmit();
   };
 
+  console.log('auth message', { error, successMessage });
+
   return (
     <div
       className={`flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#fafaf9_0%,#f5f5f4_52%,#ffffff_100%)] p-6 transition-all duration-300 dark:bg-[radial-gradient(circle_at_top,_rgba(111,79,139,0.12),_transparent_25%),linear-gradient(180deg,_#0f1720_0%,_#111827_100%)]
@@ -171,11 +173,6 @@ export default function LoginPage({
           {error && (
             <p className="mt-4 rounded-2xl border border-red-200/80 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
               {error}
-            </p>
-          )}
-          {successMessage && (
-            <p className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-300">
-              {successMessage}
             </p>
           )}
 

@@ -128,7 +128,7 @@ export function useAuth() {
       setError(error.message);
       return false;
     }
-    // setsuccessMessage("Signed out successfully!!!"); ta ma tbayen
+    setsuccessMessage("Signed out successfully!!!"); 
     return true;
   }
 
