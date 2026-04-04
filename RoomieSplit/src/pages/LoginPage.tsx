@@ -74,7 +74,7 @@ export default function LoginPage({
     void handleSubmit();
   };
 
-  console.log('auth message', { error, successMessage });
+  console.log('auth message', error || successMessage);
 
   return (
     <div
