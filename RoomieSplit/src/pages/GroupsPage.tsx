@@ -201,6 +201,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
 
       {showCreate && (
         <Modal title="Create Group" onClose={handleClose}>
+          <form onSubmit={e => { e.preventDefault(); handleCreate(); }}>
           <FormField label="Group name">
             <Input
               placeholder="e.g. Hamra Flat"
@@ -259,29 +260,32 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleClose}>
+            <Button variant="outline" size="sm" type="button" onClick={handleClose}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleCreate} disabled={!canCreate}>
+            <Button size="sm" type="submit" disabled={!canCreate}>
               {creating ? 'Creating...' : 'Create'}
             </Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {showJoin && (
         <Modal title="Join Group" onClose={() => setShowJoin(false)}>
+          <form onSubmit={e => { e.preventDefault(); handleJoin(); }}>
           <FormField label="Invite code">
             <Input placeholder="e.g. FLAT-4KX2" value={joinCode} onChange={e => setJoinCode(e.target.value)} />
           </FormField>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowJoin(false)}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowJoin(false)}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleJoin}>
+            <Button size="sm" type="submit">
               Join
             </Button>
           </div>
+          </form>
         </Modal>
       )}
     </>

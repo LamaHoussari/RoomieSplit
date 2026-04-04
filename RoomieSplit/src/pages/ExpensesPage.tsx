@@ -578,6 +578,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
 
       {showModal && (
         <Modal title="Add Expense" onClose={() => setShowModal(false)}>
+          <form onSubmit={e => { e.preventDefault(); handleAdd(); }}>
           <FormField label="Title">
             <Input value={addDraft.title} onChange={e => setAddDraft(d => ({ ...d, title: e.target.value }))} placeholder="e.g. Electric bill" />
           </FormField>
@@ -596,14 +597,16 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             <SplitPicker value={addDraft.splitUserIds} onChange={splitUserIds => setAddDraft(d => ({ ...d, splitUserIds }))} members={selectedGroupMembers} />
           </FormField>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleAdd}>Add</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button size="sm" type="submit">Add</Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {editingExpense && (
         <Modal title="Edit Expense" onClose={() => setEditingId(null)}>
+          <form onSubmit={e => { e.preventDefault(); saveEdit(); }}>
           <FormField label="Title">
             <Input value={editDraft.title} onChange={e => setEditDraft(d => ({ ...d, title: e.target.value }))} placeholder="e.g. Electric bill" />
           </FormField>
@@ -622,57 +625,64 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             <SplitPicker value={editDraft.splitUserIds} onChange={splitUserIds => setEditDraft(d => ({ ...d, splitUserIds }))} members={editMembers} />
           </FormField>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
-            <Button size="sm" onClick={saveEdit}>Save</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setEditingId(null)}>Cancel</Button>
+            <Button size="sm" type="submit">Save</Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {expenseToDelete && (
         <Modal title="Delete expense?" onClose={() => setConfirmDeleteId(null)}>
+          <form onSubmit={e => { e.preventDefault(); handleDelete(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will permanently remove{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">"{expenseToDelete.description}"</span>{' '}
             from the list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
-            <Button variant="danger" size="sm" onClick={handleDelete}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+            <Button variant="danger" size="sm" type="submit">
               Delete
             </Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {expenseToArchive && (
         <Modal title="Archive expense?" onClose={() => setConfirmArchiveId(null)}>
+          <form onSubmit={e => { e.preventDefault(); handleArchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will hide{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">"{expenseToArchive.description}"</span>{' '}
             and any linked balances from the active lists.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmArchiveId(null)}>Cancel</Button>
-            <Button size="sm" onClick={handleArchive}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmArchiveId(null)}>Cancel</Button>
+            <Button size="sm" type="submit">
               Archive
             </Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {expenseToUnarchive && (
         <Modal title="Restore expense?" onClose={() => setConfirmUnarchiveId(null)}>
+          <form onSubmit={e => { e.preventDefault(); handleUnarchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will move{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">"{expenseToUnarchive.description}"</span>{' '}
             back into the active expenses list and restore its linked balances.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmUnarchiveId(null)}>Cancel</Button>
-            <Button size="sm" onClick={handleUnarchive}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmUnarchiveId(null)}>Cancel</Button>
+            <Button size="sm" type="submit">
               Unarchive
             </Button>
           </div>
+          </form>
         </Modal>
       )}
     </>

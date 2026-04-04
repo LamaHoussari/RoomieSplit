@@ -13,6 +13,14 @@ export default function Modal({ title, onClose, children }: ModalProps) {
     return () => document.body.classList.remove('modal-open');
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return createPortal(
     <div
       onClick={onClose}
