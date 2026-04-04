@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
+import { signInWithEmail, updateUserPassword } from '../services/authService';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
 
@@ -35,6 +36,13 @@ export default function ProfilePage({ user }: { user: AppUser }) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
 
   const isDirty =
     draft.name !== saved.name ||
@@ -201,7 +209,13 @@ export default function ProfilePage({ user }: { user: AppUser }) {
         <Card title="Security">
           <FormField label="Current password">
             <div className="relative">
-              <Input type={showCurrent ? 'text' : 'password'} placeholder="Current password" className="pr-10" />
+              <Input
+                type={showCurrent ? 'text' : 'password'}
+                placeholder="Current password"
+                className="pr-10"
+                value={currentPassword}
+                onChange={e => { setCurrentPassword(e.target.value); setPwError(''); setPwSuccess(''); }}
+              />
               <button
                 type="button"
                 onClick={() => setShowCurrent(v => !v)}
@@ -224,7 +238,13 @@ export default function ProfilePage({ user }: { user: AppUser }) {
 
           <FormField label="New Password">
             <div className="relative">
-              <Input type={showNew ? 'text' : 'password'} placeholder="New password" className="pr-10" />
+              <Input
+                type={showNew ? 'text' : 'password'}
+                placeholder="New password"
+                className="pr-10"
+                value={newPassword}
+                onChange={e => { setNewPassword(e.target.value); setPwError(''); setPwSuccess(''); }}
+              />
               <button
                 type="button"
                 onClick={() => setShowNew(v => !v)}
@@ -244,8 +264,76 @@ export default function ProfilePage({ user }: { user: AppUser }) {
               </button>
             </div>
           </FormField>
-          <Button variant="outline" size="sm" className="mt-2">
-            Update password
+
+          <FormField label="Confirm New Password">
+            <Input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={e => { setConfirmPassword(e.target.value); setPwError(''); setPwSuccess(''); }}
+            />
+          </FormField>
+
+          {pwError && (
+            <p className="mt-2 rounded-xl border border-red-200/80 bg-red-50/80 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
+              {pwError}
+            </p>
+          )}
+          {pwSuccess && (
+            <p className="mt-2 rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-2.5 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-300">
+              {pwSuccess}
+            </p>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            disabled={pwLoading}
+            onClick={async () => {
+              setPwError('');
+              setPwSuccess('');
+
+              if (!currentPassword || !newPassword || !confirmPassword) {
+                setPwError('All password fields are required.');
+                return;
+              }
+              if (newPassword.length < 6) {
+                setPwError('New password must be at least 6 characters.');
+                return;
+              }
+              if (newPassword !== confirmPassword) {
+                setPwError('New passwords do not match.');
+                return;
+              }
+              if (currentPassword === newPassword) {
+                setPwError('New password must be different from current password.');
+                return;
+              }
+
+              setPwLoading(true);
+              const { error: signInErr } = await signInWithEmail(user.email!, currentPassword);
+              if (signInErr) {
+                setPwError('Current password is incorrect.');
+                setPwLoading(false);
+                return;
+              }
+
+              const { error: updateErr } = await updateUserPassword(newPassword);
+              if (updateErr) {
+                setPwError(updateErr.message);
+                setPwLoading(false);
+                return;
+              }
+
+              setPwSuccess('Password updated successfully!');
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmPassword('');
+              setPwLoading(false);
+            }}
+          >
+            {pwLoading ? 'Updating…' : 'Update password'}
           </Button>
         </Card>
       </div>
