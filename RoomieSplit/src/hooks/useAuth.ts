@@ -128,7 +128,7 @@ export function useAuth() {
     if (user?.authSource === "local-admin" || localAdminSession) {
       clearAdminSession();
       setUser(null);
-      setsuccessMessage("Signed out successfully!!!");
+      // setsuccessMessage("Signed out successfully!!!");
       return true;
     }
 
@@ -137,7 +137,7 @@ export function useAuth() {
       setError(formatAuthError(error));
       return false;
     }
-    setsuccessMessage("Signed out successfully!!!");
+    // setsuccessMessage("Signed out successfully!!!"); ta ma tbayen
     return true;
   }
 
