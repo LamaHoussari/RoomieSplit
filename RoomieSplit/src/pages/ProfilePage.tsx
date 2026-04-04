@@ -7,32 +7,41 @@ import FormField, { Input } from '../components/FormField';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
 
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length === 0) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 5) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 5)}-${digits.slice(5, 8)}`;
+}
+
+function isValidPhone(value: string): boolean {
+  if (!value) return true;
+  const digits = value.replace(/\D/g, '');
+  return digits.length === 8;
+}
+
 export default function ProfilePage({ user }: { user: AppUser }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState({
+  const initialState = {
     name: user.name || '',
     email: user.email || '',
     nickname: '',
     phone: '',
     paymentMethod: '' as string,
-  });
+  };
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(initialState);
+  const [saved, setSaved] = useState(initialState);
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
-
-  const initialDraft = {
-    name: user.name || '',
-    email: user.email || '',
-    nickname: draft.nickname,
-    phone: draft.phone,
-    paymentMethod: draft.paymentMethod,
-  };
+  const [phoneError, setPhoneError] = useState('');
 
   const isDirty =
-    draft.name !== (user.name || '') ||
-    draft.email !== (user.email || '') ||
-    draft.nickname !== initialDraft.nickname ||
-    draft.phone !== initialDraft.phone ||
-    draft.paymentMethod !== initialDraft.paymentMethod;
+    draft.name !== saved.name ||
+    draft.email !== saved.email ||
+    draft.nickname !== saved.nickname ||
+    draft.phone !== saved.phone ||
+    draft.paymentMethod !== saved.paymentMethod;
 
   const initials = (draft.name || user.email || '?')
     .split(/\s+/)
@@ -100,12 +109,26 @@ export default function ProfilePage({ user }: { user: AppUser }) {
           <FormField label="Phone Number (optional)">
             <Input
               value={draft.phone}
-              onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))}
+              onChange={e => {
+                const formatted = formatPhone(e.target.value);
+                setDraft(d => ({ ...d, phone: formatted }));
+                if (phoneError) setPhoneError('');
+              }}
+              onBlur={() => {
+                if (draft.phone && !isValidPhone(draft.phone)) {
+                  setPhoneError('Enter a valid 8-digit phone number.');
+                } else {
+                  setPhoneError('');
+                }
+              }}
               type="tel"
-              placeholder="+1 234 567 8900"
+              placeholder="(05) 123-4567"
               readOnly={!isEditing}
-              className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
+              className={`${!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''} ${phoneError ? 'border-red-400 dark:border-red-500' : ''}`}
             />
+            {phoneError && (
+              <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{phoneError}</p>
+            )}
           </FormField>
           <FormField label="Preferred Payment Method">
             {isEditing ? (
@@ -137,7 +160,6 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setDraft(d => ({ ...d, name: user.name || '', email: user.email || '' }));
                   setIsEditing(true);
                 }}
               >
@@ -149,7 +171,8 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setDraft(d => ({ ...d, name: user.name || '', email: user.email || '' }));
+                    setDraft(saved);
+                    setPhoneError('');
                     setIsEditing(false);
                   }}
                 >
@@ -157,8 +180,14 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 </Button>
                 <Button
                   size="sm"
-                  disabled={!isDirty}
+                  disabled={!isDirty || (!!draft.phone && !isValidPhone(draft.phone))}
                   onClick={() => {
+                    if (draft.phone && !isValidPhone(draft.phone)) {
+                      setPhoneError('Enter a valid 8-digit phone number.');
+                      return;
+                    }
+                    setPhoneError('');
+                    setSaved(draft);
                     setIsEditing(false);
                   }}
                 >
