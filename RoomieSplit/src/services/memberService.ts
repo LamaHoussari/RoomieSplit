@@ -53,3 +53,10 @@ export async function getMembersByGroups(groupIds: string[]) {
 export async function removeMember(memberId: string) {
   return await supabase.from("group_members").delete().eq("id", memberId);
 }
+
+export async function updateMemberRole(memberId: string, role: string) {
+  return await supabase
+    .from("group_members")
+    .update({ role })
+    .eq("id", memberId);
+}

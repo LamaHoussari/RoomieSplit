@@ -29,6 +29,12 @@ interface ExpensesPageProps {
   setChosenGroup: (id: string) => void;
 }
 
+const getTodayDateKey = () => new Date().toISOString().slice(0, 10);
+
+function isScheduledExpense(expense: Pick<Expense, 'is_paid' | 'date'>) {
+  return Boolean(expense.date) && expense.date > getTodayDateKey();
+}
+
 const memberHue = (name: string) => {
   let hue = 0;
   for (let i = 0; i < name.length; i++) hue = (hue * 31 + name.charCodeAt(i)) % 360;
@@ -120,6 +126,14 @@ function getExpenseStatus(
     const settlement = settlementsByUserId.get(userId);
     return settlement ? isSettlementSettled(settlement) : false;
   }).length;
+
+  if (isScheduledExpense(expense)) {
+    return {
+      detail: `Scheduled for ${expense.date}`,
+      label: 'Scheduled',
+      variant: 'violet' as const,
+    };
+  }
 
   if (!totalPayments) {
     return {
@@ -225,7 +239,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   const isAdmin = currentMember?.role === 'admin';
 
   const [showModal, setShowModal] = useState(false);
-  const [paidFilter, setPaidFilter] = useState('all');
+  const [expenseFilter, setExpenseFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: '', date: '', splitUserIds: [] });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -251,8 +265,8 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
 
   const visibleExpenses = expenses.filter(expense => {
     if (showArchived) return true;
-    if (paidFilter === 'paid') return Boolean(expense.is_paid);
-    if (paidFilter === 'unpaid') return !expense.is_paid;
+    if (expenseFilter === 'paid') return Boolean(expense.is_paid);
+    if (expenseFilter === 'scheduled') return isScheduledExpense(expense);
     return true;
   });
   const settlementsByExpenseId = useMemo(() => {
@@ -274,7 +288,11 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
 
   const totalAmount = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const paidAmount = expenses.reduce((sum, expense) => sum + (expense.is_paid ? Number(expense.amount || 0) : 0), 0);
-  const unpaidAmount = totalAmount - paidAmount;
+  const scheduledExpenses = expenses.filter(expense => isScheduledExpense(expense));
+  const scheduledAmount = scheduledExpenses.reduce(
+    (sum, expense) => sum + Number(expense.amount || 0),
+    0,
+  );
 
   const expenseToDelete = expenses.find(expense => expense.id === confirmDeleteId);
   const expenseToArchive = expenses.find(expense => expense.id === confirmArchiveId);
@@ -358,9 +376,9 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             </div>
             {!showArchived && (
               <div className="w-44">
-                <Select value={paidFilter} onChange={e => setPaidFilter(e.target.value)} className="py-2.5 text-sm">
+                <Select value={expenseFilter} onChange={e => setExpenseFilter(e.target.value)} className="py-2.5 text-sm">
                   <option value="all">All expenses</option>
-                  <option value="unpaid">Unpaid</option>
+                  <option value="scheduled">Scheduled</option>
                   <option value="paid">Paid</option>
                 </Select>
               </div>
@@ -413,10 +431,10 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             <p className="font-display text-3xl font-extrabold tracking-tight text-stone-900 dark:text-slate-100">${formatMoney(totalAmount)}</p>
             <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{expenses.length} expenses</p>
           </div>
-          <div className="rounded-3xl border border-stone-200/80 border-l-4 border-l-amber-400/70 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:border-l-amber-300/40 dark:bg-slate-900/78">
-            <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">Unpaid</p>
-            <p className="font-display text-3xl font-extrabold tracking-tight text-amber-600 dark:text-amber-400">${formatMoney(unpaidAmount)}</p>
-            <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{expenses.filter(expense => !expense.is_paid).length} items</p>
+          <div className="rounded-3xl border border-stone-200/80 border-l-4 border-l-violet-400/70 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:border-l-violet-300/40 dark:bg-slate-900/78">
+            <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">Scheduled</p>
+            <p className="font-display text-3xl font-extrabold tracking-tight text-violet-600 dark:text-violet-400">${formatMoney(scheduledAmount)}</p>
+            <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{scheduledExpenses.length} items</p>
           </div>
           <div className="rounded-3xl border border-stone-200/80 border-l-4 border-l-emerald-400/70 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:border-l-emerald-400/40 dark:bg-slate-900/78">
             <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">Paid</p>
