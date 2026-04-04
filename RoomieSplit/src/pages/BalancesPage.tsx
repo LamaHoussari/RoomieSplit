@@ -344,6 +344,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
 
       {showNewSettlement && (
         <Modal title="New Settlement" onClose={() => setShowNewSettlement(false)}>
+          <form onSubmit={e => { e.preventDefault(); submitNewSettlement(); }}>
           <FormField label="From (who owes)">
             <Select value={newFrom} onChange={e => setNewFrom(e.target.value)}>
               <option value="">Select member</option>
@@ -371,14 +372,16 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             <p className="mt-1 text-sm text-red-500">From and To must be different members</p>
           )}
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowNewSettlement(false)}>Cancel</Button>
-            <Button size="sm" onClick={submitNewSettlement} disabled={!newFrom || !newTo || newFrom === newTo || !parseFloat(newAmount)}>Create</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowNewSettlement(false)}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={!newFrom || !newTo || newFrom === newTo || !parseFloat(newAmount)}>Create</Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {payTarget && (
         <Modal title="Record payment" onClose={() => setPayTarget(null)}>
+          <form onSubmit={e => { e.preventDefault(); submitPay(); }}>
           <div className="mb-6 flex items-center gap-3">
             {[payTarget.from_profile?.name ?? 'Unknown', payTarget.to_profile?.name ?? 'Unknown'].map((name, i) => {
               const hue = memberHue(name);
@@ -425,14 +428,16 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
           </p>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPayTarget(null)}>Cancel</Button>
-            <Button size="sm" onClick={submitPay}>Confirm payment</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setPayTarget(null)}>Cancel</Button>
+            <Button size="sm" type="submit">Confirm payment</Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {archiveTarget && (
         <Modal title="Archive balance?" onClose={() => setArchiveTarget(null)}>
+          <form onSubmit={e => { e.preventDefault(); submitArchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will hide the balance from{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">
@@ -448,14 +453,16 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             For: {archiveTarget.expense?.description?.trim() || 'Manual balance'}
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setArchiveTarget(null)}>Cancel</Button>
-            <Button size="sm" onClick={submitArchive}>Archive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setArchiveTarget(null)}>Cancel</Button>
+            <Button size="sm" type="submit">Archive</Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {unarchiveTarget && (
         <Modal title="Restore balance?" onClose={() => setUnarchiveTarget(null)}>
+          <form onSubmit={e => { e.preventDefault(); submitUnarchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will move the balance from{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">
@@ -471,9 +478,10 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             For: {unarchiveTarget.expense?.description?.trim() || 'Manual balance'}
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setUnarchiveTarget(null)}>Cancel</Button>
-            <Button size="sm" onClick={submitUnarchive}>Unarchive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setUnarchiveTarget(null)}>Cancel</Button>
+            <Button size="sm" type="submit">Unarchive</Button>
           </div>
+          </form>
         </Modal>
       )}
     </>

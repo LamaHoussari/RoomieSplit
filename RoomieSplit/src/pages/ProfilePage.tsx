@@ -219,6 +219,49 @@ export default function ProfilePage({ user }: { user: AppUser }) {
         </Card>
 
         <Card title="Security">
+          <form onSubmit={async e => {
+            e.preventDefault();
+            setPwError('');
+            setPwSuccess('');
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+              setPwError('All password fields are required.');
+              return;
+            }
+            if (newPassword.length < 6) {
+              setPwError('New password must be at least 6 characters.');
+              return;
+            }
+            if (newPassword !== confirmPassword) {
+              setPwError('New passwords do not match.');
+              return;
+            }
+            if (currentPassword === newPassword) {
+              setPwError('New password must be different from current password.');
+              return;
+            }
+
+            setPwLoading(true);
+            const { error: signInErr } = await signInWithEmail(user.email!, currentPassword);
+            if (signInErr) {
+              setPwError('Current password is incorrect.');
+              setPwLoading(false);
+              return;
+            }
+
+            const { error: updateErr } = await updateUserPassword(newPassword);
+            if (updateErr) {
+              setPwError(updateErr.message);
+              setPwLoading(false);
+              return;
+            }
+
+            setPwSuccess('Password updated successfully!');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setPwLoading(false);
+          }}>
           <FormField label="Current password">
             <div className="relative">
               <Input
@@ -302,51 +345,11 @@ export default function ProfilePage({ user }: { user: AppUser }) {
             size="sm"
             className="mt-3"
             disabled={pwLoading}
-            onClick={async () => {
-              setPwError('');
-              setPwSuccess('');
-
-              if (!currentPassword || !newPassword || !confirmPassword) {
-                setPwError('All password fields are required.');
-                return;
-              }
-              if (newPassword.length < 6) {
-                setPwError('New password must be at least 6 characters.');
-                return;
-              }
-              if (newPassword !== confirmPassword) {
-                setPwError('New passwords do not match.');
-                return;
-              }
-              if (currentPassword === newPassword) {
-                setPwError('New password must be different from current password.');
-                return;
-              }
-
-              setPwLoading(true);
-              const { error: signInErr } = await signInWithEmail(user.email!, currentPassword);
-              if (signInErr) {
-                setPwError('Current password is incorrect.');
-                setPwLoading(false);
-                return;
-              }
-
-              const { error: updateErr } = await updateUserPassword(newPassword);
-              if (updateErr) {
-                setPwError(updateErr.message);
-                setPwLoading(false);
-                return;
-              }
-
-              setPwSuccess('Password updated successfully!');
-              setCurrentPassword('');
-              setNewPassword('');
-              setConfirmPassword('');
-              setPwLoading(false);
-            }}
+            type="submit"
           >
             {pwLoading ? 'Updating…' : 'Update password'}
           </Button>
+          </form>
         </Card>
       </div>
     </>

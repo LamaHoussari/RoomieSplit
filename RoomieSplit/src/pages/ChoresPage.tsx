@@ -292,6 +292,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
 
       {showModal && (
         <Modal title="Add Chore" onClose={() => setShowModal(false)}>
+          <form onSubmit={e => { e.preventDefault(); handleAddChore(); }}>
           <FormField label="Chore name">
             <Input placeholder="e.g. Take out trash" value={choreName} onChange={e => setChoreName(e.target.value)} />
           </FormField>
@@ -310,53 +311,60 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
             </Select>
           </FormField>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleAddChore}>Add</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button size="sm" type="submit">Add</Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {choreToRemove && (
         <Modal title="Remove chore?" onClose={() => setConfirmRemoveId(null)}>
+          <form onSubmit={e => { e.preventDefault(); handleRemoveChore(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will permanently remove{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">"{choreToRemove.name}"</span>{' '}
             from the list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmRemoveId(null)}>Cancel</Button>
-            <Button variant="danger" size="sm" onClick={handleRemoveChore}>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmRemoveId(null)}>Cancel</Button>
+            <Button variant="danger" size="sm" type="submit">
               Remove
             </Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {choreToArchive && (
         <Modal title="Archive chore?" onClose={() => setConfirmArchiveId(null)}>
+          <form onSubmit={e => { e.preventDefault(); handleArchiveChore(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will hide{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">"{choreToArchive.name}"</span>{' '}
             from the active chore list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmArchiveId(null)}>Cancel</Button>
-            <Button size="sm" onClick={handleArchiveChore}>Archive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmArchiveId(null)}>Cancel</Button>
+            <Button size="sm" type="submit">Archive</Button>
           </div>
+          </form>
         </Modal>
       )}
 
       {choreToUnarchive && (
         <Modal title="Restore chore?" onClose={() => setConfirmUnarchiveId(null)}>
+          <form onSubmit={e => { e.preventDefault(); handleUnarchiveChore(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will move{' '}
             <span className="font-semibold text-stone-900 dark:text-slate-100">"{choreToUnarchive.name}"</span>{' '}
             back into the active chore list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmUnarchiveId(null)}>Cancel</Button>
-            <Button size="sm" onClick={handleUnarchiveChore}>Unarchive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmUnarchiveId(null)}>Cancel</Button>
+            <Button size="sm" type="submit">Unarchive</Button>
           </div>
+          </form>
         </Modal>
       )}
     </>

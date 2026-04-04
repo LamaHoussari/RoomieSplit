@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
 import type { SVGProps } from 'react';
 import type { AppUser } from '../types/auth';
 
@@ -94,6 +95,16 @@ export default function Sidebar({
   onToggleCollapsed,
 }: SidebarProps) {
   const closeMobile = () => setMobileOpen?.(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMobile();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [mobileOpen]);
+
   const navItems = user.isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
   const displayName = user.name?.trim() || user.email || 'Roomie';
   const userLabel = user.isAdmin ? 'Admin session' : 'Welcome back';

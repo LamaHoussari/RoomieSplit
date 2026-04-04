@@ -87,11 +87,20 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
 
     updatePanelPosition();
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setMode('day');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('mousedown', handlePointerDown);
     window.addEventListener('resize', updatePanelPosition);
     window.addEventListener('scroll', updatePanelPosition, true);
 
     return () => {
+      document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handlePointerDown);
       window.removeEventListener('resize', updatePanelPosition);
       window.removeEventListener('scroll', updatePanelPosition, true);
