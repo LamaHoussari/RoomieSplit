@@ -126,8 +126,11 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   const [addDraft, setAddDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: userId, date: '', splitUserIds: [userId] });
 
   useEffect(() => {
-    setAddDraft(draft => sanitizeDraft(draft, memberIds, fallbackPayer));
-    setEditDraft(draft => sanitizeDraft(draft, memberIds, fallbackPayer));
+    async function updateDrafts() {
+      setAddDraft(draft => sanitizeDraft(draft, memberIds, fallbackPayer));
+      setEditDraft(draft => sanitizeDraft(draft, memberIds, fallbackPayer));
+    }
+    updateDrafts();
   }, [memberIds, fallbackPayer]);
 
   const visibleExpenses = expenses.filter(expense => {
