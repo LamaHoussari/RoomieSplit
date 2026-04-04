@@ -56,7 +56,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
       const gap = 4;
       const spaceBelow = viewportHeight - rect.bottom - 12;
       const spaceAbove = rect.top - 12;
-      const openUpwards = spaceAbove >= 180;
+      const openUpwards = spaceBelow < Math.min(desiredPanelHeight + gap, 220) && spaceAbove > spaceBelow;
       const availableHeight = Math.max(180, (openUpwards ? spaceAbove : spaceBelow) - gap);
       const panelHeight = Math.min(desiredPanelHeight, availableHeight);
       const top = openUpwards
@@ -105,7 +105,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
       window.removeEventListener('resize', updatePanelPosition);
       window.removeEventListener('scroll', updatePanelPosition, true);
     };
-  }, [open]);
+  }, [open, mode, view.month, view.year]);
 
   const firstDay = new Date(view.year, view.month, 1).getDay();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();

@@ -10,6 +10,7 @@ import GroupDetailPage from '../pages/GroupDetailPage';
 import ExpensesPage    from '../pages/ExpensesPage';
 import BalancesPage    from '../pages/BalancesPage';
 import ChoresPage      from '../pages/ChoresPage';
+import TrackingPage    from '../pages/TrackingPage';
 import ProfilePage     from '../pages/ProfilePage';
 
 import { useAuth } from "../hooks/useAuth";
@@ -66,6 +67,8 @@ function AnimatedRoutes() {
               <Route path="/balances"   element={<BalancesPage userId={user.id} 
               chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
               <Route path="/chores"     element={<ChoresPage userId={user.id} 
+              chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
+              <Route path="/tracking"   element={<TrackingPage userId={user.id}
               chosenGroup={chosenGroup} setChosenGroup={setChosenGroup}/>} />
               <Route path="/profile"    element={<ProfilePage user={user} />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

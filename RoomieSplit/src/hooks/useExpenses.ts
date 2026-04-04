@@ -24,6 +24,11 @@ import {
 } from "../services/settlementService";
 
 const SUCCESS_MESSAGE_DURATION_MS = 2200;
+const getTodayDateKey = () => new Date().toISOString().slice(0, 10);
+
+function isFutureDatedExpense(date?: string | null) {
+  return typeof date === "string" && date.length > 0 && date > getTodayDateKey();
+}
 
 export function useExpenses(
   groupId: string | null,
@@ -176,7 +181,7 @@ export function useExpenses(
     const normalizedExpense = {
       ...expense,
       amount: roundCurrency(expense.amount),
-      is_paid: expense.is_paid ?? true,
+      is_paid: expense.is_paid ?? !isFutureDatedExpense(expense.date),
     };
     const normalizedSplits = normalizeSplits(splits);
     const validationError = validateExpenseSplits(

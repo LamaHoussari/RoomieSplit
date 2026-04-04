@@ -62,6 +62,17 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
+  {
+    label: 'Tracking',
+    path: '/tracking',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 2v4M8 2v4M3 10h18" />
+        <rect x="3" y="4" width="18" height="17" rx="2" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 14h3M8 18h3M14 14h2" />
+      </svg>
+    ),
+  },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [

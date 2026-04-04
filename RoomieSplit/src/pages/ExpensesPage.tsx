@@ -32,7 +32,7 @@ interface ExpensesPageProps {
 const getTodayDateKey = () => new Date().toISOString().slice(0, 10);
 
 function isScheduledExpense(expense: Pick<Expense, 'is_paid' | 'date'>) {
-  return Boolean(expense.date) && expense.date > getTodayDateKey();
+  return Boolean(expense.date) && expense.date > getTodayDateKey() && !expense.is_paid;
 }
 
 const memberHue = (name: string) => {
@@ -585,13 +585,13 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
           <FormField label="Amount ($)">
             <Input type="number" value={addDraft.amount} onChange={e => setAddDraft(d => ({ ...d, amount: e.target.value }))} placeholder="0.00" />
           </FormField>
+          <FormField label="Date">
+            <DatePicker value={addDraft.date} onChange={date => setAddDraft(d => ({ ...d, date }))} />
+          </FormField>
           <FormField label="Paid by">
             <Select value={addDraft.payer} onChange={e => setAddDraft(d => ({ ...d, payer: e.target.value }))}>
               {selectedGroupMembers.map(member => <option key={member.id} value={member.user_id}>{member.profiles?.name ?? 'Unknown'}</option>)}
             </Select>
-          </FormField>
-          <FormField label="Date">
-            <DatePicker value={addDraft.date} onChange={date => setAddDraft(d => ({ ...d, date }))} />
           </FormField>
           <FormField label="Split between">
             <SplitPicker value={addDraft.splitUserIds} onChange={splitUserIds => setAddDraft(d => ({ ...d, splitUserIds }))} members={selectedGroupMembers} />
@@ -613,13 +613,13 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
           <FormField label="Amount ($)">
             <Input type="number" value={editDraft.amount} onChange={e => setEditDraft(d => ({ ...d, amount: e.target.value }))} placeholder="0.00" />
           </FormField>
+          <FormField label="Date">
+            <DatePicker value={editDraft.date} onChange={date => setEditDraft(d => ({ ...d, date }))} />
+          </FormField>
           <FormField label="Paid by">
             <Select value={editDraft.payer} onChange={e => setEditDraft(d => ({ ...d, payer: e.target.value }))}>
               {editMembers.map(member => <option key={member.id} value={member.user_id}>{member.profiles?.name ?? 'Unknown'}</option>)}
             </Select>
-          </FormField>
-          <FormField label="Date">
-            <DatePicker value={editDraft.date} onChange={date => setEditDraft(d => ({ ...d, date }))} />
           </FormField>
           <FormField label="Split between">
             <SplitPicker value={editDraft.splitUserIds} onChange={splitUserIds => setEditDraft(d => ({ ...d, splitUserIds }))} members={editMembers} />
