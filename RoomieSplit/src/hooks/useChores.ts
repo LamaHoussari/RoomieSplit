@@ -34,6 +34,7 @@ export function useChores(
 
     if (error) {
       setError(error.message);
+      setChores([]);
       setLoading(false);
       return;
     }

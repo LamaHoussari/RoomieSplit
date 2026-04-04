@@ -23,6 +23,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
 
   const {
     chores,
+    loading,
     error,
     successMessage,
     addChore,
@@ -168,7 +169,14 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
         }`}
       >
         <div className="-mx-2">
-          {visibleChores.map(chore => (
+          {loading ? (
+            <p className="py-12 text-center text-sm text-stone-400 dark:text-slate-500">Loading chores…</p>
+          ) : visibleChores.length === 0 ? (
+            <p className="py-12 text-center text-sm text-stone-400 dark:text-slate-500">
+              {showArchived ? 'No archived chores.' : 'No chores yet. Add one to get started!'}
+            </p>
+          ) : (
+          visibleChores.map(chore => (
             <div
               key={chore.id}
               className={`flex flex-col gap-4 rounded-2xl px-2 py-4 transition-colors sm:flex-row sm:items-center ${
@@ -209,7 +217,11 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
 
               <div className="flex items-center gap-2 sm:ml-auto">
                 <div className="flex w-24 justify-end shrink-0">
-                  <Badge variant="violet">{chore.profiles?.name ?? 'Unknown'}</Badge>
+                  <Badge variant="violet">
+                    {chore.assigned_to
+                      ? members.find(m => m.user_id === chore.assigned_to)?.profiles?.name ?? 'Unknown'
+                      : 'Unassigned'}
+                  </Badge>
                 </div>
                 <div className="flex w-24 justify-center shrink-0">
                   {chore.is_completed ? <Badge variant="green">Completed</Badge> : <Badge variant="orange">Pending</Badge>}
@@ -286,7 +298,8 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                 )}
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </Card>
 

@@ -8,7 +8,7 @@ export async function createChore(chore: NewChore) {
 export async function getChoresByGroup(groupId: string, archived = false) {
     let query = supabase
         .from("chores")
-        .select("*, profiles:assigned_to(name)")
+        .select("*")
         .eq("group_id", groupId);
 
     query = archived
@@ -21,7 +21,7 @@ export async function getChoresByGroup(groupId: string, archived = false) {
 export async function getChoresByGroups(groupIds: string[], archived = false) {
     let query = supabase
         .from("chores")
-        .select("*, profiles:assigned_to(name)")
+        .select("*")
         .in("group_id", groupIds);
 
     query = archived
