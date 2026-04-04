@@ -5,29 +5,85 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 
+const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
+
 export default function ProfilePage({ user }: { user: AppUser }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState({
     name: user.name || '',
     email: user.email || '',
+    nickname: '',
+    phone: '',
+    paymentMethod: '' as string,
   });
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const isDirty = draft.name !== (user.name || '') || draft.email !== (user.email || '');
+
+  const initialDraft = {
+    name: user.name || '',
+    email: user.email || '',
+    nickname: draft.nickname,
+    phone: draft.phone,
+    paymentMethod: draft.paymentMethod,
+  };
+
+  const isDirty =
+    draft.name !== (user.name || '') ||
+    draft.email !== (user.email || '') ||
+    draft.nickname !== initialDraft.nickname ||
+    draft.phone !== initialDraft.phone ||
+    draft.paymentMethod !== initialDraft.paymentMethod;
+
+  const initials = (draft.name || user.email || '?')
+    .split(/\s+/)
+    .map(w => w[0]?.toUpperCase())
+    .slice(0, 2)
+    .join('');
 
   return (
     <>
       <PageHeader title="Profile" subtitle="Manage your account" />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Avatar + Display Name */}
+        <Card className="lg:col-span-2">
+          <div className="flex items-center gap-5">
+            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6f4f8b] to-[#392b48] text-2xl font-bold text-white shadow dark:from-[#a88bc9] dark:to-[#4b365f]">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <h2 className="truncate text-xl font-semibold text-stone-900 dark:text-slate-100">
+                {draft.name || 'No name set'}
+              </h2>
+              <p className="truncate text-sm text-stone-500 dark:text-slate-400">
+                {user.email}
+              </p>
+              {draft.nickname && (
+                <p className="mt-0.5 truncate text-sm italic text-stone-400 dark:text-slate-500">
+                  &ldquo;{draft.nickname}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+
         <Card
           title="Account Info"
           className={isEditing ? 'ring-2 ring-[#8c74aa]/20 dark:ring-[#b59ad6]/20' : ''}
         >
-          <FormField label="Full Name">
+          <FormField label="Display Name">
             <Input
               value={draft.name}
               onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
+              readOnly={!isEditing}
+              className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
+            />
+          </FormField>
+          <FormField label="Preferred Nickname">
+            <Input
+              value={draft.nickname}
+              onChange={e => setDraft(d => ({ ...d, nickname: e.target.value }))}
+              placeholder="How your roomies call you"
               readOnly={!isEditing}
               className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
             />
@@ -41,6 +97,36 @@ export default function ProfilePage({ user }: { user: AppUser }) {
               className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
             />
           </FormField>
+          <FormField label="Phone Number (optional)">
+            <Input
+              value={draft.phone}
+              onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))}
+              type="tel"
+              placeholder="+1 234 567 8900"
+              readOnly={!isEditing}
+              className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
+            />
+          </FormField>
+          <FormField label="Preferred Payment Method">
+            {isEditing ? (
+              <select
+                value={draft.paymentMethod}
+                onChange={e => setDraft(d => ({ ...d, paymentMethod: e.target.value }))}
+                className="w-full rounded-xl border border-stone-300/80 bg-white px-4 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition focus:border-[#8c74aa] focus:ring-2 focus:ring-[#8c74aa]/20 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-100 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/20"
+              >
+                <option value="">Select a method</option>
+                {PAYMENT_METHODS.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                value={draft.paymentMethod || 'Not set'}
+                readOnly
+                className="cursor-default bg-stone-100 dark:bg-slate-800/70"
+              />
+            )}
+          </FormField>
 
           <div className="mt-5 flex items-center justify-between gap-3">
             <span className="text-sm text-stone-500 dark:text-slate-400">
@@ -51,7 +137,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setDraft({ name: user.name || '', email: user.email || '' });
+                  setDraft(d => ({ ...d, name: user.name || '', email: user.email || '' }));
                   setIsEditing(true);
                 }}
               >
@@ -63,7 +149,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setDraft({ name: user.name || '', email: user.email || '' });
+                    setDraft(d => ({ ...d, name: user.name || '', email: user.email || '' }));
                     setIsEditing(false);
                   }}
                 >
@@ -73,7 +159,6 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                   size="sm"
                   disabled={!isDirty}
                   onClick={() => {
-                    setDraft({ name: user.name || '', email: user.email || '' });
                     setIsEditing(false);
                   }}
                 >
