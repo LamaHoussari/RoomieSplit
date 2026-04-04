@@ -150,7 +150,10 @@ export function Select({ value, onChange, children, className = '', disabled }: 
     const nextIndex = selectedIndex >= 0 && !options[selectedIndex]?.disabled
       ? selectedIndex
       : options.findIndex(option => !option.disabled);
-    setActiveIndex(nextIndex);
+    async function updateActiveIndex() {
+      await setActiveIndex(nextIndex);
+    }
+    updateActiveIndex();
   }, [open, options, selectedIndex]);
 
   useEffect(() => {
