@@ -163,7 +163,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
                   {group.name}
                 </h3>
                 <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">
-                  Since {group.created_at}
+                  Since {new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                 </p>
               </div>
               <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-[#f4eef8] text-[#6f4f8b] dark:bg-[#2b2136] dark:text-[#d4c0ea]">
