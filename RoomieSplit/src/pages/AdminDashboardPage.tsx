@@ -44,7 +44,9 @@ function AdminStatCard({
   accentClass: string;
 }) {
   return (
-    <div className={`rounded-3xl border border-stone-200/80 border-l-4 bg-white/84 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78 ${accentClass}`}>
+    <div
+      className={`rounded-3xl border border-stone-200/80 border-l-4 bg-white/84 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78 ${accentClass}`}
+    >
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">
         {label}
       </p>
@@ -57,14 +59,14 @@ function AdminStatCard({
     </div>
   );
 }
-
+const today = Date.now();
 export default function AdminDashboardPage({ user }: { user: AppUser }) {
   const { snapshot, error } = useAdminDashboard();
 
   const metrics = useMemo(() => {
     if (!snapshot) return null;
 
-    const recentThreshold = Date.now() - THIRTY_DAYS_IN_MS;
+    const recentThreshold = today - THIRTY_DAYS_IN_MS;
 
     const membersByGroup = new Map<string, typeof snapshot.members>();
     const expensesByGroup = new Map<string, typeof snapshot.expenses>();
@@ -74,18 +76,30 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
     const userActivity = new Map<string, number>();
     const userGroupCounts = new Map<string, number>();
 
-    const markUserActivity = (userId: string | null | undefined, value: string | null | undefined) => {
+    const markUserActivity = (
+      userId: string | null | undefined,
+      value: string | null | undefined,
+    ) => {
       if (!userId) return;
       const timestamp = toTimestamp(value);
       if (!timestamp) return;
-      userActivity.set(userId, Math.max(userActivity.get(userId) ?? 0, timestamp));
+      userActivity.set(
+        userId,
+        Math.max(userActivity.get(userId) ?? 0, timestamp),
+      );
     };
 
-    const markGroupActivity = (groupId: string | null | undefined, value: string | null | undefined) => {
+    const markGroupActivity = (
+      groupId: string | null | undefined,
+      value: string | null | undefined,
+    ) => {
       if (!groupId) return;
       const timestamp = toTimestamp(value);
       if (!timestamp) return;
-      groupActivity.set(groupId, Math.max(groupActivity.get(groupId) ?? 0, timestamp));
+      groupActivity.set(
+        groupId,
+        Math.max(groupActivity.get(groupId) ?? 0, timestamp),
+      );
     };
 
     snapshot.groups.forEach((group) => {
@@ -97,37 +111,59 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
     });
 
     snapshot.members.forEach((member) => {
-      membersByGroup.set(member.group_id, [...(membersByGroup.get(member.group_id) ?? []), member]);
-      userGroupCounts.set(member.user_id, (userGroupCounts.get(member.user_id) ?? 0) + 1);
+      membersByGroup.set(member.group_id, [
+        ...(membersByGroup.get(member.group_id) ?? []),
+        member,
+      ]);
+      userGroupCounts.set(
+        member.user_id,
+        (userGroupCounts.get(member.user_id) ?? 0) + 1,
+      );
       markUserActivity(member.user_id, member.joined_at);
       markGroupActivity(member.group_id, member.joined_at);
     });
 
     snapshot.expenses.forEach((expense) => {
-      expensesByGroup.set(expense.group_id, [...(expensesByGroup.get(expense.group_id) ?? []), expense]);
+      expensesByGroup.set(expense.group_id, [
+        ...(expensesByGroup.get(expense.group_id) ?? []),
+        expense,
+      ]);
       markUserActivity(expense.created_by, expense.created_at);
       markUserActivity(expense.payer_id, expense.created_at);
       markGroupActivity(expense.group_id, expense.created_at);
     });
 
     snapshot.chores.forEach((chore) => {
-      choresByGroup.set(chore.group_id, [...(choresByGroup.get(chore.group_id) ?? []), chore]);
+      choresByGroup.set(chore.group_id, [
+        ...(choresByGroup.get(chore.group_id) ?? []),
+        chore,
+      ]);
       markUserActivity(chore.created_by, chore.created_at);
       markUserActivity(chore.assigned_to, chore.created_at);
       markGroupActivity(chore.group_id, chore.created_at);
     });
 
     snapshot.settlements.forEach((settlement) => {
-      settlementsByGroup.set(settlement.group_id, [...(settlementsByGroup.get(settlement.group_id) ?? []), settlement]);
+      settlementsByGroup.set(settlement.group_id, [
+        ...(settlementsByGroup.get(settlement.group_id) ?? []),
+        settlement,
+      ]);
       markUserActivity(settlement.created_by, settlement.created_at);
       markUserActivity(settlement.from_user_id, settlement.created_at);
       markUserActivity(settlement.to_user_id, settlement.created_at);
       markGroupActivity(settlement.group_id, settlement.created_at);
     });
 
-    const activeUserCount = [...userActivity.values()].filter((timestamp) => timestamp >= recentThreshold).length;
-    const totalSpend = snapshot.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-    const pendingChores = snapshot.chores.filter((chore) => !chore.is_completed).length;
+    const activeUserCount = [...userActivity.values()].filter(
+      (timestamp) => timestamp >= recentThreshold,
+    ).length;
+    const totalSpend = snapshot.expenses.reduce(
+      (sum, expense) => sum + Number(expense.amount || 0),
+      0,
+    );
+    const pendingChores = snapshot.chores.filter(
+      (chore) => !chore.is_completed,
+    ).length;
     const outstandingSettlements = snapshot.settlements.reduce(
       (sum, settlement) => sum + getSettlementRemaining(settlement),
       0,
@@ -148,10 +184,19 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
           memberCount: groupMembers.length,
           adminNames: groupMembers
             .filter((member) => member.role === "admin")
-            .map((member) => member.profiles?.name ?? member.profiles?.email ?? "Unknown"),
-          totalSpend: groupExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0),
-          unpaidExpenseCount: groupExpenses.filter((expense) => !expense.is_paid).length,
-          pendingChoreCount: groupChores.filter((chore) => !chore.is_completed).length,
+            .map(
+              (member) =>
+                member.profiles?.name ?? member.profiles?.email ?? "Unknown",
+            ),
+          totalSpend: groupExpenses.reduce(
+            (sum, expense) => sum + Number(expense.amount || 0),
+            0,
+          ),
+          unpaidExpenseCount: groupExpenses.filter(
+            (expense) => !expense.is_paid,
+          ).length,
+          pendingChoreCount: groupChores.filter((chore) => !chore.is_completed)
+            .length,
           outstandingSettlementTotal: groupSettlements.reduce(
             (sum, settlement) => sum + getSettlementRemaining(settlement),
             0,
@@ -159,7 +204,11 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
           lastActivity: groupActivity.get(group.id) ?? 0,
         };
       })
-      .sort((a, b) => (b.lastActivity || toTimestamp(b.createdAt)) - (a.lastActivity || toTimestamp(a.createdAt)));
+      .sort(
+        (a, b) =>
+          (b.lastActivity || toTimestamp(b.createdAt)) -
+          (a.lastActivity || toTimestamp(a.createdAt)),
+      );
 
     const userRows = snapshot.profiles
       .map((profile) => ({
@@ -167,7 +216,8 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
         name: profile.name || profile.email || "Unknown",
         email: profile.email,
         groupCount: userGroupCounts.get(profile.id) ?? 0,
-        lastActivity: userActivity.get(profile.id) ?? toTimestamp(profile.created_at),
+        lastActivity:
+          userActivity.get(profile.id) ?? toTimestamp(profile.created_at),
         activeRecently: (userActivity.get(profile.id) ?? 0) >= recentThreshold,
       }))
       .sort((a, b) => b.lastActivity - a.lastActivity);
@@ -194,7 +244,9 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
 
       {user.authSource === "local-admin" && (
         <div className="mb-6 rounded-3xl border border-amber-200/80 bg-amber-50/80 px-5 py-4 text-sm font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
-          This admin session is local to the client. Dashboard data still depends on the current Supabase client being allowed to read the relevant tables.
+          This admin session is local to the client. Dashboard data still
+          depends on the current Supabase client being allowed to read the
+          relevant tables.
         </div>
       )}
 
@@ -239,7 +291,13 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-stone-200/80 bg-stone-100/70 dark:border-slate-800 dark:bg-slate-800/60">
-                      {["Group", "Members", "Spend", "Open", "Last activity"].map((header) => (
+                      {[
+                        "Group",
+                        "Members",
+                        "Spend",
+                        "Open",
+                        "Last activity",
+                      ].map((header) => (
                         <th
                           key={header}
                           className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400"
@@ -257,15 +315,24 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
                       >
                         <td className="px-4 py-4">
                           <div>
-                            <p className="font-semibold text-stone-900 dark:text-slate-100">{group.name}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-stone-400 dark:text-slate-500">{group.code}</p>
+                            <p className="font-semibold text-stone-900 dark:text-slate-100">
+                              {group.name}
+                            </p>
+                            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-stone-400 dark:text-slate-500">
+                              {group.code}
+                            </p>
                             <p className="mt-2 text-xs text-stone-500 dark:text-slate-400">
-                              Admin: {group.adminNames.length ? group.adminNames.join(", ") : "Unknown"}
+                              Admin:{" "}
+                              {group.adminNames.length
+                                ? group.adminNames.join(", ")
+                                : "Unknown"}
                             </p>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-stone-600 dark:text-slate-300">
-                          <div className="font-semibold text-stone-900 dark:text-slate-100">{group.memberCount}</div>
+                          <div className="font-semibold text-stone-900 dark:text-slate-100">
+                            {group.memberCount}
+                          </div>
                           <div className="mt-1 text-xs text-stone-500 dark:text-slate-400">
                             Created {formatDate(group.createdAt)}
                           </div>
@@ -275,19 +342,34 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant={group.pendingChoreCount > 0 ? "orange" : "green"}>
+                            <Badge
+                              variant={
+                                group.pendingChoreCount > 0 ? "orange" : "green"
+                              }
+                            >
                               {group.pendingChoreCount} chores
                             </Badge>
-                            <Badge variant={group.unpaidExpenseCount > 0 ? "violet" : "green"}>
+                            <Badge
+                              variant={
+                                group.unpaidExpenseCount > 0
+                                  ? "violet"
+                                  : "green"
+                              }
+                            >
                               {group.unpaidExpenseCount} unpaid
                             </Badge>
                           </div>
                           <p className="mt-2 text-xs text-stone-500 dark:text-slate-400">
-                            {formatMoney(group.outstandingSettlementTotal)} unsettled
+                            {formatMoney(group.outstandingSettlementTotal)}{" "}
+                            unsettled
                           </p>
                         </td>
                         <td className="px-4 py-4 text-stone-500 dark:text-slate-400">
-                          {formatDate(group.lastActivity ? new Date(group.lastActivity).toISOString() : group.createdAt)}
+                          {formatDate(
+                            group.lastActivity
+                              ? new Date(group.lastActivity).toISOString()
+                              : group.createdAt,
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -313,11 +395,19 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
                         </p>
                       </div>
                       <div className="text-right">
-                        <Badge variant={profile.activeRecently ? "green" : "violet"}>
+                        <Badge
+                          variant={profile.activeRecently ? "green" : "violet"}
+                        >
                           {profile.activeRecently ? "Active" : "Quiet"}
                         </Badge>
                         <p className="mt-2 text-xs text-stone-500 dark:text-slate-400">
-                          {profile.groupCount} group{profile.groupCount === 1 ? "" : "s"} • {formatDate(profile.lastActivity ? new Date(profile.lastActivity).toISOString() : null)}
+                          {profile.groupCount} group
+                          {profile.groupCount === 1 ? "" : "s"} •{" "}
+                          {formatDate(
+                            profile.lastActivity
+                              ? new Date(profile.lastActivity).toISOString()
+                              : null,
+                          )}
                         </p>
                       </div>
                     </div>
@@ -330,20 +420,36 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
           <Card title="Platform Totals" className="mt-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-2xl bg-stone-100/80 px-4 py-4 dark:bg-slate-950/55">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">Total Spend</p>
-                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">{formatMoney(metrics.totalSpend)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">
+                  Total Spend
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">
+                  {formatMoney(metrics.totalSpend)}
+                </p>
               </div>
               <div className="rounded-2xl bg-stone-100/80 px-4 py-4 dark:bg-slate-950/55">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">Memberships</p>
-                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">{metrics.totalMemberships}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">
+                  Memberships
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">
+                  {metrics.totalMemberships}
+                </p>
               </div>
               <div className="rounded-2xl bg-stone-100/80 px-4 py-4 dark:bg-slate-950/55">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">Pending Chores</p>
-                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">{metrics.pendingChores}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">
+                  Pending Chores
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">
+                  {metrics.pendingChores}
+                </p>
               </div>
               <div className="rounded-2xl bg-stone-100/80 px-4 py-4 dark:bg-slate-950/55">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">Outstanding Settlements</p>
-                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">{formatMoney(metrics.outstandingSettlements)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-slate-400">
+                  Outstanding Settlements
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-stone-900 dark:text-slate-100">
+                  {formatMoney(metrics.outstandingSettlements)}
+                </p>
               </div>
             </div>
           </Card>
