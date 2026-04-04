@@ -26,7 +26,10 @@ export function useAdminDashboard() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    async function fetchData() {
+      await refresh();
+    }
+    fetchData();
   }, [refresh]);
 
   return {
