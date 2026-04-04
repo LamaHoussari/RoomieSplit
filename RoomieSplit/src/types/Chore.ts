@@ -2,7 +2,7 @@ export interface Chore {
   id: string;
   group_id: string;
   name: string;
-  icon: string;
+  icon: string | null;
   frequency: string;
   assigned_to: string | null;
   created_by: string;
@@ -15,7 +15,7 @@ export interface Chore {
 export interface NewChore {
   group_id: string;
   name: string;
-  icon?: string;
+  icon?: string | null;
   frequency: string;
   assigned_to: string | null;
   created_by: string;

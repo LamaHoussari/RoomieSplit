@@ -53,9 +53,10 @@ export function Select({ value, onChange, children, className = '', disabled }: 
     Children.forEach(children, child => {
       if (isValidElement(child) && child.type === 'option') {
         const optionProps = child.props as { value?: string; children: ReactNode; disabled?: boolean };
+        const label = String(optionProps.children ?? '');
         parsedOptions.push({
-          value: String(optionProps.value ?? ''),
-          label: String(optionProps.children ?? ''),
+          value: String(optionProps.value ?? label),
+          label,
           disabled: Boolean(optionProps.disabled),
         });
       }
@@ -253,7 +254,7 @@ export function Select({ value, onChange, children, className = '', disabled }: 
             const isActive = index === activeIndex;
 
             return (
-              <li key={opt.value} role="presentation">
+              <li key={`${opt.value}-${index}`} role="presentation">
                 <button
                   ref={(element) => {
                     optionRefs.current[index] = element;

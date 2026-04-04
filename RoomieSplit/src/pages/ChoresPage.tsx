@@ -8,6 +8,7 @@ import FormField, { Input, Select } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { useChores } from '../hooks/useChores';
 import { useMembers } from '../hooks/useMembers';
+import { getChoreIcon } from '../lib/choreIcons';
 
 interface ChoresPageProps {
   userId: string;
@@ -193,7 +194,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200'
                       : 'bg-stone-200/80 text-stone-700 dark:bg-slate-800 dark:text-slate-200'}`}
                 >
-                  <span className="text-lg">{chore.icon || (chore.is_completed ? '✓' : '•')}</span>
+                  <span className="text-lg">{chore.icon?.trim() || getChoreIcon(chore.name)}</span>
                 </span>
                 <div className="min-w-0">
                   <p className={`truncate text-base font-semibold ${
@@ -311,10 +312,10 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
           </FormField>
           <FormField label="Frequency">
             <Select value={choreFrequency} onChange={e => setChoreFrequency(e.target.value)}>
-              <option>Daily</option>
-              <option>Weekly</option>
-              <option>Bi-weekly</option>
-              <option>Monthly</option>
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Bi-weekly">Bi-weekly</option>
+              <option value="Monthly">Monthly</option>
             </Select>
           </FormField>
           <FormField label="Assigned to">

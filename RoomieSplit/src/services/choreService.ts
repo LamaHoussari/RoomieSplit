@@ -1,8 +1,12 @@
 import { supabase } from "../lib/supabaseClient";
+import { getChoreIcon } from "../lib/choreIcons";
 import type { NewChore } from "../types/Chore";
 
 export async function createChore(chore: NewChore) {
-    return await supabase.from("chores").insert([chore]);
+    return await supabase.from("chores").insert([{
+        ...chore,
+        icon: chore.icon?.trim() || getChoreIcon(chore.name),
+    }]);
 }
 
 export async function getChoresByGroup(groupId: string, archived = false) {
