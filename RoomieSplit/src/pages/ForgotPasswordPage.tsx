@@ -1,0 +1,85 @@
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import AuthShell from '../components/AuthShell';
+import Button from '../components/Button';
+import FormField, { Input } from '../components/FormField';
+import { requestPasswordReset } from '../services/authService';
+
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail) {
+      setError('Email is required.');
+      setSuccessMessage('');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    const redirectTo = new URL('/reset-password', window.location.origin).toString();
+    const { error: resetError } = await requestPasswordReset(normalizedEmail, redirectTo);
+
+    if (resetError) {
+      setError(resetError.message);
+      setLoading(false);
+      return;
+    }
+
+    setSuccessMessage('Password reset email sent. Check your inbox for the recovery link.');
+    setLoading(false);
+  };
+
+  return (
+    <AuthShell
+      title="Reset your password"
+      subtitle="Enter your email and we'll send you a password recovery link."
+    >
+      <form onSubmit={handleSubmit}>
+        <FormField label="Email">
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={event => setEmail(event.target.value)}
+          />
+        </FormField>
+
+        {error && (
+          <p className="mt-4 rounded-2xl border border-red-200/80 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
+            {error}
+          </p>
+        )}
+        {successMessage && (
+          <p className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-300">
+            {successMessage}
+          </p>
+        )}
+
+        <Button type="submit" className="mt-4 w-full" size="lg" disabled={loading}>
+          Send reset email
+        </Button>
+      </form>
+
+      <div className="mt-6 border-t border-stone-200/80 pt-5 text-center text-sm text-stone-500 dark:border-slate-800 dark:text-slate-400">
+        Remembered your password?{' '}
+        <Link
+          to="/login"
+          className="font-semibold text-[#6f4f8b] hover:underline underline-offset-4 dark:text-[#d4c0ea]"
+        >
+          Back to sign in
+        </Link>
+      </div>
+    </AuthShell>
+  );
+}
+

@@ -1,23 +1,23 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type { FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import FormField, { Input } from '../components/FormField';
 import Button from '../components/Button';
 
 type LoginMode = 'login' | 'register';
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PLACEHOLDER_EMAIL_DOMAIN_PATTERN = /@(example\.com|example\.org|example\.net)$/i;
 
 type AuthProps = {
   onSignUp: (email: string, password: string) => Promise<boolean>;
   onSignIn: (email: string, password: string) => Promise<boolean>;
+  onClearFeedback: () => void;
   error: string;
   successMessage: string;
   loading: boolean;
 };
 
 export default function LoginPage({
-  onSignUp, onSignIn, error, successMessage, loading,
+  onSignUp, onSignIn, onClearFeedback, error, successMessage, loading,
 }: AuthProps) {
   const [mode, setMode] = useState<LoginMode>('login');
   const [exiting, setExiting] = useState(false);
@@ -25,39 +25,32 @@ export default function LoginPage({
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
 
   const navigate = useNavigate();
 
-  function validate(normalizedEmail: string) {
-    if (!normalizedEmail || !password.trim()) {
+  const toggleMode = () => {
+    setLocalError('');
+    onClearFeedback();
+    setMode(mode === 'login' ? 'register' : 'login');
+  };
+
+  function validate() {
+    if (!email.trim() || !password.trim()) {
       setLocalError('Email and password are required.');
       return false;
     }
-
-    if (!EMAIL_PATTERN.test(normalizedEmail)) {
-      setLocalError('Enter a valid email address.');
-      return false;
-    }
-
-    if (PLACEHOLDER_EMAIL_DOMAIN_PATTERN.test(normalizedEmail)) {
-      setLocalError('Use a real email inbox. Placeholder domains like example.com cannot sign up.');
-      return false;
-    }
-
     setLocalError('');
     return true;
   }
 
   const handleSubmit = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
-    setEmail(normalizedEmail);
-
-    if (!validate(normalizedEmail)) return;
+    if (!validate()) return;
     setExiting(true);
 
     if (mode === 'login') {
-      if (await onSignIn(normalizedEmail, password)) {
+      if (await onSignIn(email, password)) {
         setTimeout(() => {
           navigate('/dashboard');
         }, 300);
@@ -67,12 +60,18 @@ export default function LoginPage({
       return;
     }
 
-    if (await onSignUp(normalizedEmail, password)) {
-      setPassword('');
-      setMode('login');
+    if (await onSignUp(email, password)) {
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 300);
+    } else {
+      setExiting(false);
     }
+  };
 
-    setExiting(false);
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleSubmit();
   };
 
   return (
@@ -108,7 +107,10 @@ export default function LoginPage({
           </p>
         </div>
 
-        <div className="rounded-3xl border border-stone-200/80 bg-white/86 p-7 shadow-[0_30px_80px_-46px_rgba(28,25,23,0.55)] backdrop-blur-sm animate-slide-up-soft dark:border-slate-800/70 dark:bg-slate-900/78 dark:shadow-black/35 sm:p-8">
+        <form
+          onSubmit={handleFormSubmit}
+          className="rounded-3xl border border-stone-200/80 bg-white/86 p-7 shadow-[0_30px_80px_-46px_rgba(28,25,23,0.55)] backdrop-blur-sm animate-slide-up-soft dark:border-slate-800/70 dark:bg-slate-900/78 dark:shadow-black/35 sm:p-8"
+        >
           <h2 className="mb-6 font-display text-2xl font-semibold text-stone-900 dark:text-slate-100">
             {mode === 'login' ? 'Welcome back' : 'Create account'}
           </h2>
@@ -124,8 +126,42 @@ export default function LoginPage({
           )}
 
           <FormField label="Password">
-            <Input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(value => !value)}
+                className="absolute inset-y-0 right-3 inline-flex items-center justify-center rounded-lg px-2 text-stone-400 transition hover:text-stone-700 dark:text-slate-500 dark:hover:text-slate-200"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+                    <path d="M4.03 3.97a.75.75 0 0 0-1.06 1.06l12 12a.75.75 0 1 0 1.06-1.06l-1.53-1.53A9.78 9.78 0 0 0 18.4 10a9.77 9.77 0 0 0-3.24-3.57l-1.1 1.1A8.3 8.3 0 0 1 16.76 10a8.3 8.3 0 0 1-3.34 2.68l-1.27-1.27a3 3 0 0 0-3.83-3.83L6.9 6.15A8.26 8.26 0 0 1 10 5.52c.56 0 1.1.06 1.63.17l1.22-1.22A9.8 9.8 0 0 0 10 4.02 9.77 9.77 0 0 0 1.6 10a9.75 9.75 0 0 0 4.2 4.43l1.1-1.1A8.29 8.29 0 0 1 3.24 10 8.28 8.28 0 0 1 5.84 7.47l-1.8-1.8Zm6.06 6.06 1.88 1.88a1.5 1.5 0 0 1-1.88-1.88Zm-2.06-2.06a1.5 1.5 0 0 0 1.88 1.88L8.03 7.97Z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+                    <path d="M10 4.02A9.77 9.77 0 0 0 1.6 10a9.77 9.77 0 0 0 16.8 0A9.77 9.77 0 0 0 10 4.02Zm0 12.46A8.28 8.28 0 0 1 3.24 10 8.28 8.28 0 0 1 10 5.52 8.28 8.28 0 0 1 16.76 10 8.28 8.28 0 0 1 10 16.48Zm0-9a2.52 2.52 0 1 0 0 5.04 2.52 2.52 0 0 0 0-5.04Zm0 3.54a1.02 1.02 0 1 1 0-2.04 1.02 1.02 0 0 1 0 2.04Z" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </FormField>
+          {mode === 'login' && (
+            <div className="-mt-1 text-right text-sm">
+              <Link
+                to="/forgot-password"
+                className="font-medium text-[#6f4f8b] hover:underline underline-offset-4 dark:text-[#d4c0ea]"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          )}
 
           {localError && (
             <p className="mt-4 rounded-2xl border border-red-200/80 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
@@ -143,7 +179,7 @@ export default function LoginPage({
             </p>
           )}
 
-          <Button className="mt-4 w-full" size="lg" onClick={handleSubmit} disabled={loading}>
+          <Button type="submit" className="mt-4 w-full" size="lg" disabled={loading}>
             {mode === 'login' ? 'Sign in' : 'Register'}
           </Button>
 
@@ -152,12 +188,12 @@ export default function LoginPage({
             <button
               type="button"
               className="font-semibold text-[#6f4f8b] hover:underline underline-offset-4 dark:text-[#d4c0ea]"
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+              onClick={toggleMode}
             >
               {mode === 'login' ? 'Sign up' : 'Sign in'}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

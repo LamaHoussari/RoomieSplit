@@ -8,6 +8,7 @@ export interface Chore {
   created_by: string;
   is_completed: boolean;
   created_at: string;
+  archived_at?: string | null;
   profiles?: { name: string };
 }
 

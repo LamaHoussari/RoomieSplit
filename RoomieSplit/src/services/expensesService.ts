@@ -22,24 +22,40 @@ export async function createExpense(expense: NewExpense, splits: NewExpenseSplit
     return { data, error: splitError };
 }
 
-export async function getExpensesByGroup(groupId: string) {
-    return await supabase
+export async function getExpensesByGroup(groupId: string, archived = false) {
+    let query = supabase
         .from("expenses")
         .select("*, profiles:payer_id(name), expense_splits(*, profiles:user_id(name))")
-        .eq("group_id", groupId)
+        .eq("group_id", groupId);
+
+    query = archived
+        ? query.not("archived_at", "is", null)
+        : query.is("archived_at", null);
+
+    return await query
         .order("date", { ascending: false });
 }
 
-export async function getExpensesByGroups(groupIds: string[]) {
-    return await supabase
+export async function getExpensesByGroups(groupIds: string[], archived = false) {
+    let query = supabase
         .from("expenses")
         .select("*, profiles:payer_id(name), expense_splits(*, profiles:user_id(name))")
-        .in("group_id", groupIds)
+        .in("group_id", groupIds);
+
+    query = archived
+        ? query.not("archived_at", "is", null)
+        : query.is("archived_at", null);
+
+    return await query
         .order("date", { ascending: false });
 }
 
 export async function deleteExpense(expenseId: string) {
     return await supabase.from("expenses").delete().eq("id", expenseId);
+}
+
+export async function setExpenseArchivedAt(expenseId: string, archivedAt: string | null) {
+    return await supabase.from("expenses").update({ archived_at: archivedAt }).eq("id", expenseId);
 }
 
 export async function updateExpense(expenseId: string, updates: Partial<NewExpense>) {

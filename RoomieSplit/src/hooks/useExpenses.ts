@@ -4,6 +4,7 @@ import {
   areSplitConfigsEqual,
   getSplitTotal,
   hasRecordedSettlementPayments,
+  isSettlementSettled,
   roundCurrency,
 } from "../lib/finance";
 import {
@@ -11,6 +12,7 @@ import {
   deleteExpense as deleteExpenseService,
   getExpensesByGroup,
   getExpensesByGroups,
+  setExpenseArchivedAt,
   updateExpense,
   updateExpenseWithSplits,
 } from "../services/expensesService";
@@ -18,9 +20,16 @@ import {
   createSettlement,
   deleteSettlementsByExpense,
   getSettlementsByExpense,
+  setSettlementsArchivedAt,
 } from "../services/settlementService";
 
-export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
+const SUCCESS_MESSAGE_DURATION_MS = 2200;
+
+export function useExpenses(
+  groupId: string | null,
+  allGroupIds?: string[],
+  showArchived = false,
+) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -68,6 +77,22 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     return null;
   }
 
+  function getOwingSplitUserIds(
+    expense: Pick<Expense, "payer_id" | "expense_splits">,
+  ) {
+    return [
+      ...new Set(
+        (expense.expense_splits ?? [])
+          .filter(
+            (split) =>
+              split.user_id !== expense.payer_id &&
+              roundCurrency(split.share_amount ?? 0) > 0,
+          )
+          .map((split) => split.user_id),
+      ),
+    ];
+  }
+
   async function syncExpenseSettlements(
     expense: Pick<Expense, "id" | "group_id" | "payer_id" | "created_by">,
     splits: NewExpenseSplit[],
@@ -113,8 +138,8 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     setError("");
 
     const { data, error } = groupId
-      ? await getExpensesByGroup(groupId)
-      : await getExpensesByGroups(allGroupIds!);
+      ? await getExpensesByGroup(groupId, showArchived)
+      : await getExpensesByGroups(allGroupIds!, showArchived);
 
     if (error) {
       setError(error.message);
@@ -132,7 +157,17 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     }
 
     loadExpensesWrapper();
-  }, [groupId, allGroupIds?.join()]);
+  }, [groupId, allGroupIds?.join(), showArchived]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessMessage("");
+    }, SUCCESS_MESSAGE_DURATION_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [successMessage]);
 
   async function addExpense(expense: NewExpense, splits: NewExpenseSplit[]) {
     setError("");
@@ -141,7 +176,7 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     const normalizedExpense = {
       ...expense,
       amount: roundCurrency(expense.amount),
-      is_paid: Boolean(expense.is_paid),
+      is_paid: expense.is_paid ?? true,
     };
     const normalizedSplits = normalizeSplits(splits);
     const validationError = validateExpenseSplits(
@@ -221,6 +256,112 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     }
 
     setSuccessMessage("Expense deleted.");
+    await loadExpenses();
+    return true;
+  }
+
+  async function archiveExpense(expenseId: string) {
+    setError("");
+    setSuccessMessage("");
+
+    const expense = expenses.find((item) => item.id === expenseId);
+    if (!expense) {
+      setError("Expense not found.");
+      return false;
+    }
+
+    const { data: linkedSettlements, error: linkedError } =
+      await getSettlementsByExpense(expenseId);
+
+    if (linkedError) {
+      setError(linkedError.message);
+      return false;
+    }
+
+    if (!expense.is_paid) {
+      setError("Only settled expenses can be archived.");
+      return false;
+    }
+
+    const owingSplitUserIds = getOwingSplitUserIds(expense);
+    const settlementsByUserId = new Map(
+      (linkedSettlements ?? []).map((settlement) => [
+        settlement.from_user_id,
+        settlement,
+      ]),
+    );
+    const hasUnsettledBalances = owingSplitUserIds.some((userId) => {
+      const settlement = settlementsByUserId.get(userId);
+      return !settlement || !isSettlementSettled(settlement);
+    });
+
+    if (hasUnsettledBalances) {
+      setError("Settle all linked balances before archiving this expense.");
+      return false;
+    }
+
+    const archivedAt = new Date().toISOString();
+    const linkedSettlementIds = (linkedSettlements ?? []).map(
+      (settlement) => settlement.id,
+    );
+
+    const { error: expenseError } = await setExpenseArchivedAt(expenseId, archivedAt);
+    if (expenseError) {
+      setError(expenseError.message);
+      return false;
+    }
+
+    const { error: settlementError } = await setSettlementsArchivedAt(
+      linkedSettlementIds,
+      archivedAt,
+    );
+    if (settlementError) {
+      await setExpenseArchivedAt(expenseId, null);
+      setError(settlementError.message);
+      return false;
+    }
+
+    setSuccessMessage("Expense archived.");
+    await loadExpenses();
+    return true;
+  }
+
+  async function unarchiveExpense(expenseId: string) {
+    setError("");
+    setSuccessMessage("");
+
+    const expense = expenses.find((item) => item.id === expenseId);
+    if (!expense) {
+      setError("Expense not found.");
+      return false;
+    }
+
+    const previousArchivedAt = expense.archived_at ?? new Date().toISOString();
+    const { data: linkedSettlements, error: linkedError } =
+      await getSettlementsByExpense(expenseId, "archived");
+
+    if (linkedError) {
+      setError(linkedError.message);
+      return false;
+    }
+
+    const { error: expenseError } = await setExpenseArchivedAt(expenseId, null);
+    if (expenseError) {
+      setError(expenseError.message);
+      return false;
+    }
+
+    const { error: settlementError } = await setSettlementsArchivedAt(
+      (linkedSettlements ?? []).map((settlement) => settlement.id),
+      null,
+    );
+    if (settlementError) {
+      await setExpenseArchivedAt(expenseId, previousArchivedAt);
+      setError(settlementError.message);
+      return false;
+    }
+
+    setSuccessMessage("Expense restored.");
     await loadExpenses();
     return true;
   }
@@ -403,6 +544,8 @@ export function useExpenses(groupId: string | null, allGroupIds?: string[]) {
     error,
     successMessage,
     addExpense,
+    archiveExpense,
+    unarchiveExpense,
     removeExpense,
     editExpense,
     togglePaid,

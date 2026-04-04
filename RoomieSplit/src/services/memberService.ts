@@ -51,7 +51,5 @@ export async function getMembersByGroups(groupIds: string[]) {
 }
 
 export async function removeMember(memberId: string) {
-  const q = await supabase.from("group_members").delete().eq("id", memberId);
-  console.log("removeMember", { memberId, q });
   return await supabase.from("group_members").delete().eq("id", memberId);
 }

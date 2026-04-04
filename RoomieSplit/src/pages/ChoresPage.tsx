@@ -19,8 +19,18 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   const { groups } = useGroups(userId);
   const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
+  const [showArchived, setShowArchived] = useState(false);
 
-  const { chores, addChore, removeChore, toggleChore } = useChores(groupId, allGroupIds);
+  const {
+    chores,
+    error,
+    successMessage,
+    addChore,
+    archiveChore,
+    unarchiveChore,
+    removeChore,
+    toggleChore,
+  } = useChores(groupId, allGroupIds, showArchived);
   const { members } = useMembers(groupId, allGroupIds);
 
   const currentMember = members.find(member => member.user_id === userId);
@@ -29,6 +39,8 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null);
+  const [confirmUnarchiveId, setConfirmUnarchiveId] = useState<string | null>(null);
 
   const [choreName, setChoreName] = useState('');
   const [choreFrequency, setChoreFrequency] = useState('Daily');
@@ -41,6 +53,8 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   });
 
   const choreToRemove = chores.find(chore => chore.id === confirmRemoveId);
+  const choreToArchive = chores.find(chore => chore.id === confirmArchiveId);
+  const choreToUnarchive = chores.find(chore => chore.id === confirmUnarchiveId);
 
   const handleAddChore = async () => {
     if (!choreName.trim() || !groupId) return;
@@ -65,12 +79,24 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
     setConfirmRemoveId(null);
   };
 
+  const handleArchiveChore = async () => {
+    if (!confirmArchiveId) return;
+    const success = await archiveChore(confirmArchiveId);
+    if (success) setConfirmArchiveId(null);
+  };
+
+  const handleUnarchiveChore = async () => {
+    if (!confirmUnarchiveId) return;
+    const success = await unarchiveChore(confirmUnarchiveId);
+    if (success) setConfirmUnarchiveId(null);
+  };
+
   return (
     <>
       <PageHeader
         title="Chores"
-        subtitle="Track household tasks and assignments"
-        actions={
+        subtitle={showArchived ? 'Archived household tasks' : 'Track household tasks and assignments'}
+        filters={
           <>
             <div className="w-44">
               <Select
@@ -93,38 +119,91 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                 <option value="completed">Completed</option>
               </Select>
             </div>
-            <div className="group/add relative">
-              <Button size="sm" onClick={() => setShowModal(true)} disabled={!groupId}>+ Add chore</Button>
-              {!groupId && (
-                <span className="pointer-events-none absolute -bottom-9 right-0 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/add:opacity-100 dark:bg-gray-700">
-                  Select a group first
-                </span>
-              )}
-            </div>
+          </>
+        }
+        actions={
+          <>
+            <Button
+              variant={showArchived ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setShowArchived(current => !current)}
+            >
+              {showArchived ? 'Back to active' : 'See archived'}
+            </Button>
+            {!showArchived && (
+              <div className="group/add relative">
+                <Button size="sm" onClick={() => setShowModal(true)} disabled={!groupId}>+ Add chore</Button>
+                {!groupId && (
+                  <span className="pointer-events-none absolute -bottom-9 right-0 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/add:opacity-100 dark:bg-gray-700">
+                    Select a group first
+                  </span>
+                )}
+              </div>
+            )}
           </>
         }
       />
 
-      <Card className="overflow-hidden">
+      {(error || successMessage) && (
+        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
+          error
+            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
+            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
+        }`}>
+          {error || successMessage}
+        </div>
+      )}
+
+      {showArchived && (
+        <h2 className="mb-4 text-lg font-display font-semibold text-amber-700 dark:text-amber-300">
+          Archived Chores
+        </h2>
+      )}
+
+      <Card
+        className={`overflow-hidden ${
+          showArchived
+            ? 'border-amber-200/80 bg-amber-50/55 dark:border-amber-900/30 dark:bg-amber-950/10'
+            : ''
+        }`}
+      >
         <div className="-mx-2">
           {visibleChores.map(chore => (
             <div
               key={chore.id}
-              className="flex flex-col gap-4 rounded-2xl px-2 py-4 transition-colors hover:bg-stone-100/80 dark:hover:bg-white/5 sm:flex-row sm:items-center"
+              className={`flex flex-col gap-4 rounded-2xl px-2 py-4 transition-colors sm:flex-row sm:items-center ${
+                showArchived
+                  ? 'hover:bg-amber-50/80 dark:hover:bg-amber-950/10'
+                  : 'hover:bg-stone-100/80 dark:hover:bg-white/5'
+              }`}
             >
               <div className="flex min-w-0 items-center gap-4">
                 <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl
-                  ${chore.is_completed
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200'
-                    : 'bg-stone-200/80 text-stone-700 dark:bg-slate-800 dark:text-slate-200'}`}
+                  ${showArchived
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-200'
+                    : chore.is_completed
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200'
+                      : 'bg-stone-200/80 text-stone-700 dark:bg-slate-800 dark:text-slate-200'}`}
                 >
                   <span className="text-lg">{chore.icon || (chore.is_completed ? '✓' : '•')}</span>
                 </span>
                 <div className="min-w-0">
-                  <p className={`truncate text-base font-semibold ${chore.is_completed ? 'text-stone-500 line-through dark:text-slate-400' : 'text-stone-900 dark:text-slate-100'}`}>
+                  <p className={`truncate text-base font-semibold ${
+                    showArchived
+                      ? 'text-stone-700 dark:text-amber-50'
+                      : chore.is_completed
+                        ? 'text-stone-500 line-through dark:text-slate-400'
+                        : 'text-stone-900 dark:text-slate-100'
+                  }`}>
                     {chore.name}
                   </p>
-                  <p className="mt-0.5 text-sm text-stone-500 dark:text-slate-400">{chore.frequency}</p>
+                  <p className={`mt-0.5 text-sm ${
+                    showArchived
+                      ? 'text-amber-700/80 dark:text-amber-100/75'
+                      : 'text-stone-500 dark:text-slate-400'
+                  }`}>
+                    {chore.frequency}
+                  </p>
                 </div>
               </div>
 
@@ -136,30 +215,72 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                   {chore.is_completed ? <Badge variant="green">Completed</Badge> : <Badge variant="orange">Pending</Badge>}
                 </div>
 
-                <button
-                  type="button"
-                  title={chore.is_completed ? 'Mark undone' : 'Mark done'}
-                  onClick={() => toggleChore(chore.id, !chore.is_completed)}
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-150
-                    ${chore.is_completed
-                      ? 'border-emerald-500 bg-emerald-500 text-white hover:border-emerald-600 hover:bg-emerald-600'
-                      : 'border-stone-300 bg-white text-transparent hover:border-stone-500 dark:border-slate-600 dark:bg-transparent dark:hover:border-slate-400'
-                    }`}
-                >
-                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-3 w-3">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
-                  </svg>
-                </button>
+                {(() => {
+                  const canManageChore = isAdmin || chore.created_by === userId;
 
-                {(isAdmin || chore.created_by === userId) && (
+                  return !showArchived ? (
+                    <>
+                      <button
+                        type="button"
+                        title={canManageChore ? 'Archive' : 'Only the chore creator can archive this chore'}
+                        onClick={canManageChore ? () => setConfirmArchiveId(chore.id) : undefined}
+                        disabled={!canManageChore}
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                          canManageChore
+                            ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20'
+                            : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
+                        }`}
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5h14M5 4.5h10a1 1 0 0 1 1 1v2H4v-2a1 1 0 0 1 1-1Zm0 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7m-7 3h4" />
+                        </svg>
+                      </button>
+
+                      {(isAdmin || chore.created_by === userId) && (
+                        <button
+                          type="button"
+                          title="Remove"
+                          onClick={() => setConfirmRemoveId(chore.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30"
+                        >
+                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l8 8M14 6l-8 8" />
+                          </svg>
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      title={canManageChore ? 'Unarchive' : 'Only the chore creator or an admin can unarchive this chore'}
+                      onClick={canManageChore ? () => setConfirmUnarchiveId(chore.id) : undefined}
+                      disabled={!canManageChore}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                        canManageChore
+                          ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
+                          : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
+                      }`}
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 13V5m0 0-3 3m3-3 3 3M4 13.5v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1" />
+                      </svg>
+                    </button>
+                  );
+                })()}
+
+                {!showArchived && (
                   <button
                     type="button"
-                    title="Remove"
-                    onClick={() => setConfirmRemoveId(chore.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30"
+                    title={chore.is_completed ? 'Mark undone' : 'Mark done'}
+                    onClick={() => toggleChore(chore.id, !chore.is_completed)}
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-150
+                      ${chore.is_completed
+                        ? 'border-emerald-500 bg-emerald-500 text-white hover:border-emerald-600 hover:bg-emerald-600'
+                        : 'border-stone-300 bg-white text-transparent hover:border-stone-500 dark:border-slate-600 dark:bg-transparent dark:hover:border-slate-400'
+                      }`}
                   >
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l8 8M14 6l-8 8" />
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-3 w-3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
                     </svg>
                   </button>
                 )}
@@ -207,6 +328,34 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
             <Button variant="danger" size="sm" onClick={handleRemoveChore}>
               Remove
             </Button>
+          </div>
+        </Modal>
+      )}
+
+      {choreToArchive && (
+        <Modal title="Archive chore?" onClose={() => setConfirmArchiveId(null)}>
+          <p className="text-base text-stone-600 dark:text-slate-300">
+            This will hide{' '}
+            <span className="font-semibold text-stone-900 dark:text-slate-100">"{choreToArchive.name}"</span>{' '}
+            from the active chore list.
+          </p>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setConfirmArchiveId(null)}>Cancel</Button>
+            <Button size="sm" onClick={handleArchiveChore}>Archive</Button>
+          </div>
+        </Modal>
+      )}
+
+      {choreToUnarchive && (
+        <Modal title="Restore chore?" onClose={() => setConfirmUnarchiveId(null)}>
+          <p className="text-base text-stone-600 dark:text-slate-300">
+            This will move{' '}
+            <span className="font-semibold text-stone-900 dark:text-slate-100">"{choreToUnarchive.name}"</span>{' '}
+            back into the active chore list.
+          </p>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setConfirmUnarchiveId(null)}>Cancel</Button>
+            <Button size="sm" onClick={handleUnarchiveChore}>Unarchive</Button>
           </div>
         </Modal>
       )}

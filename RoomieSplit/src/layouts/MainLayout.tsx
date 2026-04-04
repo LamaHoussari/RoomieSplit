@@ -14,39 +14,27 @@ export default function MainLayout({ onSignOut, user }: { onSignOut: () => Promi
     }
   });
   const location = useLocation();
-  const isFlatBackground = location.pathname === '/dashboard' || location.pathname === '/admin';
-  const showPageGlow = !isFlatBackground;
 
   useEffect(() => {
     localStorage.setItem('rs_sidebar_collapsed', JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
   return (
-    <div
-      className={`relative min-h-screen flex flex-col transition-colors duration-200 ${
-        isFlatBackground ? 'bg-stone-50 dark:bg-slate-950' : 'bg-transparent'
-      }`}
-    >
-      {showPageGlow && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(111,79,139,0.08),_transparent_28%)] dark:bg-[radial-gradient(circle_at_top,_rgba(156,132,186,0.12),_transparent_22%)]"
-        />
-      )}
+    <div className="relative flex h-screen flex-col overflow-hidden bg-stone-50 transition-colors duration-200 dark:bg-slate-950">
+      <Navbar onMenuClick={() => setSidebarOpen(true)} user={user} />
 
-      <Navbar onSignOut={onSignOut} onMenuClick={() => setSidebarOpen(true)} user={user} />
-
-      <div className="relative flex flex-1 min-h-0">
+      <div className="relative flex flex-1 min-h-0 w-full overflow-hidden">
         <Sidebar
           user={user}
+          onSignOut={onSignOut}
           mobileOpen={sidebarOpen}
           setMobileOpen={setSidebarOpen}
           collapsed={sidebarOpen ? false : sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed(c => !c)}
         />
 
-        <main className="relative flex-1 min-w-0 overflow-y-auto p-5 transition-[filter] duration-200 sm:p-6 md:p-10">
-          <div key={location.pathname} className="animate-slide-up-soft">
+        <main className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
+          <div key={location.pathname} className="h-full overflow-y-auto p-5 animate-slide-up-soft sm:p-6 md:p-10">
             <Outlet />
           </div>
         </main>

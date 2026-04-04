@@ -37,10 +37,41 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
   const isAdmin = currentMember?.role === 'admin';
   const { expenses } = useExpenses(groupId);
   const { settlements } = useSettlements(groupId);
+  const currentBalance = computeMemberBalance(userId, settlements);
+  const hasAnotherAdmin = members.some(
+    member => member.user_id !== userId && member.role === 'admin',
+  );
+  const canLeaveGroup = Boolean(
+    currentMember &&
+    currentBalance === 0 &&
+    (!isAdmin || hasAnotherAdmin),
+  );
+  const leaveDisabledReason = !currentMember
+    ? 'You are not a member of this group.'
+    : currentBalance !== 0
+      ? 'Settle your balance before leaving the group.'
+      : isAdmin && !hasAnotherAdmin
+        ? members.length === 1
+          ? 'Delete the group instead of leaving it.'
+          : 'Assign another admin before leaving the group.'
+        : '';
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const totalSettled = settlements.reduce((sum, settlement) => sum + Number(settlement.paid || 0), 0);
   const formatMoney = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+  const handleLeaveGroup = async () => {
+    if (!currentMember || !canLeaveGroup) return;
+    if (!confirm(`Leave "${group?.name ?? 'this group'}"?`)) return;
+
+    const { error } = await removeMember(currentMember.id);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    navigate('/groups');
+  };
 
   return (
     <>
@@ -167,6 +198,33 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
               {group?.code ?? '-'}
             </div>
           </div>
+
+          {currentMember && (
+            <div className="mt-6 border-t border-stone-200/80 pt-5 dark:border-slate-800">
+              <p className="text-sm font-medium text-stone-500 dark:text-slate-400">Membership</p>
+              <p className="mt-2 text-sm text-stone-500 dark:text-slate-400">
+                {isAdmin
+                  ? 'You are managing this group as an admin.'
+                  : 'You can leave this group once your balance is settled.'}
+              </p>
+              <div className="mt-4">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleLeaveGroup}
+                  disabled={!canLeaveGroup}
+                  title={leaveDisabledReason || 'Leave group'}
+                >
+                  Leave Group
+                </Button>
+              </div>
+              {!canLeaveGroup && leaveDisabledReason && (
+                <p className="mt-2 text-xs font-medium text-stone-500 dark:text-slate-400">
+                  {leaveDisabledReason}
+                </p>
+              )}
+            </div>
+          )}
         </Card>
       </div>
 

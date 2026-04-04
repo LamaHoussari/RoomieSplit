@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
 import {
-  getSettlementPaidAmount,
   getSettlementRemaining,
+  isSettlementSettled,
   roundCurrency,
 } from "../lib/finance";
 import type { NewSettlement, Settlement } from "../types/Settlement";
-import { createSettlement, getSettlementsByGroup, getSettlementsByGroups, updateSettlement as updateSettlementService } from "../services/settlementService";
+import {
+  createSettlement,
+  getSettlementsByGroup,
+  getSettlementsByGroups,
+  recordSettlementPayment as recordSettlementPaymentService,
+  setSettlementArchivedAt,
+} from "../services/settlementService";
 
-export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
+export function useSettlements(
+  groupId: string | null,
+  allGroupIds?: string[],
+  showArchived = false,
+) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -23,8 +33,8 @@ export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
     setError("");
 
     const { data, error } = groupId
-      ? await getSettlementsByGroup(groupId)
-      : await getSettlementsByGroups(allGroupIds!);
+      ? await getSettlementsByGroup(groupId, showArchived)
+      : await getSettlementsByGroups(allGroupIds!, showArchived);
 
     if (error) {
       setError(error.message);
@@ -42,7 +52,7 @@ export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
       await loadSettlements();
     }
     loadSettlementsWrapper();
-  }, [groupId, allGroupIds?.join()]);
+  }, [groupId, allGroupIds?.join(), showArchived]);
 
   async function addSettlement(settlement: NewSettlement) {
     setError("");
@@ -84,9 +94,18 @@ export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
     return true;
   }
 
-  async function recordPayment(settlement: Settlement, paymentAmount: number) {
+  async function recordPayment(
+    settlement: Settlement,
+    paymentAmount: number,
+    actingUserId: string,
+  ) {
     setError("");
     setSuccessMessage("");
+
+    if (settlement.from_user_id !== actingUserId) {
+      setError("Only the member who owes this balance can record its payment.");
+      return false;
+    }
 
     const amount = roundCurrency(paymentAmount);
     const remaining = getSettlementRemaining(settlement);
@@ -101,15 +120,60 @@ export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
       return false;
     }
 
-    const { error } = await updateSettlementService(settlement.id, {
-      paid: roundCurrency(getSettlementPaidAmount(settlement) + amount),
-    });
+    const { error } = await recordSettlementPaymentService(settlement.id, amount);
 
     if (error) {
       setError(error.message);
       return false;
     }
+
     setSuccessMessage("Payment recorded.");
+    await loadSettlements();
+    return true;
+  }
+
+  async function archiveSettlement(settlementId: string) {
+    setError("");
+    setSuccessMessage("");
+
+    const settlement = settlements.find((item) => item.id === settlementId);
+    if (!settlement) {
+      setError("Balance not found.");
+      return false;
+    }
+
+    if (!isSettlementSettled(settlement)) {
+      setError("Only settled balances can be archived.");
+      return false;
+    }
+
+    const { error } = await setSettlementArchivedAt(
+      settlementId,
+      new Date().toISOString(),
+    );
+
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+
+    setSuccessMessage("Balance archived.");
+    await loadSettlements();
+    return true;
+  }
+
+  async function unarchiveSettlement(settlementId: string) {
+    setError("");
+    setSuccessMessage("");
+
+    const { error } = await setSettlementArchivedAt(settlementId, null);
+
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+
+    setSuccessMessage("Balance restored.");
     await loadSettlements();
     return true;
   }
@@ -120,6 +184,8 @@ export function useSettlements(groupId: string | null, allGroupIds?: string[]) {
     error,
     successMessage,
     addSettlement,
+    archiveSettlement,
+    unarchiveSettlement,
     recordPayment,
   };
 }

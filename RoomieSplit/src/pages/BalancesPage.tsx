@@ -34,17 +34,22 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const { groups } = useGroups(userId);
   const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
+  const [showArchived, setShowArchived] = useState(false);
 
   const { members } = useMembers(groupId, allGroupIds);
   const {
     settlements,
     error,
     successMessage,
+    archiveSettlement,
+    unarchiveSettlement,
     recordPayment,
     addSettlement,
-  } = useSettlements(groupId, allGroupIds);
+  } = useSettlements(groupId, allGroupIds, showArchived);
 
   const [payTarget, setPayTarget] = useState<Settlement | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Settlement | null>(null);
+  const [unarchiveTarget, setUnarchiveTarget] = useState<Settlement | null>(null);
   const [payAmount, setPayAmount] = useState('');
   const [showNewSettlement, setShowNewSettlement] = useState(false);
   const [newFrom, setNewFrom] = useState('');
@@ -52,6 +57,9 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const [newAmount, setNewAmount] = useState('');
 
   const openPay = (settlement: Settlement) => {
+    if (settlement.from_user_id !== userId) {
+      return;
+    }
     setPayTarget(settlement);
     setPayAmount(String(getSettlementRemaining(settlement)));
   };
@@ -64,8 +72,20 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       alert(`Amount exceeds the remaining balance of $${formatMoney(remaining)}.`);
       return;
     }
-    const success = await recordPayment(payTarget, amount);
+    const success = await recordPayment(payTarget, amount, userId);
     if (success) setPayTarget(null);
+  };
+
+  const submitArchive = async () => {
+    if (!archiveTarget) return;
+    const success = await archiveSettlement(archiveTarget.id);
+    if (success) setArchiveTarget(null);
+  };
+
+  const submitUnarchive = async () => {
+    if (!unarchiveTarget) return;
+    const success = await unarchiveSettlement(unarchiveTarget.id);
+    if (success) setUnarchiveTarget(null);
   };
 
   const submitNewSettlement = async () => {
@@ -88,18 +108,45 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
     }
   };
 
+  const currentMember = groupId
+    ? members.find(member => member.user_id === userId)
+    : null;
+  const isAdmin = currentMember?.role === 'admin';
+  const canManageSettlement = (settlement: Settlement) =>
+    isAdmin ||
+    settlement.created_by === userId ||
+    settlement.from_user_id === userId ||
+    settlement.to_user_id === userId;
+  const canPaySettlement = (settlement: Settlement) =>
+    settlement.from_user_id === userId;
+
   return (
     <>
       <PageHeader
         title="Balances"
-        subtitle={chosenGroup ? (groups.find(group => group.id === chosenGroup)?.name ?? 'Select a group') : 'All Groups'}
-        actions={
+        subtitle={showArchived
+          ? chosenGroup
+            ? `${groups.find(group => group.id === chosenGroup)?.name ?? 'Selected group'} archived balances`
+            : 'Archived balances'
+          : chosenGroup
+            ? (groups.find(group => group.id === chosenGroup)?.name ?? 'Select a group')
+            : 'All Groups'}
+        filters={
           <div className="w-44">
             <Select value={chosenGroup} onChange={e => setChosenGroup(e.target.value)} className="py-2.5 text-sm">
               <option value="">All Groups</option>
               {groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
             </Select>
           </div>
+        }
+        actions={
+          <Button
+            variant={showArchived ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setShowArchived(current => !current)}
+          >
+            {showArchived ? 'Back to active' : 'See archived'}
+          </Button>
         }
       />
 
@@ -113,40 +160,71 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
         </div>
       )}
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {members.map(member => {
-          const balance = computeMemberBalance(member.user_id, settlements);
-          const name = member.profiles?.name ?? 'Unknown';
-          return (
-            <div
-              key={member.id}
-              className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] transition-shadow hover:shadow-[0_24px_56px_-34px_rgba(28,25,23,0.5)] dark:border-slate-800/70 dark:bg-slate-900/78 sm:p-7"
-            >
-              <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">{name}</p>
-              <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-900 dark:text-slate-100'}`}>
-                {balance > 0 ? '+' : balance < 0 ? '-' : ''}${formatMoney(balance)}
-              </p>
-              <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'all settled'}</p>
-            </div>
-          );
-        })}
-      </div>
+      {showArchived && (
+        <h2 className="mb-4 text-lg font-display font-semibold text-amber-700 dark:text-amber-300">
+          Archived Balances
+        </h2>
+      )}
 
-      <Card title="Settlement Plan" className="overflow-hidden">
+      {!showArchived && (
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {members.map(member => {
+            const balance = computeMemberBalance(member.user_id, settlements);
+            const name = member.profiles?.name ?? 'Unknown';
+            return (
+              <div
+                key={member.id}
+                className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] transition-shadow hover:shadow-[0_24px_56px_-34px_rgba(28,25,23,0.5)] dark:border-slate-800/70 dark:bg-slate-900/78 sm:p-7"
+              >
+                <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">{name}</p>
+                <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-900 dark:text-slate-100'}`}>
+                  {balance > 0 ? '+' : balance < 0 ? '-' : ''}${formatMoney(balance)}
+                </p>
+                <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'all settled'}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Card
+        title="Settlement Plan"
+        className={`overflow-hidden ${
+          showArchived
+            ? 'border-amber-200/80 bg-amber-50/55 dark:border-amber-900/30 dark:bg-amber-950/10'
+            : ''
+        }`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-base">
             <colgroup>
               <col className="w-32" />
               <col className="w-32" />
+              <col className="w-56" />
               <col className="w-28" />
               <col className="w-36" />
               <col className="w-28" />
               <col className="w-20" />
-              <col className="w-12" />
+              <col className="w-24" />
             </colgroup>
             <thead>
-              <tr className="border-b border-stone-200/80 bg-stone-100/70 dark:border-slate-800 dark:bg-slate-800/60">
-                {['From', 'To', 'Amount', 'Paid', 'Status', 'Source', ''].map((header, i) => (
+              <tr
+                className={`border-b ${
+                  showArchived
+                    ? 'border-amber-200/80 bg-amber-100/70 dark:border-amber-900/30 dark:bg-amber-950/20'
+                    : 'border-stone-200/80 bg-stone-100/70 dark:border-slate-800 dark:bg-slate-800/60'
+                }`}
+              >
+                {[
+                  'From',
+                  'To',
+                  'For',
+                  'Amount',
+                  'Paid',
+                  'Status',
+                  'Source',
+                  '',
+                ].map((header, i) => (
                   <th
                     key={header || i}
                     className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400"
@@ -161,10 +239,20 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                 const settled = isSettlementSettled(settlement);
                 const fromName = settlement.from_profile?.name ?? 'Unknown';
                 const toName = settlement.to_profile?.name ?? 'Unknown';
+                const expenseTitle = settlement.expense?.description?.trim() || '-';
+                const archiveAllowed = canManageSettlement(settlement) && settled;
                 return (
-                  <tr key={settlement.id} className="border-b border-stone-200/60 transition-colors last:border-0 hover:bg-stone-100/70 dark:border-slate-800/50 dark:hover:bg-white/5">
+                  <tr
+                    key={settlement.id}
+                    className={`border-b transition-colors last:border-0 ${
+                      showArchived
+                        ? 'border-amber-100/90 hover:bg-amber-50/80 dark:border-amber-950/20 dark:hover:bg-amber-950/10'
+                        : 'border-stone-200/60 hover:bg-stone-100/70 dark:border-slate-800/50 dark:hover:bg-white/5'
+                    }`}
+                  >
                     <td className="px-4 py-4"><Badge variant="red">{fromName}</Badge></td>
                     <td className="px-4 py-4"><Badge variant="purple">{toName}</Badge></td>
+                    <td className="px-4 py-4 text-sm font-medium text-stone-600 dark:text-slate-300">{expenseTitle}</td>
                     <td className="px-4 py-4 font-semibold text-stone-900 dark:text-slate-100">${formatMoney(settlement.amount)}</td>
                     <td className="whitespace-nowrap px-4 py-4 text-stone-500 dark:text-slate-400">${formatMoney(settlement.paid)} / ${formatMoney(settlement.amount)}</td>
                     <td className="px-4 py-4">
@@ -176,18 +264,60 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                         : <Badge variant="violet">External</Badge>}
                     </td>
                     <td className="px-4 py-4">
-                      {!settled && (
-                        <button
-                          type="button"
-                          onClick={() => openPay(settlement)}
-                          title="Record payment"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
-                        >
-                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2 7h16M2 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2M2 7v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M6 11h.01M10 11h.01" />
-                          </svg>
-                        </button>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {!showArchived && !settled && (
+                          <button
+                            type="button"
+                            onClick={() => openPay(settlement)}
+                            title={canPaySettlement(settlement) ? 'Record payment' : 'Only the member who owes this balance can pay it'}
+                            disabled={!canPaySettlement(settlement)}
+                            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                              canPaySettlement(settlement)
+                                ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
+                                : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
+                            }`}
+                          >
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2 7h16M2 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2M2 7v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M6 11h.01M10 11h.01" />
+                            </svg>
+                          </button>
+                        )}
+                        {showArchived ? (
+                          <button
+                            type="button"
+                            onClick={canManageSettlement(settlement) ? () => setUnarchiveTarget(settlement) : undefined}
+                            title={canManageSettlement(settlement) ? 'Unarchive' : 'Only members involved in this balance or an admin can unarchive it'}
+                            disabled={!canManageSettlement(settlement)}
+                            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                              canManageSettlement(settlement)
+                                ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
+                                : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
+                            }`}
+                          >
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 13V5m0 0-3 3m3-3 3 3M4 13.5v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1" />
+                            </svg>
+                          </button>
+                        ) : (
+                          canManageSettlement(settlement) && (
+                            <button
+                              type="button"
+                              onClick={() => setArchiveTarget(settlement)}
+                              title={archiveAllowed ? 'Archive' : 'Only settled balances can be archived'}
+                              disabled={!archiveAllowed}
+                              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                                archiveAllowed
+                                  ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20'
+                                  : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
+                              }`}
+                            >
+                              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5h14M5 4.5h10a1 1 0 0 1 1 1v2H4v-2a1 1 0 0 1 1-1Zm0 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7m-7 3h4" />
+                              </svg>
+                            </button>
+                          )
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -198,16 +328,18 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       </Card>
 
       <div className="mt-4">
-        <div className="group/settle relative inline-block">
-          <Button size="sm" onClick={() => { setShowNewSettlement(true); setNewFrom(''); setNewTo(''); setNewAmount(''); }} disabled={!groupId}>
-            + New Settlement
-          </Button>
-          {!groupId && (
-            <span className="pointer-events-none absolute -bottom-9 left-0 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/settle:opacity-100 dark:bg-gray-700">
-              Select a group first
-            </span>
-          )}
-        </div>
+        {!showArchived && (
+          <div className="group/settle relative inline-block">
+            <Button size="sm" onClick={() => { setShowNewSettlement(true); setNewFrom(''); setNewTo(''); setNewAmount(''); }} disabled={!groupId}>
+              + New Settlement
+            </Button>
+            {!groupId && (
+              <span className="pointer-events-none absolute -bottom-9 left-0 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/settle:opacity-100 dark:bg-gray-700">
+                Select a group first
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {showNewSettlement && (
@@ -295,6 +427,52 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setPayTarget(null)}>Cancel</Button>
             <Button size="sm" onClick={submitPay}>Confirm payment</Button>
+          </div>
+        </Modal>
+      )}
+
+      {archiveTarget && (
+        <Modal title="Archive balance?" onClose={() => setArchiveTarget(null)}>
+          <p className="text-base text-stone-600 dark:text-slate-300">
+            This will hide the balance from{' '}
+            <span className="font-semibold text-stone-900 dark:text-slate-100">
+              {archiveTarget.from_profile?.name ?? 'Unknown'}
+            </span>{' '}
+            to{' '}
+            <span className="font-semibold text-stone-900 dark:text-slate-100">
+              {archiveTarget.to_profile?.name ?? 'Unknown'}
+            </span>
+            .
+          </p>
+          <div className="mt-3 rounded-2xl bg-stone-100/70 px-4 py-3 text-sm text-stone-500 dark:bg-slate-800/60 dark:text-slate-400">
+            For: {archiveTarget.expense?.description?.trim() || 'Manual balance'}
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setArchiveTarget(null)}>Cancel</Button>
+            <Button size="sm" onClick={submitArchive}>Archive</Button>
+          </div>
+        </Modal>
+      )}
+
+      {unarchiveTarget && (
+        <Modal title="Restore balance?" onClose={() => setUnarchiveTarget(null)}>
+          <p className="text-base text-stone-600 dark:text-slate-300">
+            This will move the balance from{' '}
+            <span className="font-semibold text-stone-900 dark:text-slate-100">
+              {unarchiveTarget.from_profile?.name ?? 'Unknown'}
+            </span>{' '}
+            to{' '}
+            <span className="font-semibold text-stone-900 dark:text-slate-100">
+              {unarchiveTarget.to_profile?.name ?? 'Unknown'}
+            </span>{' '}
+            back into the active list.
+          </p>
+          <div className="mt-3 rounded-2xl bg-stone-100/70 px-4 py-3 text-sm text-stone-500 dark:bg-slate-800/60 dark:text-slate-400">
+            For: {unarchiveTarget.expense?.description?.trim() || 'Manual balance'}
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setUnarchiveTarget(null)}>Cancel</Button>
+            <Button size="sm" onClick={submitUnarchive}>Unarchive</Button>
           </div>
         </Modal>
       )}

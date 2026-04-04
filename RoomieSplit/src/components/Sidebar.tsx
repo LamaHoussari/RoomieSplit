@@ -78,6 +78,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 
 interface SidebarProps {
   user: AppUser;
+  onSignOut: () => Promise<boolean>;
   mobileOpen?: boolean;
   setMobileOpen?: (open: boolean) => void;
   collapsed?: boolean;
@@ -86,6 +87,7 @@ interface SidebarProps {
 
 export default function Sidebar({
   user,
+  onSignOut,
   mobileOpen = false,
   setMobileOpen,
   collapsed = false,
@@ -93,6 +95,8 @@ export default function Sidebar({
 }: SidebarProps) {
   const closeMobile = () => setMobileOpen?.(false);
   const navItems = user.isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
+  const displayName = user.name?.trim() || user.email || 'Roomie';
+  const userLabel = user.isAdmin ? 'Admin session' : 'Welcome back';
 
   return (
     <>
@@ -107,7 +111,7 @@ export default function Sidebar({
         className={[
           'fixed inset-y-0 left-0 z-50',
           'md:static md:inset-auto md:z-auto',
-          'md:h-screen md:min-h-screen',
+          'h-full',
           collapsed ? 'w-20' : 'w-64',
           'flex flex-col flex-shrink-0',
           'border-r border-stone-200/80 bg-white/78 shadow-[0_20px_48px_-36px_rgba(28,25,23,0.5)] backdrop-blur-xl',
@@ -176,6 +180,55 @@ export default function Sidebar({
             </NavLink>
           ))}
         </nav>
+
+        <div className={['border-t border-stone-200/80 p-3 dark:border-slate-800/80', collapsed ? 'px-2' : 'px-3'].join(' ')}>
+          {collapsed ? (
+            <div className="flex flex-col items-center gap-2">
+              <div
+                title={displayName}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#6f4f8b]/12 text-sm font-bold text-[#6f4f8b] dark:bg-[#6f4f8b]/20 dark:text-[#d4c0ea]"
+              >
+                {(displayName[0] ?? 'R').toUpperCase()}
+              </div>
+              <button
+                type="button"
+                onClick={onSignOut}
+                title="Sign out"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-red-200/70 bg-red-50/70 text-red-700 transition hover:bg-red-50 hover:text-red-800 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-950/30"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H3m0 0 3-3m-3 3 3 3" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <div className="mx-auto flex w-full max-w-[208px] flex-col justify-center gap-3">
+              <div className="w-full text-left">
+                <p className="text-sm font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500">
+                  {userLabel}
+                </p>
+                <p className="mt-1 truncate text-base font-semibold text-stone-900 dark:text-slate-100">
+                  {displayName}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200/70 bg-red-50/70 px-3 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 hover:text-red-800
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-950/30 dark:focus-visible:ring-offset-slate-950"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H3m0 0 3-3m-3 3 3 3" />
+                </svg>
+                <span>Sign out</span>
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );

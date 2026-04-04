@@ -3,18 +3,17 @@ import { useTheme } from '../context/ThemeContext';
 import type { AppUser } from '../types/auth';
 
 type NavProps = {
-  onSignOut: () => Promise<boolean>;
   onMenuClick?: () => void;
   user: AppUser;
 };
 
-export default function Navbar({ onSignOut, onMenuClick, user }: NavProps) {
+export default function Navbar({ onMenuClick, user }: NavProps) {
   const { dark, toggle } = useTheme();
   const homePath = user.isAdmin ? '/admin' : '/dashboard';
 
   return (
-    <header className="sticky top-0 z-30 border-b border-stone-200/70 bg-white/72 backdrop-blur-xl shadow-sm shadow-stone-900/5 dark:border-slate-800/70 dark:bg-slate-950/78 dark:shadow-black/20">
-      <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
+    <header className="relative z-30 h-16 shrink-0 border-b border-stone-200/70 bg-white/72 backdrop-blur-xl shadow-sm shadow-stone-900/5 dark:border-slate-800/70 dark:bg-slate-950/78 dark:shadow-black/20">
+      <div className="flex h-full items-center justify-between gap-3 px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -35,22 +34,6 @@ export default function Navbar({ onSignOut, onMenuClick, user }: NavProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="inline-flex items-center gap-2 rounded-2xl border border-red-200/70 bg-red-50/70 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 hover:text-red-800
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white
-            dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-950/30 dark:focus-visible:ring-offset-slate-950"
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H3m0 0 3-3m-3 3 3 3" />
-            </svg>
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
-
           <button
             type="button"
             onClick={toggle}

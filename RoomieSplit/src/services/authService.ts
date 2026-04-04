@@ -1,56 +1,27 @@
 import { supabase } from "../lib/supabaseClient";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
-function normalizeEmailAddress(email: string) {
-    return email.trim().toLowerCase();
-}
-
-async function ensureProfileForUser(user: { id: string; email?: string | null }) {
-    const normalizedEmail = user.email?.trim().toLowerCase();
-
-    if (!normalizedEmail) {
-        return { error: null };
-    }
-
-    return await supabase.from("profiles").upsert({
-        id: user.id,
-        name: normalizedEmail.split("@")[0],
-        email: normalizedEmail,
-    });
-}
-
 export async function signUpWithEmail(email: string, password: string) {
-    const normalizedEmail = normalizeEmailAddress(email);
-    const result = await supabase.auth.signUp({ email: normalizedEmail, password });
-
-    if (result.error || !result.data.user || !result.data.session) {
-        return result;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error || !data.user) {
+        return { data, error };
     }
 
-    const { error } = await ensureProfileForUser(result.data.user);
+    const { error: profileError } = await supabase.from("profiles").upsert({
+        id: data.user.id,
+        name: email.split("@")[0],
+        email,
+    });
 
-    if (error) {
-        return { data: result.data, error };
+    if (profileError) {
+        return { data, error: profileError };
     }
 
-    return result;
+    return { data, error: null };
 }
 
 export async function signInWithEmail(email: string, password: string) {
-    const normalizedEmail = normalizeEmailAddress(email);
-    const result = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
-
-    if (result.error || !result.data.user) {
-        return result;
-    }
-
-    const { error } = await ensureProfileForUser(result.data.user);
-
-    if (error) {
-        return { data: result.data, error };
-    }
-
-    return result;
+    return await supabase.auth.signInWithPassword({ email, password });
 }
 
 export async function signOutUser() {
@@ -58,16 +29,19 @@ export async function signOutUser() {
 }
 
 export async function getCurrentUser() {
-    const { data, error } = await supabase.auth.getSession();
+    return await supabase.auth.getUser();
+}
 
-    if (error) {
-        return { data: { user: null }, error };
-    }
+export async function getCurrentSession() {
+    return await supabase.auth.getSession();
+}
 
-    return {
-        data: { user: data.session?.user ?? null },
-        error: null,
-    };
+export async function requestPasswordReset(email: string, redirectTo: string) {
+    return await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+}
+
+export async function updateUserPassword(password: string) {
+    return await supabase.auth.updateUser({ password });
 }
 
 export function subscribeToAuthChanges(

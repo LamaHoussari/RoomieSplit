@@ -64,7 +64,7 @@ export default function DashboardPage({ userId, chosenGroup, setChosenGroup }: D
       <PageHeader
         title="Dashboard"
         subtitle={name ? `Welcome, ${name}. Overview of your shared expenses.` : 'Overview of your shared expenses.'}
-        actions={
+        filters={
           <div className="w-44">
             <Select value={chosenGroup} onChange={e => setChosenGroup(e.target.value)} className="py-2.5 text-sm">
               <option value="">All Groups</option>

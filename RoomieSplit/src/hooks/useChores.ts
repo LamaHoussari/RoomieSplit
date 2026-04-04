@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import type { NewChore, Chore } from "../types/Chore";
-import { createChore, getChoresByGroup, getChoresByGroups, updateChore as updateChoreService, deleteChore as deleteChoreService } from "../services/choreService";
+import {
+  createChore,
+  deleteChore as deleteChoreService,
+  getChoresByGroup,
+  getChoresByGroups,
+  setChoreArchivedAt,
+  updateChore as updateChoreService,
+} from "../services/choreService";
 
-export function useChores(groupId: string | null, allGroupIds?: string[]) {
+export function useChores(
+  groupId: string | null,
+  allGroupIds?: string[],
+  showArchived = false,
+) {
   const [chores, setChores] = useState<Chore[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -18,8 +29,8 @@ export function useChores(groupId: string | null, allGroupIds?: string[]) {
     setError("");
 
     const { data, error } = groupId
-      ? await getChoresByGroup(groupId)
-      : await getChoresByGroups(allGroupIds!);
+      ? await getChoresByGroup(groupId, showArchived)
+      : await getChoresByGroups(allGroupIds!, showArchived);
 
     if (error) {
       setError(error.message);
@@ -37,7 +48,7 @@ export function useChores(groupId: string | null, allGroupIds?: string[]) {
       await loadChores();
     }
     loadChoresWrapper();
-  }, [groupId, allGroupIds?.join()]);
+  }, [groupId, allGroupIds?.join(), showArchived]);
 
   async function addChore(chore: NewChore) {
     setError("");
@@ -70,6 +81,36 @@ export function useChores(groupId: string | null, allGroupIds?: string[]) {
     return true;
   }
 
+  async function archiveChore(choreId: string) {
+    setError("");
+    setSuccessMessage("");
+
+    const { error } = await setChoreArchivedAt(choreId, new Date().toISOString());
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+
+    setSuccessMessage("Chore archived.");
+    await loadChores();
+    return true;
+  }
+
+  async function unarchiveChore(choreId: string) {
+    setError("");
+    setSuccessMessage("");
+
+    const { error } = await setChoreArchivedAt(choreId, null);
+    if (error) {
+      setError(error.message);
+      return false;
+    }
+
+    setSuccessMessage("Chore restored.");
+    await loadChores();
+    return true;
+  }
+
   async function toggleChore(choreId: string, isCompleted: boolean) {
     setError("");
     const { error } = await updateChoreService(choreId, { is_completed: isCompleted });
@@ -87,6 +128,8 @@ export function useChores(groupId: string | null, allGroupIds?: string[]) {
     error,
     successMessage,
     addChore,
+    archiveChore,
+    unarchiveChore,
     removeChore,
     toggleChore,
   };

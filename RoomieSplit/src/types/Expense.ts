@@ -8,6 +8,7 @@ export interface Expense {
   date: string;
   is_paid: boolean;
   created_at: string;
+  archived_at?: string | null;
   profiles?: { name: string };
   expense_splits?: ExpenseSplit[];
 }

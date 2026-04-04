@@ -17,15 +17,6 @@ import {
   storeAdminSession,
 } from "../lib/adminAuth";
 
-function formatAuthError(error: {
-  message: string;
-  code?: string;
-  status?: number;
-}) {
-  const details = [error.code, error.status].filter(Boolean).join(" / ");
-  return details ? `${error.message} [${details}]` : error.message;
-}
-
 function mapUser(
   user: { id: string; email?: string | null } | null,
 ): AppUser | null {
@@ -46,6 +37,11 @@ export function useAuth() {
   const [error, setError] = useState("");
   const [successMessage, setsuccessMessage] = useState("");
 
+  function clearFeedback() {
+    setError("");
+    setsuccessMessage("");
+  }
+
   useEffect(() => {
     async function loadUser() {
       setLoading(true);
@@ -53,7 +49,7 @@ export function useAuth() {
       const { data, error } = await getCurrentUser();
 
       if (error) {
-        setError(formatAuthError(error));
+        setError(error.message);
         setLoading(false);
         return;
       }
@@ -78,16 +74,12 @@ export function useAuth() {
       setError("This email is reserved for the admin dashboard.");
       return false;
     }
-    const { data, error } = await signUpWithEmail(email, passowrd);
+    const { error } = await signUpWithEmail(email, passowrd);
     if (error) {
-      setError(formatAuthError(error));
+      setError(error.message);
       return false;
     }
-    setsuccessMessage(
-      data.session
-        ? "Account created and signed in."
-        : "Account created. Check your email to confirm it, then sign in.",
-    );
+    setsuccessMessage("Account created successfully!!!");
     return true;
   }
 
@@ -113,7 +105,7 @@ export function useAuth() {
 
     const { error } = await signInWithEmail(email, passowrd);
     if (error) {
-      setError(formatAuthError(error));
+      setError(error.message);
       return false;
     }
     setsuccessMessage("Signed in successfully!!!");
@@ -128,13 +120,13 @@ export function useAuth() {
     if (user?.authSource === "local-admin" || localAdminSession) {
       clearAdminSession();
       setUser(null);
-      setsuccessMessage("Signed out successfully!!!");
+      setsuccessMessage("Signed out successfully!");
       return true;
     }
 
     const { error } = await signOutUser();
     if (error) {
-      setError(formatAuthError(error));
+      setError(error.message);
       return false;
     }
     setsuccessMessage("Signed out successfully!!!");
@@ -146,6 +138,7 @@ export function useAuth() {
     loading,
     error,
     successMessage,
+    clearFeedback,
     signUp,
     signIn,
     signOut,

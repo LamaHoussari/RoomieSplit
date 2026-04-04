@@ -8,6 +8,8 @@ export interface Settlement {
   created_by: string;
   created_at: string;
   expense_id?: string | null;
+  archived_at?: string | null;
+  expense?: { description: string | null } | null;
   from_profile?: { name: string };
   to_profile?: { name: string };
 }

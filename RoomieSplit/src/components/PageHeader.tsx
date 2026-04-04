@@ -1,10 +1,11 @@
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
+  filters?: React.ReactNode;
   actions?: React.ReactNode;
 }
 
-export default function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, filters, actions }: PageHeaderProps) {
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
@@ -16,6 +17,7 @@ export default function PageHeader({ title, subtitle, actions }: PageHeaderProps
             {subtitle}
           </p>
         )}
+        {filters && <div className="mt-4 flex flex-wrap items-center gap-2">{filters}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>

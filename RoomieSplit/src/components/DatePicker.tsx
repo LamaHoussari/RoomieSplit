@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import type { CSSProperties, ReactNode } from 'react';
 
 interface DatePickerProps {
   value: string;
@@ -10,6 +12,18 @@ const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+function CalendarNavButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-700 transition hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function DatePicker({ value, onChange, placeholder = 'Select a date' }: DatePickerProps) {
   const today = new Date();
   const parsed = value ? new Date(value + 'T00:00:00') : null;
@@ -18,20 +32,71 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
   const [view, setView] = useState({ month: (parsed ?? today).getMonth(), year: (parsed ?? today).getFullYear() });
   const [mode, setMode] = useState<'day' | 'month' | 'year'>('day');
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
 
   const yearStart = view.year - 10;
   const years = Array.from({ length: 21 }, (_, i) => yearStart + i);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setMode('day');
-      }
+    if (!open) return;
+
+    const updatePanelPosition = () => {
+      const button = buttonRef.current;
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const panel = panelRef.current;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const panelWidth = Math.min(288, viewportWidth - 24);
+      const desiredPanelHeight = Math.min(panel?.offsetHeight ?? 360, viewportHeight - 24);
+      const left = Math.max(12, Math.min(rect.right - panelWidth, viewportWidth - panelWidth - 12));
+      const gap = 4;
+      const spaceBelow = viewportHeight - rect.bottom - 12;
+      const spaceAbove = rect.top - 12;
+      const openUpwards = spaceAbove >= 180;
+      const availableHeight = Math.max(180, (openUpwards ? spaceAbove : spaceBelow) - gap);
+      const panelHeight = Math.min(desiredPanelHeight, availableHeight);
+      const top = openUpwards
+        ? Math.max(12, rect.top - panelHeight - gap)
+        : Math.min(viewportHeight - panelHeight - 12, rect.bottom + gap);
+
+      setPanelStyle({
+        position: 'fixed',
+        top,
+        left,
+        width: panelWidth,
+        maxHeight: availableHeight,
+        zIndex: 90,
+      });
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        ref.current?.contains(target) ||
+        panelRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+      setMode('day');
+    };
+
+    updatePanelPosition();
+
+    document.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('resize', updatePanelPosition);
+    window.addEventListener('scroll', updatePanelPosition, true);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('resize', updatePanelPosition);
+      window.removeEventListener('scroll', updatePanelPosition, true);
+    };
+  }, [open]);
 
   const firstDay = new Date(view.year, view.month, 1).getDay();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
@@ -67,19 +132,10 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
     ? parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : '';
 
-  const NavBtn = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-700 transition hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-    >
-      {children}
-    </button>
-  );
-
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => {
           setOpen(o => !o);
@@ -98,16 +154,20 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute z-50 mt-2 w-72 rounded-2xl border border-stone-300/80 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-slate-950">
+      {open && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={panelRef}
+          style={panelStyle}
+          className="rounded-2xl border border-stone-300/80 bg-white p-4 shadow-[0_24px_60px_-28px_rgba(28,25,23,0.42)] dark:border-slate-700 dark:bg-slate-950"
+        >
           {mode === 'day' && (
             <>
               <div className="mb-3 flex items-center justify-between">
-                <NavBtn onClick={previousMonth}>
+                <CalendarNavButton onClick={previousMonth}>
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z" />
                   </svg>
-                </NavBtn>
+                </CalendarNavButton>
 
                 <div className="flex items-center gap-1">
                   <button
@@ -126,11 +186,11 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
                   </button>
                 </div>
 
-                <NavBtn onClick={nextMonth}>
+                <CalendarNavButton onClick={nextMonth}>
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z" />
                   </svg>
-                </NavBtn>
+                </CalendarNavButton>
               </div>
 
               <div className="mb-1 grid grid-cols-7">
@@ -169,11 +229,11 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
           {mode === 'month' && (
             <>
               <div className="mb-3 flex items-center justify-between">
-                <NavBtn onClick={() => setView(v => ({ ...v, year: v.year - 1 }))}>
+                <CalendarNavButton onClick={() => setView(v => ({ ...v, year: v.year - 1 }))}>
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z" />
                   </svg>
-                </NavBtn>
+                </CalendarNavButton>
                 <button
                   type="button"
                   onClick={() => setMode('year')}
@@ -181,11 +241,11 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
                 >
                   {view.year}
                 </button>
-                <NavBtn onClick={() => setView(v => ({ ...v, year: v.year + 1 }))}>
+                <CalendarNavButton onClick={() => setView(v => ({ ...v, year: v.year + 1 }))}>
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z" />
                   </svg>
-                </NavBtn>
+                </CalendarNavButton>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -214,19 +274,19 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
           {mode === 'year' && (
             <>
               <div className="mb-3 flex items-center justify-between">
-                <NavBtn onClick={() => setView(v => ({ ...v, year: v.year - 21 }))}>
+                <CalendarNavButton onClick={() => setView(v => ({ ...v, year: v.year - 21 }))}>
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1 0 1.06L9.06 10l3.73 3.71a.75.75 0 1 1-1.06 1.06l-4.25-4.24a.75.75 0 0 1 0-1.06l4.25-4.24a.75.75 0 0 1 1.06 0Z" />
                   </svg>
-                </NavBtn>
+                </CalendarNavButton>
                 <span className="text-sm font-semibold text-stone-900 dark:text-slate-100">
                   {yearStart} - {yearStart + 20}
                 </span>
-                <NavBtn onClick={() => setView(v => ({ ...v, year: v.year + 21 }))}>
+                <CalendarNavButton onClick={() => setView(v => ({ ...v, year: v.year + 21 }))}>
                   <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 0-1.06L10.94 10 7.21 6.29a.75.75 0 1 1 1.06-1.06l4.25 4.24a.75.75 0 0 1 0 1.06l-4.25 4.24a.75.75 0 0 1-1.06 0Z" />
                   </svg>
-                </NavBtn>
+                </CalendarNavButton>
               </div>
 
               <div className="grid max-h-48 grid-cols-3 gap-2 overflow-y-auto">
@@ -251,7 +311,8 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
               </div>
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

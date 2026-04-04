@@ -5,18 +5,30 @@ export async function createChore(chore: NewChore) {
     return await supabase.from("chores").insert([chore]);
 }
 
-export async function getChoresByGroup(groupId: string) {
-    return await supabase
+export async function getChoresByGroup(groupId: string, archived = false) {
+    let query = supabase
         .from("chores")
         .select("*, profiles:assigned_to(name)")
         .eq("group_id", groupId);
+
+    query = archived
+        ? query.not("archived_at", "is", null)
+        : query.is("archived_at", null);
+
+    return await query;
 }
 
-export async function getChoresByGroups(groupIds: string[]) {
-    return await supabase
+export async function getChoresByGroups(groupIds: string[], archived = false) {
+    let query = supabase
         .from("chores")
         .select("*, profiles:assigned_to(name)")
         .in("group_id", groupIds);
+
+    query = archived
+        ? query.not("archived_at", "is", null)
+        : query.is("archived_at", null);
+
+    return await query;
 }
 
 export async function updateChore(choreId: string, updates: Partial<NewChore & { is_completed: boolean }>) {
@@ -25,4 +37,8 @@ export async function updateChore(choreId: string, updates: Partial<NewChore & {
 
 export async function deleteChore(choreId: string) {
     return await supabase.from("chores").delete().eq("id", choreId);
+}
+
+export async function setChoreArchivedAt(choreId: string, archivedAt: string | null) {
+    return await supabase.from("chores").update({ archived_at: archivedAt }).eq("id", choreId);
 }

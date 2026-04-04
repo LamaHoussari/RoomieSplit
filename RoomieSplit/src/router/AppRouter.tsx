@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout      from '../layouts/MainLayout';
 import LoginPage       from '../pages/LoginPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
 import DashboardPage   from '../pages/DashboardPage';
 import GroupsPage      from '../pages/GroupsPage';
@@ -22,6 +24,7 @@ function AnimatedRoutes() {
     loading, // auth loading state
     error, // auth error
     successMessage, // auth success feedback
+    clearFeedback, // clear auth feedback
     signUp, // signup action
     signIn, // signin action
     signOut, // signout action
@@ -31,6 +34,8 @@ function AnimatedRoutes() {
     <div className="page-transition">
       <Routes>
         <Route path="/" element={<Navigate to={user ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} replace />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/login" element={user ? (
           <Navigate to={user.isAdmin ? "/admin" : "/dashboard"} replace />
         ) : (
@@ -39,6 +44,7 @@ function AnimatedRoutes() {
             onSignIn={signIn}
             error={error}
             successMessage={successMessage}
+            onClearFeedback={clearFeedback}
             loading={loading}
           />
         )} />
