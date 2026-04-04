@@ -32,6 +32,12 @@ export function useAdminDashboard() {
     fetchData();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(""), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
+
   return {
     snapshot,
     loading,

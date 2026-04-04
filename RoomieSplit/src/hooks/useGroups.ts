@@ -44,6 +44,18 @@ export function useGroups(userId: string | null) {
     loadGroupsWrapper();
   }, [userId]);
 
+  useEffect(() => {
+    if (!successMessage) return;
+    const id = setTimeout(() => setSuccessMessage(""), 4000);
+    return () => clearTimeout(id);
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(""), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
+
   // Adds a new group
   async function addGroup(group: NewGroup) {
     setError("");

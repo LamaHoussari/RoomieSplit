@@ -50,6 +50,18 @@ export function useChores(
     loadChoresWrapper();
   }, [groupId, allGroupIds?.join(), showArchived]);
 
+  useEffect(() => {
+    if (!successMessage) return;
+    const id = setTimeout(() => setSuccessMessage(""), 4000);
+    return () => clearTimeout(id);
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(""), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
+
   async function addChore(chore: NewChore) {
     setError("");
     setSuccessMessage("");

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import Button from './Button';
 import {
@@ -34,6 +34,18 @@ export default function InviteMemberModal({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [codeCopied, setCodeCopied] = useState(false);
+
+  useEffect(() => {
+    if (!success) return;
+    const id = setTimeout(() => setSuccess(''), 4000);
+    return () => clearTimeout(id);
+  }, [success]);
+
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(''), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
 
   async function handleInviteByEmail(e: React.FormEvent) {
     e.preventDefault();

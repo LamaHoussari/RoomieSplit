@@ -67,6 +67,12 @@ export function useAuth() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(""), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
   async function signUp(email: string, passowrd: string) {
     setError("");
     setsuccessMessage("");

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AppUser } from '../types/auth';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
@@ -43,6 +43,18 @@ export default function ProfilePage({ user }: { user: AppUser }) {
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+
+  useEffect(() => {
+    if (!pwSuccess) return;
+    const id = setTimeout(() => setPwSuccess(''), 4000);
+    return () => clearTimeout(id);
+  }, [pwSuccess]);
+
+  useEffect(() => {
+    if (!pwError) return;
+    const id = setTimeout(() => setPwError(''), 5000);
+    return () => clearTimeout(id);
+  }, [pwError]);
 
   const isDirty =
     draft.name !== saved.name ||

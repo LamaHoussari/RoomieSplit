@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import AuthShell from '../components/AuthShell';
@@ -11,6 +11,18 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const id = setTimeout(() => setSuccessMessage(''), 4000);
+    return () => clearTimeout(id);
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(''), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

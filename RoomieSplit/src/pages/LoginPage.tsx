@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
@@ -27,6 +27,12 @@ export default function LoginPage({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
+
+  useEffect(() => {
+    if (!localError) return;
+    const id = setTimeout(() => setLocalError(''), 5000);
+    return () => clearTimeout(id);
+  }, [localError]);
 
   const navigate = useNavigate();
 
