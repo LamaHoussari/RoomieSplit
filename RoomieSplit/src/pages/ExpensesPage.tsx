@@ -240,6 +240,8 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
 
   const [showModal, setShowModal] = useState(false);
   const [expenseFilter, setExpenseFilter] = useState('all');
+  const [sortKey, setSortKey] = useState<'title' | 'payer' | 'date' | 'amount'>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<ExpenseDraft>({ title: '', amount: '', payer: '', date: '', splitUserIds: [] });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -269,6 +271,25 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
     if (expenseFilter === 'scheduled') return isScheduledExpense(expense);
     return true;
   });
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
+
+  const sortedExpenses = useMemo(() => {
+    const sorted = [...visibleExpenses].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'title': cmp = (a.description ?? '').localeCompare(b.description ?? ''); break;
+        case 'payer': cmp = (a.profiles?.name ?? '').localeCompare(b.profiles?.name ?? ''); break;
+        case 'date': cmp = (a.date ?? '').localeCompare(b.date ?? ''); break;
+        case 'amount': cmp = Number(a.amount || 0) - Number(b.amount || 0); break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }, [visibleExpenses, sortKey, sortDir]);
   const settlementsByExpenseId = useMemo(() => {
     const grouped = new Map<string, typeof settlements>();
 
@@ -462,26 +483,30 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                 }`}
               >
                 {[
-                  'Title',
-                  'Paid by',
-                  'Date',
-                  'Split',
-                  'Status',
-                  'Amount',
-                  '',
-                ].map((header, i) => (
+                  { label: 'Title', key: 'title' as const },
+                  { label: 'Paid by', key: 'payer' as const },
+                  { label: 'Date', key: 'date' as const },
+                  { label: 'Split', key: null },
+                  { label: 'Status', key: null },
+                  { label: 'Amount', key: 'amount' as const },
+                  { label: '', key: null },
+                ].map((col, i) => (
                   <th
-                    key={header || i}
+                    key={col.label || i}
                     className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400
-                      ${i === 6 ? 'w-[180px] min-w-[180px]' : ''}`}
+                      ${i === 6 ? 'w-[180px] min-w-[180px]' : ''} ${col.key ? 'cursor-pointer select-none hover:text-stone-700 dark:hover:text-slate-200' : ''}`}
+                    onClick={col.key ? () => toggleSort(col.key!) : undefined}
                   >
-                    {header}
+                    {col.label}
+                    {col.key && sortKey === col.key && (
+                      <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    )}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {visibleExpenses.map(expense => {
+              {sortedExpenses.map(expense => {
                 const status = getExpenseStatus(expense, settlementsByExpenseId);
                 const archiveAllowed = canArchiveExpense(expense, settlementsByExpenseId);
 

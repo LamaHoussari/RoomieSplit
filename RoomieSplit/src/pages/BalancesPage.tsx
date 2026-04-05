@@ -127,6 +127,28 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const canPaySettlement = (settlement: Settlement) =>
     settlement.from_user_id === userId;
 
+  const [sortKey, setSortKey] = useState<'from' | 'to' | 'amount' | 'paid' | 'status'>('amount');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
+
+  const sortedSettlements = useMemo(() => {
+    return [...settlements].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'from': cmp = (a.from_profile?.name ?? '').localeCompare(b.from_profile?.name ?? ''); break;
+        case 'to': cmp = (a.to_profile?.name ?? '').localeCompare(b.to_profile?.name ?? ''); break;
+        case 'amount': cmp = Number(a.amount || 0) - Number(b.amount || 0); break;
+        case 'paid': cmp = Number(a.paid || 0) - Number(b.paid || 0); break;
+        case 'status': cmp = (isSettlementSettled(a) ? 1 : 0) - (isSettlementSettled(b) ? 1 : 0); break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [settlements, sortKey, sortDir]);
+
   return (
     <>
       <PageHeader
@@ -223,26 +245,30 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                 }`}
               >
                 {[
-                  'From',
-                  'To',
-                  'For',
-                  'Amount',
-                  'Paid',
-                  'Status',
-                  'Source',
-                  '',
-                ].map((header, i) => (
+                  { label: 'From', key: 'from' as const },
+                  { label: 'To', key: 'to' as const },
+                  { label: 'For', key: null },
+                  { label: 'Amount', key: 'amount' as const },
+                  { label: 'Paid', key: 'paid' as const },
+                  { label: 'Status', key: 'status' as const },
+                  { label: 'Source', key: null },
+                  { label: '', key: null },
+                ].map((col, i) => (
                   <th
-                    key={header || i}
-                    className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400"
+                    key={col.label || i}
+                    className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400 ${col.key ? 'cursor-pointer select-none hover:text-stone-700 dark:hover:text-slate-200' : ''}`}
+                    onClick={col.key ? () => toggleSort(col.key!) : undefined}
                   >
-                    {header}
+                    {col.label}
+                    {col.key && sortKey === col.key && (
+                      <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    )}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {settlements.map(settlement => {
+              {sortedSettlements.map(settlement => {
                 const settled = isSettlementSettled(settlement);
                 const fromName = settlement.from_profile?.name ?? 'Unknown';
                 const toName = settlement.to_profile?.name ?? 'Unknown';

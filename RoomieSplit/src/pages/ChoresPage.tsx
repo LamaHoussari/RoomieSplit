@@ -40,6 +40,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
 
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [choreSort, setChoreSort] = useState('name-asc');
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null);
   const [confirmUnarchiveId, setConfirmUnarchiveId] = useState<string | null>(null);
@@ -53,6 +54,29 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
     if (statusFilter === 'pending') return !chore.is_completed;
     return true;
   });
+
+  const sortedChores = useMemo(() => {
+    const [key, dir] = choreSort.split('-') as [string, string];
+    return [...visibleChores].sort((a, b) => {
+      let cmp = 0;
+      switch (key) {
+        case 'name': cmp = (a.name ?? '').localeCompare(b.name ?? ''); break;
+        case 'frequency': {
+          const order: Record<string, number> = { Daily: 0, Weekly: 1, 'Bi-weekly': 2, Monthly: 3 };
+          cmp = (order[a.frequency] ?? 99) - (order[b.frequency] ?? 99);
+          break;
+        }
+        case 'assignee': {
+          const nameA = members.find(m => m.user_id === a.assigned_to)?.profiles?.name ?? 'zzz';
+          const nameB = members.find(m => m.user_id === b.assigned_to)?.profiles?.name ?? 'zzz';
+          cmp = nameA.localeCompare(nameB);
+          break;
+        }
+        case 'status': cmp = (a.is_completed ? 1 : 0) - (b.is_completed ? 1 : 0); break;
+      }
+      return dir === 'asc' ? cmp : -cmp;
+    });
+  }, [visibleChores, choreSort, members]);
 
   const choreToRemove = chores.find(chore => chore.id === confirmRemoveId);
   const choreToArchive = chores.find(chore => chore.id === confirmArchiveId);
@@ -121,6 +145,21 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                 <option value="completed">Completed</option>
               </Select>
             </div>
+            <div className="w-44">
+              <Select
+                value={choreSort}
+                onChange={e => setChoreSort(e.target.value)}
+                className="py-2.5 text-sm"
+              >
+                <option value="name-asc">Name A–Z</option>
+                <option value="name-desc">Name Z–A</option>
+                <option value="frequency-asc">Frequency ↑</option>
+                <option value="frequency-desc">Frequency ↓</option>
+                <option value="assignee-asc">Assignee A–Z</option>
+                <option value="status-asc">Pending first</option>
+                <option value="status-desc">Completed first</option>
+              </Select>
+            </div>
           </>
         }
         actions={
@@ -177,7 +216,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
               {showArchived ? 'No archived chores.' : 'No chores yet. Add one to get started!'}
             </p>
           ) : (
-          visibleChores.map(chore => (
+          sortedChores.map(chore => (
             <div
               key={chore.id}
               className={`flex flex-col gap-4 rounded-2xl px-2 py-4 transition-colors sm:flex-row sm:items-center ${
