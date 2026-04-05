@@ -31,6 +31,13 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
   const [showLeaveGroupModal, setShowLeaveGroupModal] = useState(false);
   const [selectedNextAdminId, setSelectedNextAdminId] = useState('');
   const [leavingGroup, setLeavingGroup] = useState(false);
+  const [pageFeedback, setPageFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!pageFeedback) return;
+    const id = setTimeout(() => setPageFeedback(null), 5000);
+    return () => clearTimeout(id);
+  }, [pageFeedback]);
 
   useEffect(() => {
     if (!groupId) return;
@@ -80,7 +87,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
       : null;
 
     if (requiresAdminReplacement && !nextAdmin) {
-      alert('Choose a new admin before leaving the group.');
+      setPageFeedback({ type: 'error', message: 'Choose a new admin before leaving the group.' });
       return;
     }
 
@@ -90,7 +97,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
       const { error: promoteError } = await updateMemberRole(nextAdmin.id, 'admin');
       if (promoteError) {
         setLeavingGroup(false);
-        alert(promoteError.message);
+        setPageFeedback({ type: 'error', message: promoteError.message });
         return;
       }
     }
@@ -101,7 +108,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
         await loadMembers();
       }
       setLeavingGroup(false);
-      alert(leaveError.message);
+      setPageFeedback({ type: 'error', message: leaveError.message });
       return;
     }
 
@@ -190,6 +197,16 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
         </Modal>
       )}
 
+      {pageFeedback && (
+        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
+          pageFeedback.type === 'error'
+            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
+            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
+        }`}>
+          {pageFeedback.message}
+        </div>
+      )}
+
       <button
         type="button"
         className="mb-6 inline-flex items-center gap-2 text-base font-semibold text-stone-700 transition-colors hover:text-stone-950 dark:text-slate-300 dark:hover:text-white"
@@ -258,7 +275,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                             onClick={async () => {
                               if (!confirm(`Remove ${memberName} from the group?`)) return;
                               const { error } = await removeMember(member.id);
-                              if (error) alert(error.message);
+                              if (error) setPageFeedback({ type: 'error', message: error.message });
                               else loadMembers();
                             }}
                           >
@@ -342,7 +359,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
               if (!confirm(`Are you sure you want to delete "${group?.name}"? This action cannot be undone.`)) return;
               if (!groupId) return;
               const { error } = await deleteGroup(groupId);
-              if (error) alert(error.message);
+              if (error) setPageFeedback({ type: 'error', message: error.message });
               else navigate('/groups');
             }}
           >

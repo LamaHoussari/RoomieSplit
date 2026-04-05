@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -55,6 +55,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const [newFrom, setNewFrom] = useState('');
   const [newTo, setNewTo] = useState('');
   const [newAmount, setNewAmount] = useState('');
+  const [pageFeedback, setPageFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!pageFeedback) return;
+    const id = setTimeout(() => setPageFeedback(null), 5000);
+    return () => clearTimeout(id);
+  }, [pageFeedback]);
 
   const openPay = (settlement: Settlement) => {
     if (settlement.from_user_id !== userId) {
@@ -69,7 +76,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
     if (!amount || amount <= 0 || !payTarget) return;
     const remaining = getSettlementRemaining(payTarget);
     if (amount > remaining) {
-      alert(`Amount exceeds the remaining balance of $${formatMoney(remaining)}.`);
+      setPageFeedback({ type: 'error', message: `Amount exceeds the remaining balance of $${formatMoney(remaining)}.` });
       return;
     }
     const success = await recordPayment(payTarget, amount, userId);
@@ -150,13 +157,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
         }
       />
 
-      {(error || successMessage) && (
+      {(error || pageFeedback || successMessage) && (
         <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
-          error
+          error || pageFeedback?.type === 'error'
             ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
             : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
         }`}>
-          {error || successMessage}
+          {error || pageFeedback?.message || successMessage}
         </div>
       )}
 
