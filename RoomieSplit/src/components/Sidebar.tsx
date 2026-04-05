@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { SVGProps } from 'react';
 import type { AppUser } from '../types/auth';
 
@@ -105,7 +105,13 @@ export default function Sidebar({
   collapsed = false,
   onToggleCollapsed,
 }: SidebarProps) {
-  const closeMobile = () => setMobileOpen?.(false);
+  const closeMobile = useCallback(() => setMobileOpen?.(false), [setMobileOpen]);
+  const [everOpened, setEverOpened] = useState(false);
+
+  // Track whether mobile menu was ever opened (for closing animation)
+  if (mobileOpen && !everOpened) {
+    setEverOpened(true);
+  }
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -114,7 +120,7 @@ export default function Sidebar({
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [mobileOpen]);
+  }, [mobileOpen, closeMobile]);
 
   const navItems = user.isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
   const displayName = user.name?.trim() || user.email || 'Roomie';
@@ -122,12 +128,13 @@ export default function Sidebar({
 
   return (
     <>
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm md:hidden"
-          onClick={closeMobile}
-        />
-      )}
+      <div
+        className={[
+          'fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm md:hidden',
+          mobileOpen ? 'sidebar-overlay-open' : everOpened ? 'sidebar-overlay-closed' : 'hidden',
+        ].join(' ')}
+        onClick={closeMobile}
+      />
 
       <aside
         className={[
@@ -138,8 +145,12 @@ export default function Sidebar({
           'flex flex-col flex-shrink-0',
           'border-r border-stone-200/80 bg-white/78 shadow-[0_20px_48px_-36px_rgba(28,25,23,0.5)] backdrop-blur-xl',
           'dark:border-slate-800/80 dark:bg-slate-950/78',
-          'transition-[transform,width] duration-200 ease-in-out',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+          'md:transition-[width] md:duration-200 md:ease-in-out',
+          mobileOpen
+            ? 'sidebar-panel-open'
+            : everOpened
+              ? 'sidebar-panel-closed md:!animate-none md:translate-x-0'
+              : '-translate-x-full md:translate-x-0',
         ].join(' ')}
       >
         <div
