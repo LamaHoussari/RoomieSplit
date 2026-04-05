@@ -258,11 +258,17 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   const editFallbackPayer = editMembers[0]?.user_id ?? userId;
 
   useEffect(() => {
-    setAddDraft(draft => sanitizeDraft(draft, addMemberIds, addFallbackPayer));
+    async function updateAddDraft() {
+      setAddDraft(draft => sanitizeDraft(draft, addMemberIds, addFallbackPayer));
+    }
+    updateAddDraft( );
   }, [addMemberIds, addFallbackPayer]);
 
   useEffect(() => {
-    setEditDraft(draft => sanitizeDraft(draft, editMemberIds, editFallbackPayer));
+    async function updateEditDraft() {
+      setEditDraft(draft => sanitizeDraft(draft, editMemberIds, editFallbackPayer));
+    }
+    updateEditDraft();
   }, [editMemberIds, editFallbackPayer]);
 
   const visibleExpenses = expenses.filter(expense => {
