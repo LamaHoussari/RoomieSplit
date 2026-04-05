@@ -218,12 +218,12 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
 
       <div className="mt-4">
         {!showArchived && (
-          <div className="group/settle relative inline-block">
+          <div className="group/settle relative inline-block bottom-2 left-2">
             <Button size="sm" onClick={() => { setShowNewSettlement(true); setNewFrom(''); setNewTo(''); setNewAmount(''); }} disabled={!groupId}>
               + New Settlement
             </Button>
             {!groupId && (
-              <span className="pointer-events-none absolute -bottom-9 left-0 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/settle:opacity-100 dark:bg-gray-700">
+              <span className="pointer-events-none absolute left-38 top-1  whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/settle:opacity-100 dark:bg-gray-700">
                 Select a group first
               </span>
             )}
