@@ -27,7 +27,7 @@ export default function Navbar({ onMenuClick, user }: NavProps) {
           </button>
 
           <NavLink to={homePath} className="group flex min-w-0 items-center gap-3">
-            <span className="truncate font-display text-lg font-extrabold tracking-tight text-stone-900 transition-colors group-hover:text-black dark:text-slate-100 dark:group-hover:text-white">
+            <span className="truncate font-display text-2xl font-extrabold tracking-tight text-stone-900 transition-colors group-hover:text-black dark:text-slate-100 dark:group-hover:text-white">
               Roomie<span className="text-[#6f4f8b] dark:text-[#d4c0ea]">Split</span>
             </span>
           </NavLink>
