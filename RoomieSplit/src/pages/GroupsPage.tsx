@@ -24,7 +24,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
   const [creating, setCreating] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
-  const canCreate = groupName.trim() !== '' && !creating;
+  const canCreate = groupName.trim() !== '' && inviteEmails.length > 0 && !creating;
 
   const handleAddEmail = () => {
     const email = emailInput.trim().toLowerCase();
@@ -211,7 +211,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
           </FormField>
 
           <div className="mt-4">
-            <FormField label="Invite members by email (optional)">
+            <FormField label="Invite members by email">
               <div className="flex gap-2">
                 <Input
                   placeholder="e.g. roomie@email.com"
@@ -233,7 +233,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
               </div>
             </FormField>
             <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">
-              You will be added as the admin automatically. Invite roommates now or later.
+              You will be added as the admin automatically. Add at least one roommate to create the group.
             </p>
             {emailError && (
               <p className="mt-1 text-sm text-red-500">{emailError}</p>
