@@ -5,6 +5,7 @@ import PageHeader from "../components/PageHeader";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import { getSettlementRemaining, roundCurrency } from "../lib/finance";
 import type { AppUser } from "../types/auth";
+import { SkeletonCard } from "../components/Skeleton";
 
 const THIRTY_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 30;
 
@@ -234,6 +235,17 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
       userRows,
     };
   }, [snapshot]);
+
+  if (!metrics && !error) {
+  return (
+    <>
+      <PageHeader eyebrow="" title="Admin Dashboard" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[1,2,3,4].map(i => <SkeletonCard key={i} />)}
+      </div>
+    </>
+  );
+}
 
   return (
     <>
