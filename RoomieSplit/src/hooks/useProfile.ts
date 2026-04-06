@@ -3,16 +3,20 @@ import { supabase } from '../lib/supabaseClient'; // adjust path if needed
 
 export function useProfile(userId: string) {
   const [name, setName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     supabase
       .from('profiles')
-      .select('name')
+      .select('name, avatar_path')
       .eq('id', userId)
       .single()
-      .then(({ data }) => setName(data?.name ?? null));
+      .then(({ data }) => {
+        setName(data?.name ?? null);
+        setAvatarUrl(data?.avatar_path ?? null);
+      });
   }, [userId]);
 
-  return { name };
+  return { name, avatarUrl };
 }

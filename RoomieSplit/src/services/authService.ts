@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabaseClient";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { generateAndUploadAvatar } from "./avatarService";
 
 export async function signUpWithEmail(email: string, password: string) {
     const { data, error } = await supabase.auth.signUp({ email, password });
@@ -7,10 +8,14 @@ export async function signUpWithEmail(email: string, password: string) {
         return { data, error };
     }
 
+    const name = email.split("@")[0];
+    const avatarUrl = await generateAndUploadAvatar(data.user.id, name);
+
     const { error: profileError } = await supabase.from("profiles").upsert({
         id: data.user.id,
-        name: email.split("@")[0],
+        name,
         email,
+        avatar_path: avatarUrl,
     });
 
     if (profileError) {

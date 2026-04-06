@@ -95,6 +95,7 @@ interface SidebarProps {
   setMobileOpen?: (open: boolean) => void;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
+  avatarUrl?: string | null;
 }
 
 export default function Sidebar({
@@ -104,6 +105,7 @@ export default function Sidebar({
   setMobileOpen,
   collapsed = false,
   onToggleCollapsed,
+  avatarUrl,
 }: SidebarProps) {
   const closeMobile = useCallback(() => setMobileOpen?.(false), [setMobileOpen]);
   const [everOpened, setEverOpened] = useState(false);
@@ -217,12 +219,21 @@ export default function Sidebar({
         <div className={['border-t border-stone-200/80 p-3 dark:border-slate-800/80', collapsed ? 'px-2' : 'px-3'].join(' ')}>
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
-              <div
-                title={displayName}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#6f4f8b]/12 text-sm font-bold text-[#6f4f8b] dark:bg-[#6f4f8b]/20 dark:text-[#d4c0ea]"
-              >
-                {(displayName[0] ?? 'R').toUpperCase()}
-              </div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  title={displayName}
+                  className="h-10 w-10 rounded-2xl object-cover"
+                />
+              ) : (
+                <div
+                  title={displayName}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#6f4f8b]/12 text-sm font-bold text-[#6f4f8b] dark:bg-[#6f4f8b]/20 dark:text-[#d4c0ea]"
+                >
+                  {(displayName[0] ?? 'R').toUpperCase()}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={onSignOut}

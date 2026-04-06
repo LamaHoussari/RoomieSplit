@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 import { signInWithEmail, updateUserPassword } from '../services/authService';
+import { useProfile } from '../hooks/useProfile';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
 
@@ -23,6 +24,7 @@ function isValidPhone(value: string): boolean {
 }
 
 export default function ProfilePage({ user }: { user: AppUser }) {
+  const { avatarUrl } = useProfile(user.id);
   const initialState = {
     name: user.name || '',
     email: user.email || '',
@@ -77,9 +79,17 @@ export default function ProfilePage({ user }: { user: AppUser }) {
         {/* Avatar + Display Name */}
         <Card className="lg:col-span-2">
           <div className="flex items-center gap-5">
-            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6f4f8b] to-[#392b48] text-2xl font-bold text-white shadow dark:from-[#a88bc9] dark:to-[#4b365f]">
-              {initials}
-            </div>
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={draft.name || 'Avatar'}
+                className="h-20 w-20 flex-shrink-0 rounded-full object-cover shadow"
+              />
+            ) : (
+              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6f4f8b] to-[#392b48] text-2xl font-bold text-white shadow dark:from-[#a88bc9] dark:to-[#4b365f]">
+                {initials}
+              </div>
+            )}
             <div className="min-w-0">
               <h2 className="truncate text-xl font-semibold text-stone-900 dark:text-slate-100">
                 {draft.name || 'No name set'}

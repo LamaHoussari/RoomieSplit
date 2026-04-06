@@ -3,8 +3,10 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import type { AppUser } from '../types/auth';
+import { useProfile } from '../hooks/useProfile';
 
 export default function MainLayout({ onSignOut, user }: { onSignOut: () => Promise<boolean>; user: AppUser; }) {
+  const { avatarUrl } = useProfile(user.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -31,6 +33,7 @@ export default function MainLayout({ onSignOut, user }: { onSignOut: () => Promi
           setMobileOpen={setSidebarOpen}
           collapsed={sidebarOpen ? false : sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed(c => !c)}
+          avatarUrl={avatarUrl}
         />
 
         <main className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
