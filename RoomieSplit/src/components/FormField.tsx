@@ -102,7 +102,7 @@ export function Select({ value, onChange, children, className = '', disabled }: 
     const left = Math.max(12, Math.min(rect.left, viewportWidth - minWidth - 12));
     const spaceBelow = viewportHeight - rect.bottom - 12;
     const spaceAbove = rect.top - 12;
-    const openUpwards = spaceBelow < 220 && spaceAbove > spaceBelow;
+    const openUpwards = spaceBelow < 999 && spaceAbove > spaceBelow && false;
     const maxHeight = Math.min(320, Math.max(140, openUpwards ? spaceAbove - 8 : spaceBelow - 8));
     const top = openUpwards
       ? Math.max(12, rect.top - maxHeight - 8)

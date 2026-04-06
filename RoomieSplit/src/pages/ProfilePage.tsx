@@ -3,7 +3,7 @@ import type { AppUser } from '../types/auth';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import FormField, { Input } from '../components/FormField';
+import FormField, { Input, Select } from '../components/FormField';
 import { signInWithEmail, updateUserPassword } from '../services/authService';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabaseClient';
@@ -215,24 +215,23 @@ export default function ProfilePage({ user }: { user: AppUser }) {
             )}
           </FormField>
           <FormField label="Preferred Payment Method">
-            {isEditing ? (
-              <select
-                value={draft.paymentMethod}
-                onChange={e => setDraft(d => ({ ...d, paymentMethod: e.target.value }))}
-                className="w-full rounded-xl border border-stone-300/80 bg-white px-4 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition focus:border-[#8c74aa] focus:ring-2 focus:ring-[#8c74aa]/20 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-100 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/20"
-              >
-                <option value="">Select a method</option>
-                {PAYMENT_METHODS.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            ) : (
-              <Input
-                value={draft.paymentMethod || 'Not set'}
-                readOnly
-                className="cursor-default bg-stone-100 dark:bg-slate-800/70"
-              />
-            )}
+             {isEditing ? (
+                <Select
+                  value={draft.paymentMethod}
+                  onChange={e => setDraft(d => ({ ...d, paymentMethod: e.target.value }))}
+                >
+                  <option value="">Select a method</option>
+                  {PAYMENT_METHODS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </Select>
+              ) : (
+                <Input
+                  value={draft.paymentMethod || 'Not set'}
+                  readOnly
+                  className="cursor-default bg-stone-100 dark:bg-slate-800/70"
+                />
+              )}
           </FormField>
 
           <div className="mt-5 flex items-center justify-between gap-3">
