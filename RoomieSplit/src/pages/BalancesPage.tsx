@@ -319,13 +319,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                             onClick={() => openPay(settlement)}
                             title={canPaySettlement(settlement) ? 'Record payment' : 'Only the member who owes this balance can pay it'}
                             disabled={!canPaySettlement(settlement)}
-                            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                               canPaySettlement(settlement)
                                 ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
                                 : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
                             }`}
                           >
-                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M2 7h16M2 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2M2 7v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M6 11h.01M10 11h.01" />
                             </svg>
                           </button>
@@ -336,13 +336,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                             onClick={canManageSettlement(settlement) ? () => setUnarchiveTarget(settlement) : undefined}
                             title={canManageSettlement(settlement) ? 'Unarchive' : 'Only members involved in this balance or an admin can unarchive it'}
                             disabled={!canManageSettlement(settlement)}
-                            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                               canManageSettlement(settlement)
                                 ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
                                 : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
                             }`}
                           >
-                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M10 13V5m0 0-3 3m3-3 3 3M4 13.5v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1" />
                             </svg>
                           </button>
@@ -353,13 +353,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                               onClick={() => setArchiveTarget(settlement)}
                               title={archiveAllowed ? 'Archive' : 'Only settled balances can be archived'}
                               disabled={!archiveAllowed}
-                              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                                 archiveAllowed
                                   ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20'
                                   : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
                               }`}
                             >
-                              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5h14M5 4.5h10a1 1 0 0 1 1 1v2H4v-2a1 1 0 0 1 1-1Zm0 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7m-7 3h4" />
                               </svg>
                             </button>

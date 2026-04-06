@@ -277,13 +277,13 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                         title={canManageChore ? 'Archive' : 'Only the chore creator can archive this chore'}
                         onClick={canManageChore ? () => setConfirmArchiveId(chore.id) : undefined}
                         disabled={!canManageChore}
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                           canManageChore
                             ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20'
                             : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
                         }`}
                       >
-                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5h14M5 4.5h10a1 1 0 0 1 1 1v2H4v-2a1 1 0 0 1 1-1Zm0 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7m-7 3h4" />
                         </svg>
                       </button>
@@ -293,9 +293,9 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                           type="button"
                           title="Remove"
                           onClick={() => setConfirmRemoveId(chore.id)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30"
+                          className="flex h-10 w-10 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30"
                         >
-                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l8 8M14 6l-8 8" />
                           </svg>
                         </button>
@@ -307,13 +307,13 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                       title={canManageChore ? 'Unarchive' : 'Only the chore creator or an admin can unarchive this chore'}
                       onClick={canManageChore ? () => setConfirmUnarchiveId(chore.id) : undefined}
                       disabled={!canManageChore}
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                         canManageChore
                           ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
                           : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
                       }`}
                     >
-                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10 13V5m0 0-3 3m3-3 3 3M4 13.5v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1" />
                       </svg>
                     </button>

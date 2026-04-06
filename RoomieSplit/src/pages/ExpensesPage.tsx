@@ -544,13 +544,13 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                             onClick={canManageExpense(expense) ? () => setConfirmUnarchiveId(expense.id) : undefined}
                             title={canManageExpense(expense) ? 'Unarchive' : 'Only the expense owner or an admin can unarchive this expense'}
                             disabled={!canManageExpense(expense)}
-                            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                               canManageExpense(expense)
                                 ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'
                                 : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
                             }`}
                           >
-                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M10 13V5m0 0-3 3m3-3 3 3M4 13.5v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1" />
                             </svg>
                           </button>
@@ -561,9 +561,9 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                                 type="button"
                                 onClick={() => openEdit(expense)}
                                 title="Edit"
-                                className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+                                className="flex h-10 w-10 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
                               >
-                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.586 3.586a2 2 0 1 1 2.828 2.828L7 15.828 3 17l1.172-4L13.586 3.586Z" />
                                 </svg>
                               </button>
@@ -573,13 +573,13 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                                 onClick={() => setConfirmArchiveId(expense.id)}
                                 title={archiveAllowed ? 'Archive' : 'Settle all balances first'}
                                 disabled={!archiveAllowed}
-                                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                                className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
                                   archiveAllowed
                                     ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20'
                                     : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
                                 }`}
                               >
-                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5h14M5 4.5h10a1 1 0 0 1 1 1v2H4v-2a1 1 0 0 1 1-1Zm0 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7m-7 3h4" />
                                 </svg>
                               </button>
@@ -588,9 +588,9 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                                 type="button"
                                 onClick={() => setConfirmDeleteId(expense.id)}
                                 title="Delete"
-                                className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30"
+                                className="flex h-10 w-10 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30"
                               >
-                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l8 8M14 6l-8 8" />
                                 </svg>
                               </button>
