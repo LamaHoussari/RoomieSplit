@@ -11,6 +11,7 @@ import { useMembers } from '../hooks/useMembers';
 import { useSettlements } from '../hooks/useSettlements';
 import { useProfile } from '../hooks/useProfile';
 import { computeMemberBalance } from '../lib/finance';
+import { Skeleton, SkeletonCard, SkeletonRow } from '../components/Skeleton';
 
 interface StatCardProps {
   label: string;
@@ -45,14 +46,16 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ userId, chosenGroup, setChosenGroup }: DashboardPageProps) {
   const navigate = useNavigate();
-  const { groups } = useGroups(userId);
+  const { groups, loading: groupsLoading } = useGroups(userId);
   const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
   const { name } = useProfile(userId);
 
-  const { expenses } = useExpenses(groupId, allGroupIds);
-  const { members } = useMembers(groupId, allGroupIds);
-  const { settlements } = useSettlements(groupId, allGroupIds);
+  const { expenses, loading: expensesLoading } = useExpenses(groupId, allGroupIds);
+  const { members, loading: membersLoading } = useMembers(groupId, allGroupIds);
+  const { settlements, loading: settlementsLoading } = useSettlements(groupId, allGroupIds);
+
+  const dataLoading = groupsLoading || expensesLoading || membersLoading || settlementsLoading;
 
   const totalSpend = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const myBalance = computeMemberBalance(userId, settlements);
@@ -74,6 +77,24 @@ export default function DashboardPage({ userId, chosenGroup, setChosenGroup }: D
         }
       />
 
+      {dataLoading ? (
+        <>
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+              <Skeleton className="mb-4 h-5 w-32" />
+              {Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}
+            </div>
+            <div className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+              <Skeleton className="mb-4 h-5 w-24" />
+              {Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={myBalance > 0 ? 'You are owed' : myBalance < 0 ? 'You owe' : 'You are settled'}
@@ -160,6 +181,8 @@ export default function DashboardPage({ userId, chosenGroup, setChosenGroup }: D
           </div>
         </Card>
       </div>
+        </>
+      )}
     </>
   );
 }

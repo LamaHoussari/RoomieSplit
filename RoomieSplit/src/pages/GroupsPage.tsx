@@ -6,13 +6,14 @@ import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { lookupUserByEmail, addMemberByEmail, sendInviteEmail } from '../services/inviteService';
+import { SkeletonCard } from '../components/Skeleton';
 
 interface GroupsPageProps {
   userId: string;
 }
 
 export default function GroupsPage({ userId }: GroupsPageProps) {
-  const { groups, error, successMessage, addGroup, joinGroup } = useGroups(userId);
+  const { groups, loading, error, successMessage, addGroup, joinGroup } = useGroups(userId);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const navigate = useNavigate();
@@ -151,6 +152,10 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
       )}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} className="min-h-[140px]" />)
+        ) : (
+          <>
         {groups.map(group => (
           <div
             key={group.id}
@@ -197,6 +202,8 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
             + Create new group
           </span>
         </div>
+          </>
+        )}
       </div>
 
       {showCreate && (

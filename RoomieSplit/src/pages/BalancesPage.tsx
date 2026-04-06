@@ -14,6 +14,7 @@ import {
   getSettlementRemaining,
   isSettlementSettled,
 } from '../lib/finance';
+import { SkeletonCard, SkeletonTableRow } from '../components/Skeleton';
 
 const memberHue = (name: string) => {
   let hue = 0;
@@ -31,14 +32,15 @@ interface BalancesPageProps {
 }
 
 export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: BalancesPageProps) {
-  const { groups } = useGroups(userId);
+  const { groups, loading: groupsLoading } = useGroups(userId);
   const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
   const [showArchived, setShowArchived] = useState(false);
 
-  const { members } = useMembers(groupId, allGroupIds);
+  const { members, loading: membersLoading } = useMembers(groupId, allGroupIds);
   const {
     settlements,
+    loading: settlementsLoading,
     error,
     successMessage,
     archiveSettlement,
@@ -196,6 +198,11 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       )}
 
       {!showArchived && (
+        (groupsLoading || membersLoading) ? (
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : (
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {members.map(member => {
             const balance = computeMemberBalance(member.user_id, settlements);
@@ -214,6 +221,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             );
           })}
         </div>
+        )
       )}
 
       <div className="mt-4">
@@ -283,7 +291,10 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
               </tr>
             </thead>
             <tbody>
-              {sortedSettlements.map(settlement => {
+              {settlementsLoading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={8} />)
+              ) : (
+              sortedSettlements.map(settlement => {
                 const settled = isSettlementSettled(settlement);
                 const fromName = settlement.from_profile?.name ?? 'Unknown';
                 const toName = settlement.to_profile?.name ?? 'Unknown';
@@ -369,7 +380,8 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                     </td>
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
         </div>

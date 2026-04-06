@@ -14,6 +14,7 @@ import type { GroupMember } from '../types/Member';
 import type { Settlement } from '../types/Settlement';
 import DatePicker from '../components/DatePicker';
 import { isSettlementSettled, roundCurrency, splitAmountEvenly } from '../lib/finance';
+import { SkeletonCard, SkeletonTableRow } from '../components/Skeleton';
 
 interface ExpenseDraft {
   title: string;
@@ -219,6 +220,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
 
   const {
     expenses,
+    loading: expensesLoading,
     error,
     successMessage,
     addExpense,
@@ -227,8 +229,10 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
     removeExpense,
     editExpense,
   } = useExpenses(groupId, allGroupIds, showArchived);
-  const { settlements } = useSettlements(groupId, allGroupIds, showArchived);
-  const { members: selectedGroupMembers } = useMembers(groupId);
+  const { settlements, loading: settlementsLoading } = useSettlements(groupId, allGroupIds, showArchived);
+  const { members: selectedGroupMembers, loading: membersLoading } = useMembers(groupId);
+
+  const dataLoading = expensesLoading || settlementsLoading || membersLoading;
   const addMemberIds = useMemo(
     () => new Set(selectedGroupMembers.map(member => member.user_id)),
     [selectedGroupMembers],
@@ -452,6 +456,11 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
       )}
 
       {!showArchived && (
+        dataLoading ? (
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : (
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-3xl border border-stone-200/80 border-l-4 border-l-[#8c74aa]/70 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:border-l-[#b59ad6]/45 dark:bg-slate-900/78">
             <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">Total spend</p>
@@ -469,6 +478,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{expenses.filter(expense => expense.is_paid).length} items</p>
           </div>
         </div>
+        )
       )}
 
       <Card
@@ -512,7 +522,10 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
               </tr>
             </thead>
             <tbody>
-              {sortedExpenses.map(expense => {
+              {dataLoading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={7} />)
+              ) : (
+              sortedExpenses.map(expense => {
                 const status = getExpenseStatus(expense, settlementsByExpenseId);
                 const archiveAllowed = canArchiveExpense(expense, settlementsByExpenseId);
 
@@ -601,7 +614,8 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                     </td>
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
         </div>

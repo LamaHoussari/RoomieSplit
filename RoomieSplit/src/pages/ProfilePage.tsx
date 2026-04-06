@@ -7,6 +7,7 @@ import FormField, { Input } from '../components/FormField';
 import { signInWithEmail, updateUserPassword } from '../services/authService';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabaseClient';
+import { Skeleton } from '../components/Skeleton';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
 
@@ -25,7 +26,7 @@ function isValidPhone(value: string): boolean {
 }
 
 export default function ProfilePage({ user }: { user: AppUser }) {
-  const { profile, avatarUrl } = useProfile(user.id);
+  const { profile, loading: profileLoading, avatarUrl } = useProfile(user.id);
   const initialState = {
     name: user.name || '',
     email: user.email || '',
@@ -89,6 +90,41 @@ export default function ProfilePage({ user }: { user: AppUser }) {
     <>
       <PageHeader title="Profile" subtitle="Manage your account" />
 
+      {profileLoading ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="lg:col-span-2 rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+            <div className="flex items-center gap-5">
+              <Skeleton className="h-20 w-20 !rounded-full" />
+              <div className="flex-1 space-y-3">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-56" />
+              </div>
+            </div>
+          </div>
+          <div className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+            <Skeleton className="mb-4 h-5 w-28" />
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="mb-2 h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+            <Skeleton className="mb-4 h-5 w-20" />
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="mb-2 h-4 w-32" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Avatar + Display Name */}
         <Card className="lg:col-span-2">
@@ -382,6 +418,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
           </form>
         </Card>
       </div>
+      )}
     </>
   );
 }

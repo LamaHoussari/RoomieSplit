@@ -9,6 +9,7 @@ import { useGroups } from '../hooks/useGroups';
 import { useChores } from '../hooks/useChores';
 import { useMembers } from '../hooks/useMembers';
 import { getChoreIcon } from '../lib/choreIcons';
+import { SkeletonRow } from '../components/Skeleton';
 
 interface ChoresPageProps {
   userId: string;
@@ -210,7 +211,9 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
       >
         <div className="-mx-2">
           {loading ? (
-            <p className="py-12 text-center text-sm text-stone-400 dark:text-slate-500">Loading chores…</p>
+            <div className="space-y-2 py-4">
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
+            </div>
           ) : visibleChores.length === 0 ? (
             <p className="py-12 text-center text-sm text-stone-400 dark:text-slate-500">
               {showArchived ? 'No archived chores.' : 'No chores yet. Add one to get started!'}
