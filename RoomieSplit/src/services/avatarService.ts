@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabaseClient";
 import { createAvatar } from "@dicebear/core";
-import { bottts } from "@dicebear/collection";
+import { thumbs } from "@dicebear/collection";
 
 const BUCKET = "profile_images";
 
@@ -8,7 +8,7 @@ export async function generateAndUploadAvatar(
   userId: string,
   seed: string
 ): Promise<string | null> {
-  const avatar = createAvatar(bottts, { seed, size: 128 });
+  const avatar = createAvatar(thumbs, { seed, size: 128 });
   const svg = avatar.toString();
   const blob = new Blob([svg], { type: "image/svg+xml" });
   const filePath = `${userId}/${Date.now()}.svg`;
