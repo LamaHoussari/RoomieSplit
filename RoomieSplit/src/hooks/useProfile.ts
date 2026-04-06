@@ -1,22 +1,23 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient'; // adjust path if needed
+import { supabase } from '../lib/supabaseClient';
+import type { Profile } from '../types/Profile';
 
 export function useProfile(userId: string) {
-  const [name, setName] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     supabase
       .from('profiles')
-      .select('name, avatar_path')
+      .select('id, name, email, nickname, phone, payment_method, avatar_path, created_at')
       .eq('id', userId)
       .single()
-      .then(({ data }) => {
-        setName(data?.name ?? null);
-        setAvatarUrl(data?.avatar_path ?? null);
-      });
+      .then(({ data }) => setProfile((data as Profile) ?? null));
   }, [userId]);
 
-  return { name, avatarUrl };
+  return {
+    profile,
+    name: profile?.name ?? null,
+    avatarUrl: profile?.avatar_path ?? null,
+  };
 }

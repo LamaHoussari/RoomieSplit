@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 import { signInWithEmail, updateUserPassword } from '../services/authService';
 import { useProfile } from '../hooks/useProfile';
+import { supabase } from '../lib/supabaseClient';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
 
@@ -24,7 +25,7 @@ function isValidPhone(value: string): boolean {
 }
 
 export default function ProfilePage({ user }: { user: AppUser }) {
-  const { avatarUrl } = useProfile(user.id);
+  const { profile, avatarUrl } = useProfile(user.id);
   const initialState = {
     name: user.name || '',
     email: user.email || '',
@@ -38,6 +39,19 @@ export default function ProfilePage({ user }: { user: AppUser }) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+
+  useEffect(() => {
+    if (!profile) return;
+    const loaded = {
+      name: profile.name || '',
+      email: profile.email || '',
+      nickname: profile.nickname || '',
+      phone: profile.phone || '',
+      paymentMethod: profile.payment_method || '',
+    };
+    setDraft(loaded);
+    setSaved(loaded);
+  }, [profile]);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -211,12 +225,18 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 <Button
                   size="sm"
                   disabled={!isDirty || (!!draft.phone && !isValidPhone(draft.phone))}
-                  onClick={() => {
+                  onClick={async () => {
                     if (draft.phone && !isValidPhone(draft.phone)) {
                       setPhoneError('Enter a valid 8-digit phone number.');
                       return;
                     }
                     setPhoneError('');
+                    await supabase.from('profiles').update({
+                      name: draft.name,
+                      nickname: draft.nickname || null,
+                      phone: draft.phone || null,
+                      payment_method: draft.paymentMethod || null,
+                    }).eq('id', user.id);
                     setSaved(draft);
                     setIsEditing(false);
                   }}
