@@ -17,7 +17,7 @@ function CalendarNavButton({ onClick, children }: { onClick: () => void; childre
     <button
       type="button"
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-xl bg-stone-100 text-stone-700 transition hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+      className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-stone-100 text-stone-700 transition hover:bg-stone-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
     >
       {children}
     </button>
@@ -150,9 +150,9 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
           setOpen(o => !o);
           setMode('day');
         }}
-        className="flex w-full items-center justify-between rounded-2xl border border-stone-300/80 bg-white/88 px-4 py-3.5 text-base outline-none shadow-sm transition
+        className="flex w-full items-center justify-between rounded-[8px] border border-stone-300/85 bg-white/90 px-4 py-3 text-[15px] outline-none shadow-[0_12px_24px_-22px_rgba(28,25,23,0.75)] transition
           hover:border-stone-400 dark:hover:border-slate-500
-          focus:border-[#8c74aa] focus:ring-2 focus:ring-[#8c74aa]/15 dark:border-slate-700 dark:bg-slate-900/60 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/20"
+          focus:border-[#6f4f8b] focus:ring-4 focus:ring-[#6f4f8b]/10 dark:border-slate-700 dark:bg-slate-900/62 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/12"
       >
         <span className={displayValue ? 'text-stone-900 dark:text-slate-100' : 'text-stone-400 dark:text-slate-500'}>
           {displayValue || placeholder}
@@ -167,7 +167,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
         <div
           ref={panelRef}
           style={panelStyle}
-          className="rounded-2xl border border-stone-300/80 bg-white p-4 shadow-[0_24px_60px_-28px_rgba(28,25,23,0.42)] dark:border-slate-700 dark:bg-slate-950"
+          className="rounded-[8px] border border-stone-300/80 bg-white p-4 shadow-[0_24px_60px_-28px_rgba(28,25,23,0.42)] dark:border-slate-700 dark:bg-slate-950"
         >
           {mode === 'day' && (
             <>
@@ -182,14 +182,14 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
                   <button
                     type="button"
                     onClick={() => setMode('month')}
-                    className="rounded-lg px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
+                    className="rounded-[6px] px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
                   >
                     {MONTHS[view.month]}
                   </button>
                   <button
                     type="button"
                     onClick={() => setMode('year')}
-                    className="rounded-lg px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
+                    className="rounded-[6px] px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
                   >
                     {view.year}
                   </button>
@@ -218,7 +218,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
                     disabled={cell.type !== 'cur'}
                     onClick={() => cell.type === 'cur' && select(cell.day)}
                     className={[
-                      'aspect-square flex items-center justify-center rounded-full text-sm transition',
+                      'aspect-square flex items-center justify-center rounded-[8px] text-sm transition',
                       cell.type !== 'cur'
                         ? 'cursor-default text-stone-300 dark:text-slate-700'
                         : isSelected(cell.day)
@@ -246,7 +246,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
                 <button
                   type="button"
                   onClick={() => setMode('year')}
-                  className="rounded-lg px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
+                  className="rounded-[6px] px-2 py-1 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5"
                 >
                   {view.year}
                 </button>
@@ -267,7 +267,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
                       setMode('day');
                     }}
                     className={[
-                      'rounded-xl py-2 text-sm font-medium transition',
+                      'rounded-[8px] py-2 text-sm font-medium transition',
                       i === view.month
                         ? 'bg-[#6f4f8b] text-white dark:bg-[#2b2136] dark:text-[#e2d4f0]'
                         : 'text-stone-900 hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5',
@@ -308,7 +308,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Select a da
                       setMode('month');
                     }}
                     className={[
-                      'rounded-xl py-2 text-sm font-medium transition',
+                      'rounded-[8px] py-2 text-sm font-medium transition',
                       year === view.year
                         ? 'bg-[#6f4f8b] text-white dark:bg-[#2b2136] dark:text-[#e2d4f0]'
                         : 'text-stone-900 hover:bg-stone-100 dark:text-slate-100 dark:hover:bg-white/5',

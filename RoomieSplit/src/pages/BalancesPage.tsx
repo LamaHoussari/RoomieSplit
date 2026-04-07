@@ -4,6 +4,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
+import MetricCard from '../components/MetricCard';
 import FormField, { Input, Select } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { useMembers } from '../hooks/useMembers';
@@ -154,6 +155,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   return (
     <>
       <PageHeader
+        eyebrow="Settlement plan"
         title="Balances"
         subtitle={showArchived
           ? chosenGroup
@@ -182,19 +184,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       />
 
       {(error || pageFeedback || successMessage) && (
-        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
-          error || pageFeedback?.type === 'error'
-            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
-            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
-        }`}>
+        <div className={`mb-6 rs-alert ${error || pageFeedback?.type === 'error' ? 'rs-alert-error' : 'rs-alert-success'}`}>
           {error || pageFeedback?.message || successMessage}
         </div>
       )}
 
       {showArchived && (
-        <h2 className="mb-4 text-lg font-display font-semibold text-amber-700 dark:text-amber-300">
-          Archived Balances
-        </h2>
+        <div className="mb-4 rs-alert rs-alert-warning">Archived balances stay out of the active settlement plan until restored.</div>
       )}
 
       {!showArchived && (
@@ -208,16 +204,13 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             const balance = computeMemberBalance(member.user_id, settlements);
             const name = member.profiles?.name ?? 'Unknown';
             return (
-              <div
+              <MetricCard
                 key={member.id}
-                className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] transition-shadow hover:shadow-[0_24px_56px_-34px_rgba(28,25,23,0.5)] dark:border-slate-800/70 dark:bg-slate-900/78 sm:p-7"
-              >
-                <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">{name}</p>
-                <p className={`font-display text-4xl font-extrabold tracking-tight ${balance > 0 ? 'text-emerald-600 dark:text-emerald-400' : balance < 0 ? 'text-red-500 dark:text-red-400' : 'text-stone-900 dark:text-slate-100'}`}>
-                  {balance > 0 ? '+' : balance < 0 ? '-' : ''}${formatMoney(balance)}
-                </p>
-                <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'all settled'}</p>
-              </div>
+                label={name}
+                value={`${balance > 0 ? '+' : balance < 0 ? '-' : ''}$${formatMoney(balance)}`}
+                detail={balance > 0 ? 'Is owed' : balance < 0 ? 'Owes' : 'All settled'}
+                tone={balance > 0 ? 'success' : balance < 0 ? 'danger' : 'neutral'}
+              />
             );
           })}
         </div>
@@ -240,7 +233,9 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       </div>
 
       <Card
+        eyebrow={showArchived ? 'History' : 'Plan'}
         title="Settlement Plan"
+        description={showArchived ? 'Restore archived settlements when they belong back in the active plan.' : 'Track who owes who, record payments, and archive balances once they are fully settled.'}
         className={`overflow-hidden ${
           showArchived
             ? 'border-amber-200/80 bg-amber-50/55 dark:border-amber-900/30 dark:bg-amber-950/10'

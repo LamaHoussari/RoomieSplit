@@ -22,6 +22,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
+    const favicon = document.getElementById('app-favicon') as HTMLLinkElement | null;
+    if (favicon) {
+      favicon.href = dark ? '/FOR%20DARK%20MODE.png' : '/FOR%20LIGHT%20MODE.png';
+    }
     try {
       localStorage.setItem('rs_dark_mode', String(dark));
     } catch {

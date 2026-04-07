@@ -22,23 +22,25 @@ export default function MainLayout({ onSignOut, user }: { onSignOut: () => Promi
   }, [sidebarCollapsed]);
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-stone-50 transition-colors duration-200 dark:bg-slate-950">
+    <div className="relative flex h-screen flex-col overflow-hidden bg-transparent">
       <Navbar onMenuClick={() => setSidebarOpen(true)} user={user} />
 
-      <div className="relative flex flex-1 min-h-0 w-full overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <Sidebar
           user={user}
           onSignOut={onSignOut}
           mobileOpen={sidebarOpen}
           setMobileOpen={setSidebarOpen}
           collapsed={sidebarOpen ? false : sidebarCollapsed}
-          onToggleCollapsed={() => setSidebarCollapsed(c => !c)}
+          onToggleCollapsed={() => setSidebarCollapsed(current => !current)}
           avatarUrl={avatarUrl}
         />
 
-        <main className="relative flex-1 min-w-0 min-h-0 overflow-hidden">
-          <div key={location.pathname} className="h-full overflow-y-auto p-5 animate-slide-up-soft sm:p-6 md:p-10">
-            <Outlet />
+        <main className="relative min-w-0 flex-1 overflow-hidden">
+          <div key={location.pathname} className="h-full overflow-y-auto px-4 py-5 animate-slide-up-soft sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div className="mx-auto w-full max-w-[1500px]">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>

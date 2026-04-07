@@ -88,7 +88,11 @@ export default function ProfilePage({ user }: { user: AppUser }) {
 
   return (
     <>
-      <PageHeader title="Profile" subtitle="Manage your account" />
+      <PageHeader
+        eyebrow="Account"
+        title="Profile"
+        subtitle="Manage personal details, payment preferences, and account security."
+      />
 
       {profileLoading ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -136,7 +140,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 className="h-20 w-20 flex-shrink-0 rounded-full object-cover shadow"
               />
             ) : (
-              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6f4f8b] to-[#392b48] text-2xl font-bold text-white shadow dark:from-[#a88bc9] dark:to-[#4b365f]">
+              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full border border-[#ddd0e9] bg-[#6f4f8b] text-2xl font-bold text-white shadow dark:border-[#4a375e] dark:bg-[#7e62a0]">
                 {initials}
               </div>
             )}
@@ -149,7 +153,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
               </p>
               {draft.nickname && (
                 <p className="mt-0.5 truncate text-sm italic text-stone-400 dark:text-slate-500">
-                  &ldquo;{draft.nickname}&rdquo;
+                  "{draft.nickname}"
                 </p>
               )}
             </div>
@@ -413,7 +417,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
             disabled={pwLoading}
             type="submit"
           >
-            {pwLoading ? 'Updating…' : 'Update password'}
+            {pwLoading ? 'Updating...' : 'Update password'}
           </Button>
           </form>
         </Card>

@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
       subtitle="Set a new password for your account using the recovery link from your email."
     >
       {checkingSession ? (
-        <p className="rounded-2xl border border-stone-200/80 bg-stone-50/80 px-4 py-3 text-sm font-medium text-stone-600 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-300">
+        <p className="rs-alert border-stone-200/80 bg-stone-50/80 text-stone-600 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-300">
           Validating recovery link...
         </p>
       ) : (
@@ -144,17 +144,17 @@ export default function ResetPasswordPage() {
           </FormField>
 
           {!sessionReady && (
-            <p className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm font-medium text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-300">
+            <p className="mt-4 rs-alert rs-alert-warning">
               This reset link is missing or expired. Request a new password reset email.
             </p>
           )}
           {error && (
-            <p className="mt-4 rounded-2xl border border-red-200/80 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
+            <p className="mt-4 rs-alert rs-alert-error">
               {error}
             </p>
           )}
           {successMessage && (
-            <p className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-300">
+            <p className="mt-4 rs-alert rs-alert-success">
               {successMessage}
             </p>
           )}

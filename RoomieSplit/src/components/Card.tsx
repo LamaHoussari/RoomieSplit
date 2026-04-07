@@ -1,18 +1,43 @@
 interface CardProps {
   title?: string;
+  description?: string;
+  eyebrow?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  contentClassName?: string;
 }
 
-export default function Card({ title, children, className = '' }: CardProps) {
+export default function Card({
+  title,
+  description,
+  eyebrow,
+  action,
+  children,
+  className = '',
+  contentClassName = '',
+}: CardProps) {
   return (
-    <div className={`rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] backdrop-blur-sm transition-shadow hover:shadow-[0_24px_56px_-34px_rgba(28,25,23,0.5)] dark:border-slate-800/70 dark:bg-slate-900/78 ${className}`}>
-      {title && (
-        <h3 className="mb-5 text-lg font-display font-semibold text-stone-900 dark:text-slate-100">
-          {title}
-        </h3>
+    <section className={`rs-panel p-5 sm:p-6 ${className}`}>
+      {(title || description || eyebrow || action) && (
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            {eyebrow && <p className="rs-kicker">{eyebrow}</p>}
+            {title && (
+              <h3 className="mt-1 font-display text-xl font-semibold text-stone-950 dark:text-white">
+                {title}
+              </h3>
+            )}
+            {description && (
+              <p className="mt-1 max-w-2xl text-sm text-stone-500 dark:text-slate-400">
+                {description}
+              </p>
+            )}
+          </div>
+          {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
+        </div>
       )}
-      {children}
-    </div>
+      <div className={contentClassName}>{children}</div>
+    </section>
   );
 }

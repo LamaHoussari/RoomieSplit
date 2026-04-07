@@ -5,15 +5,21 @@ import type { CSSProperties, KeyboardEvent, ReactNode, InputHTMLAttributes } fro
 interface FormFieldProps {
   label: string;
   children: ReactNode;
+  hint?: string;
 }
 
-export default function FormField({ label, children }: FormFieldProps) {
+export default function FormField({ label, children, hint }: FormFieldProps) {
   return (
     <div className="mb-4">
-      <label className="mb-2 block text-base font-semibold text-stone-700 dark:text-slate-300">
+      <label className="rs-kicker mb-2.5 block">
         {label}
       </label>
       {children}
+      {hint && (
+        <p className="mt-1.5 text-xs text-stone-500 dark:text-slate-400">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -21,9 +27,9 @@ export default function FormField({ label, children }: FormFieldProps) {
 export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full rounded-2xl border border-stone-300/80 bg-white/88 px-4 py-3.5 text-base text-stone-900 placeholder:text-stone-400 outline-none shadow-sm transition
-      focus:border-[#8c74aa] focus:ring-2 focus:ring-[#8c74aa]/15
-      dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/20
+      className={`w-full rounded-[8px] border border-stone-300/85 bg-white/90 px-4 py-3 text-[15px] text-stone-900 placeholder:text-stone-400 outline-none shadow-[0_12px_24px_-22px_rgba(28,25,23,0.75)] transition
+      hover:border-stone-400 focus:border-[#6f4f8b] focus:ring-4 focus:ring-[#6f4f8b]/10
+      dark:border-slate-700 dark:bg-slate-900/62 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-500 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/12
       disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     />
@@ -214,11 +220,11 @@ export function Select({ value, onChange, children, className = '', disabled }: 
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
-        className={`group flex w-full items-center justify-between gap-3 rounded-2xl border border-stone-300/80 bg-white/92 px-4 py-3 text-left text-sm text-stone-900 outline-none shadow-[0_10px_24px_-18px_rgba(28,25,23,0.55)] transition
+        className={`group flex w-full items-center justify-between gap-3 rounded-[8px] border border-stone-300/85 bg-white/92 px-4 py-3 text-left text-sm text-stone-900 outline-none shadow-[0_12px_24px_-22px_rgba(28,25,23,0.75)] transition
         hover:border-stone-400 hover:bg-white
-        focus-visible:border-[#8c74aa] focus-visible:ring-2 focus-visible:ring-[#8c74aa]/15
+        focus-visible:border-[#6f4f8b] focus-visible:ring-4 focus-visible:ring-[#6f4f8b]/10
         dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:border-slate-500 dark:hover:bg-slate-900
-        dark:focus-visible:border-[#b59ad6] dark:focus-visible:ring-[#b59ad6]/20
+        dark:focus-visible:border-[#b59ad6] dark:focus-visible:ring-[#b59ad6]/12
         disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
         <span className="min-w-0">
@@ -227,7 +233,7 @@ export function Select({ value, onChange, children, className = '', disabled }: 
           </span>
         </span>
         <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-stone-100/90 text-stone-500 transition-all group-hover:bg-stone-200/80 group-hover:text-stone-700 dark:bg-slate-800/80 dark:text-slate-400 dark:group-hover:bg-slate-700/80 dark:group-hover:text-slate-200 ${open ? 'rotate-180' : ''}`}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-stone-100/90 text-stone-500 transition-all group-hover:bg-stone-200/80 group-hover:text-stone-700 dark:bg-slate-800/80 dark:text-slate-400 dark:group-hover:bg-slate-700/80 dark:group-hover:text-slate-200 ${open ? 'rotate-180' : ''}`}
         >
           <svg
             className="h-4 w-4"
@@ -247,7 +253,7 @@ export function Select({ value, onChange, children, className = '', disabled }: 
           role="listbox"
           aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
           style={menuStyle}
-          className="overflow-y-auto rounded-3xl border border-stone-200/90 bg-white/96 p-1.5 shadow-[0_24px_60px_-28px_rgba(28,25,23,0.42)] backdrop-blur-xl dark:border-slate-700/90 dark:bg-slate-950/96"
+          className="overflow-y-auto rounded-[8px] border border-stone-200/90 bg-white/96 p-1.5 shadow-[0_24px_60px_-28px_rgba(28,25,23,0.42)] backdrop-blur-xl dark:border-slate-700/90 dark:bg-slate-950/96"
         >
           {options.map((opt, index) => {
             const isSelected = opt.value === value;
@@ -270,7 +276,7 @@ export function Select({ value, onChange, children, className = '', disabled }: 
                   onClick={() => {
                     if (!opt.disabled) selectValue(opt.value);
                   }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-3 text-left text-sm transition-colors
+                  className={`flex w-full items-center justify-between gap-3 rounded-[6px] px-3.5 py-3 text-left text-sm transition-colors
                     ${opt.disabled
                       ? 'cursor-not-allowed text-stone-400 opacity-60 dark:text-slate-600'
                       : isSelected

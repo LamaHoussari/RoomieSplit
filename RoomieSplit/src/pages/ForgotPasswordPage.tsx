@@ -67,12 +67,12 @@ export default function ForgotPasswordPage() {
         </FormField>
 
         {error && (
-          <p className="mt-4 rounded-2xl border border-red-200/80 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
+          <p className="mt-4 rs-alert rs-alert-error">
             {error}
           </p>
         )}
         {successMessage && (
-          <p className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-300">
+          <p className="mt-4 rs-alert rs-alert-success">
             {successMessage}
           </p>
         )}

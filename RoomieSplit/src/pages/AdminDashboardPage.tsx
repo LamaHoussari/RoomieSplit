@@ -238,12 +238,13 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
   return (
     <>
       <PageHeader
+        eyebrow="Operations"
         title="Admin Dashboard"
         subtitle="Global operational view across groups, members, and system activity."
       />
 
       {user.authSource === "local-admin" && (
-        <div className="mb-6 rounded-3xl border border-amber-200/80 bg-amber-50/80 px-5 py-4 text-sm font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
+        <div className="mb-6 rs-alert rs-alert-warning">
           This admin session is local to the client. Dashboard data still
           depends on the current Supabase client being allowed to read the
           relevant tables.
@@ -251,7 +252,7 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
       )}
 
       {error && (
-        <div className="mb-6 rounded-3xl border border-red-200/80 bg-red-50/80 px-5 py-4 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
+        <div className="mb-6 rs-alert rs-alert-error">
           {error}
         </div>
       )}

@@ -4,6 +4,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
+import MetricCard from '../components/MetricCard';
 import FormField, { Input, Select } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { useChores } from '../hooks/useChores';
@@ -82,6 +83,9 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   const choreToRemove = chores.find(chore => chore.id === confirmRemoveId);
   const choreToArchive = chores.find(chore => chore.id === confirmArchiveId);
   const choreToUnarchive = chores.find(chore => chore.id === confirmUnarchiveId);
+  const pendingCount = chores.filter(chore => !chore.is_completed).length;
+  const completedCount = chores.filter(chore => chore.is_completed).length;
+  const assignedCount = chores.filter(chore => Boolean(chore.assigned_to)).length;
 
   const handleAddChore = async () => {
     if (!choreName.trim() || !groupId) return;
@@ -121,6 +125,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   return (
     <>
       <PageHeader
+        eyebrow="Household flow"
         title="Chores"
         subtitle={showArchived ? 'Archived household tasks' : 'Track household tasks and assignments'}
         filters={
@@ -187,22 +192,27 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
       />
 
       {(error || successMessage) && (
-        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
-          error
-            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
-            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
-        }`}>
+        <div className={`mb-6 rs-alert ${error ? 'rs-alert-error' : 'rs-alert-success'}`}>
           {error || successMessage}
         </div>
       )}
 
       {showArchived && (
-        <h2 className="mb-4 text-lg font-display font-semibold text-amber-700 dark:text-amber-300">
-          Archived Chores
-        </h2>
+        <div className="mb-4 rs-alert rs-alert-warning">Archived chores stay out of the active task list until restored.</div>
+      )}
+
+      {!showArchived && (
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <MetricCard label="Pending" value={String(pendingCount)} detail="Still needs attention." tone="warning" />
+          <MetricCard label="Completed" value={String(completedCount)} detail="Already checked off." tone="success" />
+          <MetricCard label="Assigned" value={String(assignedCount)} detail="Currently owned by a roommate." tone="accent" />
+        </div>
       )}
 
       <Card
+        eyebrow={showArchived ? 'History' : 'Task list'}
+        title={showArchived ? 'Archived chores' : 'Active chores'}
+        description={showArchived ? 'Restore chores here if they belong back in the working rotation.' : 'Sort, complete, archive, and rebalance task ownership from one list.'}
         className={`overflow-hidden ${
           showArchived
             ? 'border-amber-200/80 bg-amber-50/55 dark:border-amber-900/30 dark:bg-amber-950/10'
@@ -426,3 +436,4 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
     </>
   );
 }
+
