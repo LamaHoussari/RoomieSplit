@@ -320,21 +320,22 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1">
                         {!showArchived && !settled && (
-                          <button
+                        <button
                             type="button"
                             onClick={() => openPay(settlement)}
                             title={canPaySettlement(settlement) ? 'Record payment' : 'Only the member who owes this balance can pay it'}
                             disabled={!canPaySettlement(settlement)}
-                            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
                               canPaySettlement(settlement)
-                                ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
-                                : 'cursor-not-allowed text-stone-300 dark:text-slate-700'
+                                ? 'bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500'
+                                : 'cursor-not-allowed bg-stone-100 text-stone-300 dark:bg-slate-800 dark:text-slate-600'
                             }`}
                           >
-                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-5 w-5">
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5 shrink-0">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M2 7h16M2 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2M2 7v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M6 11h.01M10 11h.01" />
                             </svg>
-                          </button>
+                            Pay
+                        </button>
                         )}
                         {showArchived ? (
                           <button

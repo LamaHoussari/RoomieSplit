@@ -8,6 +8,7 @@ import { signInWithEmail, updateUserPassword } from '../services/authService';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabaseClient';
 import { Skeleton } from '../components/Skeleton';
+import { useNavigate } from 'react-router-dom';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
 
@@ -86,8 +87,20 @@ export default function ProfilePage({ user }: { user: AppUser }) {
     .slice(0, 2)
     .join('');
 
+  const navigate = useNavigate();  
+
   return (
     <>
+       <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="mb-4 flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-800 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+        >
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10H5m0 0 4-4m-4 4 4 4" />
+          </svg>
+          Back
+        </button>
       <PageHeader
         eyebrow="Account"
         title="Profile"
