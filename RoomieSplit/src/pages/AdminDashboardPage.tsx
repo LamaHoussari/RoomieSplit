@@ -1,6 +1,6 @@
 ﻿import React, { useMemo, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
+// import { formatDistanceToNow } from "date-fns";
 import Badge from "../components/Badge";
 import Card from "../components/Card";
 import PageHeader from "../components/PageHeader";
@@ -11,7 +11,7 @@ import type { AppUser } from "../types/auth";
 const THIRTY_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 30;
 
 // #3: Memoized table headers
-const TABLE_HEADERS = ["Group", "Members", "Spend", "Open", "Last activity"] as const;
+// const TABLE_HEADERS = ["Group", "Members", "Spend", "Open", "Last activity"] as const;
 
 // #3: Badge variant helpers
 const getChoreBadgeVariant = (count: number): "orange" | "green" => 
@@ -29,10 +29,16 @@ function formatRelativeDate(timestamp: number) {
   
   const date = new Date(timestamp);
   const now = new Date();
-  const diffDays = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
   
-  if (diffDays < 1) return formatDistanceToNow(date, { addSuffix: true });
-  if (diffDays < 7) return formatDistanceToNow(date, { addSuffix: true });
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+
   return formatDate(date.toISOString());
 }
 
@@ -156,7 +162,7 @@ const GroupTableRow = React.memo(({
 interface UserRow {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   groupCount: number;
   lastActivity: number;
   activeRecently: boolean;
@@ -449,8 +455,8 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
         group.code.toLowerCase().includes(groupSearch.toLowerCase())
       )
       .sort((a, b) => {
-        let aVal = a[groupSortField];
-        let bVal = b[groupSortField];
+        const aVal = a[groupSortField];
+        const bVal = b[groupSortField];
         
         if (typeof aVal === 'string' && typeof bVal === 'string') {
           return groupSortOrder === 'asc' 
