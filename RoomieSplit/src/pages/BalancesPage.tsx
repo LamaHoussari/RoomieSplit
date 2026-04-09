@@ -219,7 +219,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
 
       <div className="mt-4">
         {!showArchived && (
-          <div className="group/settle relative inline-block bottom-2 left-2">
+          <div className="group/settle relative inline-block bottom-2 left-3">
             <Button size="sm" onClick={() => { setShowNewSettlement(true); setNewFrom(''); setNewTo(''); setNewAmount(''); }} disabled={!groupId}>
               + New Settlement
             </Button>
