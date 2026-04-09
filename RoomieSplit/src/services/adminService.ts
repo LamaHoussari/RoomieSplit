@@ -1,4 +1,4 @@
-﻿import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 import type { Chore } from "../types/Chore";
 import type { Expense } from "../types/Expense";
 import type { Group } from "../types/Group";

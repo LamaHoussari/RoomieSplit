@@ -1,30 +1,41 @@
 import React from 'react';
+import PageHeader from '../components/PageHeader';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+import { useAdminDashboard } from '../hooks/useAdminDashboard';
 
 export default function Users() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Users Management</h1>
-      <p>Manage all users here: view, edit, or deactivate users.</p>
+  const { snapshot, loading, error } = useAdminDashboard();
 
-      {/* Example table */}
-      <table className="w-full mt-4 border-collapse border border-slate-300">
-        <thead>
-          <tr className="bg-slate-100">
-            <th className="border p-2">ID</th>
-            <th className="border p-2">Name</th>
-            <th className="border p-2">Email</th>
-            <th className="border p-2">Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="border p-2">1</td>
-            <td className="border p-2">John Doe</td>
-            <td className="border p-2">john@example.com</td>
-            <td className="border p-2">User</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  if (loading) return <div className="p-6">Loading users...</div>;
+  if (error) return <div className="p-6 text-red-500">Error loading users: {error}</div>;
+
+  return (
+    <>
+      <PageHeader 
+        eyebrow="Administration" 
+        title="Users Management" 
+        subtitle="Manage all users here: view, edit, or deactivate users." 
+      />
+      <Card title="Users">
+        <div className="space-y-4 pt-2">
+          {snapshot?.profiles.map(profile => (
+            <div
+              key={profile.id}
+              className="flex justify-between items-center"
+            >
+              <div>
+                <p className="text-stone-900 dark:text-white font-medium">{profile.name || 'Unknown'}</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">{profile.email}</p>
+              </div>
+              <Badge variant="purple">ACTIVE</Badge>
+            </div>
+          ))}
+          {!snapshot?.profiles.length && (
+            <div className="text-center text-stone-500 py-4">No users found.</div>
+          )}
+        </div>
+      </Card>
+    </>
   );
 }

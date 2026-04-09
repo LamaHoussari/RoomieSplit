@@ -59,12 +59,10 @@ function AnimatedRoutes() {
           {user.isAdmin ? (
             <>
               <Route path="/admin" element={<AdminDashboardPage user={user} />} />
-
               <Route path="/admin/users" element={<Users />} />
               <Route path="/admin/groups" element={<Groups />} />
               <Route path="/admin/audit" element={<AuditLog />} />
-
-              <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
+              <Route path="/*" element={<Navigate to="/" replace />} />
             </>
           ) : (
             <>

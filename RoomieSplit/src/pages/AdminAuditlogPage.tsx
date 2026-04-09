@@ -1,29 +1,101 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import PageHeader from '../components/PageHeader';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+import { useAdminDashboard } from '../hooks/useAdminDashboard';
 
 export default function AuditLog() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Audit Log</h1>
-      <p>Track all system actions performed by users and admins.</p>
+  const { snapshot, loading, error } = useAdminDashboard();
 
-      <table className="w-full mt-4 border-collapse border border-slate-300">
-        <thead>
-          <tr className="bg-slate-100">
-            <th className="border p-2">Timestamp</th>
-            <th className="border p-2">User</th>
-            <th className="border p-2">Action</th>
-            <th className="border p-2">Details</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="border p-2">2026-04-09 10:15</td>
-            <td className="border p-2">admin@example.com</td>
-            <td className="border p-2">Created User</td>
-            <td className="border p-2">User: Jane Doe</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  const auditEvents = useMemo(() => {
+    if (!snapshot) return [];
+
+    const getProfile = (id: string | undefined | null) => 
+      snapshot.profiles.find(p => p.id === id);
+
+    const expensesEvents = snapshot.expenses.map(e => {
+      const p = getProfile(e.created_by);
+      return {
+        id: `exp-${e.id}`,
+        timestamp: new Date(e.created_at || Date.now()),
+        email: p?.email || 'Unknown',
+        actionType: 'Expense',
+        badgeVariant: 'orange' as const,
+        description: `Added expense: ${e.description} in ${e.groups?.name || 'Group'}`
+      };
+    });
+
+    const choresEvents = snapshot.chores.map(c => {
+      const p = getProfile(c.created_by);
+      return {
+        id: `chore-${c.id}`,
+        timestamp: new Date(c.created_at || Date.now()),
+        email: p?.email || 'Unknown',
+        actionType: 'Chore',
+        badgeVariant: 'purple' as const,
+        description: `Added chore: ${c.name}`
+      };
+    });
+
+    const settlementsEvents = snapshot.settlements.map(s => {
+      const p = getProfile(s.from_user_id);
+      return {
+        id: `set-${s.id}`,
+        timestamp: new Date(s.created_at || Date.now()),
+        email: p?.email || 'Unknown',
+        actionType: 'Settlement',
+        badgeVariant: 'green' as const,
+        description: `Recorded a payment of $${s.amount}`
+      };
+    });
+
+    const allEvents = [...expensesEvents, ...choresEvents, ...settlementsEvents]
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    return allEvents;
+  }, [snapshot]);
+
+  if (loading) return <div className="p-6">Loading audit events...</div>;
+  if (error) return <div className="p-6 text-red-500">Error loading audit log: {error}</div>;
+
+  return (
+    <>
+      <PageHeader 
+        eyebrow="Security" 
+        title="Audit Log" 
+        subtitle="Track all system actions performed by users and admins." 
+      />
+      <Card title="Activity Stream">
+        <table className="w-full text-left mt-2">
+          <thead>
+            <tr className="border-b border-stone-100 dark:border-slate-800">
+              <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Timestamp</th>
+              <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">User</th>
+              <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Action</th>
+              <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Details</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
+            {auditEvents.map(event => (
+              <tr key={event.id}>
+                <td className="py-4 text-stone-500 dark:text-slate-400">
+                  {event.timestamp.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                </td>
+                <td className="py-4 font-medium text-stone-900 dark:text-white">
+                  {event.email}
+                </td>
+                <td className="py-4"><Badge variant={event.badgeVariant}>{event.actionType}</Badge></td>
+                <td className="py-4 text-stone-500 dark:text-slate-400">{event.description}</td>
+              </tr>
+            ))}
+            {auditEvents.length === 0 && (
+              <tr>
+                <td colSpan={4} className="py-6 text-center text-stone-500">No events found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+    </>
   );
 }
