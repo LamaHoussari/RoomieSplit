@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
-import Badge from '../components/Badge';
 import { useAdminDashboard } from '../hooks/useAdminDashboard';
 
 export default function AuditLog() {
@@ -18,10 +17,9 @@ export default function AuditLog() {
       return {
         id: `exp-${e.id}`,
         timestamp: new Date(e.created_at || Date.now()),
-        email: p?.email || 'Unknown',
-        actionType: 'Expense',
-        badgeVariant: 'orange' as const,
-        description: `Added expense: ${e.description} in ${e.groups?.name || 'Group'}`
+        email: p?.email || 'System',
+        action: 'Created expense',
+        target: e.description || 'Unknown Expense'
       };
     });
 
@@ -30,10 +28,9 @@ export default function AuditLog() {
       return {
         id: `chore-${c.id}`,
         timestamp: new Date(c.created_at || Date.now()),
-        email: p?.email || 'Unknown',
-        actionType: 'Chore',
-        badgeVariant: 'purple' as const,
-        description: `Added chore: ${c.name}`
+        email: p?.email || 'System',
+        action: 'Created chore',
+        target: c.name || 'Unknown Chore'
       };
     });
 
@@ -42,10 +39,9 @@ export default function AuditLog() {
       return {
         id: `set-${s.id}`,
         timestamp: new Date(s.created_at || Date.now()),
-        email: p?.email || 'Unknown',
-        actionType: 'Settlement',
-        badgeVariant: 'green' as const,
-        description: `Recorded a payment of $${s.amount}`
+        email: p?.email || 'System',
+        action: 'Updated balance',
+        target: s.groups?.name || 'Group Balance'
       };
     });
 
@@ -72,7 +68,7 @@ export default function AuditLog() {
               <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Timestamp</th>
               <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">User</th>
               <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Action</th>
-              <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Details</th>
+              <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Target</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
@@ -84,8 +80,12 @@ export default function AuditLog() {
                 <td className="py-4 font-medium text-stone-900 dark:text-white">
                   {event.email}
                 </td>
-                <td className="py-4"><Badge variant={event.badgeVariant}>{event.actionType}</Badge></td>
-                <td className="py-4 text-stone-500 dark:text-slate-400">{event.description}</td>
+                <td className="py-4 text-stone-700 dark:text-stone-300">
+                  {event.action}
+                </td>
+                <td className="py-4 text-stone-500 dark:text-slate-400">
+                  {event.target}
+                </td>
               </tr>
             ))}
             {auditEvents.length === 0 && (
