@@ -6,6 +6,7 @@ import PageHeader from "../components/PageHeader";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import { getSettlementRemaining, roundCurrency } from "../lib/finance";
 import type { AppUser } from "../types/auth";
+import Button from "../components/Button";
 
 function formatMoney(value: number) {
   return `$${roundCurrency(value).toLocaleString(undefined, {
@@ -65,19 +66,19 @@ const UserDetailsPanel = ({
           <p><strong>Last Activity:</strong> {formatRelativeDate(user.lastActivity)}</p>
         </div>
 
-        <button
+        <Button
           onClick={() => onToggleSuspend(user.id)}
           className="mt-6 w-full rounded-lg bg-red-500 text-white py-2"
         >
           Suspend / Reactivate
-        </button>
+        </Button>
 
-        <button
+        <Button
           onClick={onClose}
           className="mt-3 w-full rounded-lg border py-2"
         >
           Close
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -170,18 +171,16 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
                   <tr key={g.id}>
                     <td>{g.name}</td>
                     <td>
-                      <button
+                      <Button
                         onClick={() => handleGroupView(g.id)}
-                        className="mr-2 bg-blue-500 text-white px-2 py-1 rounded"
                       >
                         View
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => console.log("Archive", g.id)}
-                        className="bg-red-500 text-white px-2 py-1 rounded"
                       >
                         Archive
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
