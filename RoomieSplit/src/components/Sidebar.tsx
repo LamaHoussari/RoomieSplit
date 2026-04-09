@@ -77,12 +77,40 @@ const NAV_ITEMS: NavItem[] = [
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
   {
-    label: 'Admin',
+    label: 'Overview',
     path: '/admin',
     icon: props => (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 4.971-2.91 8.963-7 10-4.09-1.037-7-5.029-7-10V7l7-4Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12.5l1.75 1.75L14.5 10" />
+        <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Users',
+    path: '/admin/users',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <path d="M16 11a4 4 0 1 0-8 0" />
+        <path d="M12 15c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Groups',
+    path: '/admin/groups',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <path d="M3 7h18M3 12h18M3 17h18" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Audit Log',
+    path: '/admin/audit',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <rect x="4" y="4" width="16" height="16" rx="2" />
+        <path d="M9 12h6M9 16h6M9 8h6" />
       </svg>
     ),
   },
@@ -175,7 +203,7 @@ export default function Sidebar({
             </button>
           </div>
 
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
+          <nav className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 py-4">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -187,19 +215,13 @@ export default function Sidebar({
                     'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition',
                     collapsed ? 'justify-center' : '',
                     isActive
-                      ? 'bg-[#f4eef8] text-[#5e4678] dark:bg-[#2b2136] dark:text-[#efe6fb]'
-                      : 'text-stone-600 hover:bg-white/70 hover:text-stone-950 dark:text-slate-300 dark:hover:bg-slate-900/60 dark:hover:text-white',
+                      ? 'bg-[#ede7f6] text-[#5e35b1] dark:bg-[#2e2545]'
+                      : 'text-stone-600 hover:bg-white/70 dark:text-slate-300',
                   ].join(' ')
                 }
               >
-                {({ isActive }) => (
-                  <>
-                    <span className={`${isActive ? 'text-[#6f4f8b] dark:text-[#d4c0ea]' : 'text-stone-400 dark:text-slate-500'}`}>
-                      {item.icon({ className: 'h-5 w-5', 'aria-hidden': true })}
-                    </span>
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </>
-                )}
+                {item.icon({ className: 'h-5 w-5' })}
+                {!collapsed && <span>{item.label}</span>}
               </NavLink>
             ))}
           </nav>
