@@ -208,6 +208,7 @@ export default function Sidebar({
               <NavLink
                 key={item.path}
                 to={item.path}
+                end={item.path === '/admin'}
                 onClick={closeMobile}
                 title={collapsed ? item.label : undefined}
                 className={({ isActive }) =>
