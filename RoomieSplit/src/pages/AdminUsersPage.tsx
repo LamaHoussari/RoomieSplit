@@ -13,7 +13,7 @@ function formatDate(value: string | null | undefined) {
   return parsed.toLocaleDateString();
 }
 
-const UserDetailsModal = ({ user, onClose, onDeactivate }: any) => {
+const UserDetailsModal = ({ user, onClose }: any) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -26,12 +26,31 @@ const UserDetailsModal = ({ user, onClose, onDeactivate }: any) => {
           <p><strong>Date Added:</strong> {formatDate(user.created_at)}</p>
         </div>
 
-        <div className="flex gap-2">
-          <Button onClick={() => onDeactivate(user.id)} variant="danger" className="w-full">
-            Deactivate
+        <Button onClick={onClose} variant="outline" className="w-full">
+          Close
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const ConfirmDeactivateModal = ({ onConfirm, onCancel, isLoading }: any) => {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={!isLoading ? onCancel : undefined} />
+      
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl border border-stone-200 dark:border-slate-800">
+        <h2 className="text-xl font-bold mb-2 text-stone-900 dark:text-white">Confirm Deactivation</h2>
+        <p className="text-sm text-stone-600 dark:text-slate-400 mb-6">
+          Are you sure you want to deactivate this user? They will immediately lose access to the platform and their active sessions will be terminated.
+        </p>
+
+        <div className="flex gap-3">
+          <Button onClick={onCancel} variant="outline" className="flex-1" disabled={isLoading}>
+            Cancel
           </Button>
-          <Button onClick={onClose} variant="outline" className="w-full">
-            Close
+          <Button onClick={onConfirm} variant="danger" className="flex-1" disabled={isLoading}>
+            {isLoading ? 'Deactivating...' : 'Yes, Deactivate'}
           </Button>
         </div>
       </div>
@@ -40,9 +59,28 @@ const UserDetailsModal = ({ user, onClose, onDeactivate }: any) => {
 };
 
 export default function Users() {
-  const { snapshot, loading, error } = useAdminDashboard();
+  const { snapshot, loading, error, deactivateUser, activateUser } = useAdminDashboard();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [userToDeactivateId, setUserToDeactivateId] = useState<string | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
+  const handleDeactivateClick = (id: string) => {
+    setUserToDeactivateId(id);
+  };
+
+  const confirmDeactivation = async () => {
+    if (!userToDeactivateId) return;
+    setIsDeactivating(true);
+    await deactivateUser(userToDeactivateId);
+    setIsDeactivating(false);
+    setUserToDeactivateId(null);
+    setSelectedProfileId(null); // Close user details modal if it's open as well
+  };
+
+  const handleActivate = async (id: string) => {
+    await activateUser(id);
+  };
 
   const filteredProfiles = useMemo(() => {
     if (!snapshot?.profiles) return [];
@@ -82,22 +120,40 @@ export default function Users() {
       />
       <Card title="Users">
         <div className="space-y-3 pt-2">
-          {filteredProfiles.map(profile => (
-            <div
-              key={profile.id}
-              className="flex justify-between items-center p-3 border border-stone-200 dark:border-slate-800 rounded-lg hover:bg-stone-50 dark:hover:bg-slate-800/50 transition-colors"
-            >
-              <div>
-                <p className="text-stone-900 dark:text-white font-medium">{profile.name || 'Unknown'}</p>
-                <p className="text-sm text-gray-500 dark:text-slate-400">{profile.email}</p>
+          {filteredProfiles.map(profile => {
+            const isActive = profile.is_active !== false;
+
+            return (
+              <div
+                key={profile.id}
+                className={`flex justify-between items-center p-3 border rounded-lg transition-colors ${
+                  isActive 
+                    ? 'border-stone-200 dark:border-slate-800 hover:bg-stone-50 dark:hover:bg-slate-800/50' 
+                    : 'border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/10 opacity-75'
+                }`}
+              >
+                <div>
+                  <p className="text-stone-900 dark:text-white font-medium">{profile.name || 'Unknown'}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">{profile.email}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {isActive ? (
+                    <Badge variant="purple">ACTIVE</Badge>
+                  ) : (
+                    <Badge variant="red">DEACTIVATED</Badge>
+                  )}
+                  
+                  <Button size="sm" variant="outline" onClick={() => setSelectedProfileId(profile.id)}>View</Button>
+                  
+                  {isActive ? (
+                    <Button size="sm" variant="danger" onClick={() => handleDeactivateClick(profile.id)}>Deactivate</Button>
+                  ) : (
+                    <Button size="sm" variant="outline" className="border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30" onClick={() => handleActivate(profile.id)}>Activate</Button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="purple">ACTIVE</Badge>
-                <Button size="sm" variant="outline" onClick={() => setSelectedProfileId(profile.id)}>View</Button>
-                <Button size="sm" variant="danger" onClick={() => console.log('Deactivate', profile.id)}>Deactivate</Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {!filteredProfiles.length && (
             <div className="text-center text-stone-500 py-4">
               {searchQuery ? "No matching users found." : "No users found."}
@@ -110,9 +166,14 @@ export default function Users() {
         <UserDetailsModal 
           user={selectedProfile} 
           onClose={() => setSelectedProfileId(null)} 
-          onDeactivate={(id: string) => {
-            console.log('Deactivate', id);
-          }}
+        />
+      )}
+
+      {userToDeactivateId && (
+        <ConfirmDeactivateModal
+          isLoading={isDeactivating}
+          onConfirm={confirmDeactivation}
+          onCancel={() => setUserToDeactivateId(null)}
         />
       )}
     </>

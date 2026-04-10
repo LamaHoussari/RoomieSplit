@@ -1,111 +1,72 @@
-﻿import React, { useMemo, useCallback, useState } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import Badge from "../components/Badge";
 import Card from "../components/Card";
+import Badge from "../components/Badge";
 import PageHeader from "../components/PageHeader";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import { getSettlementRemaining, roundCurrency } from "../lib/finance";
 import type { AppUser } from "../types/auth";
-import Button from "../components/Button";
 
 function formatMoney(value: number) {
-  return `$${roundCurrency(value).toLocaleString(undefined, {
-    maximumFractionDigits: 2,
-  })}`;
+  return `$${roundCurrency(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return "No activity";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "No activity";
-  return parsed.toLocaleDateString();
-}
-
-function toTimestamp(value: string | null | undefined) {
-  if (!value) return 0;
-  const parsed = new Date(value).getTime();
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function formatRelativeDate(timestamp: number) {
-  if (!timestamp) return "No activity";
-
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-
+function formatRelative(value: string | null | undefined) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const diffMs = Date.now() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
-
   if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffHours < 24) return `${diffHours} hr ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-
-  return formatDate(date.toISOString());
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 }
 
-const UserDetailsPanel = ({
-  user,
-  onClose,
-  onToggleSuspend,
-}: any) => {
-  if (!user) return null;
-
+// Quick nav card component
+function NavCard({
+  icon,
+  label,
+  description,
+  count,
+  color,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  description: string;
+  count: number;
+  color: string;
+  onClick: () => void;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/40" onClick={onClose} />
-
-      <div className="w-[380px] bg-white dark:bg-slate-900 p-6 shadow-xl">
-        <h2 className="text-xl font-bold">{user.name}</h2>
-        <p className="text-sm text-stone-500">{user.email}</p>
-
-        <div className="mt-4 space-y-2 text-sm">
-          <p><strong>Groups:</strong> {user.groupCount}</p>
-          <p><strong>Last Activity:</strong> {formatRelativeDate(user.lastActivity)}</p>
-        </div>
-
-        <Button
-          onClick={() => onToggleSuspend(user.id)}
-          className="mt-6 w-full rounded-lg bg-red-500 text-white py-2"
-        >
-          Suspend / Reactivate
-        </Button>
-
-        <Button
-          onClick={onClose}
-          className="mt-3 w-full rounded-lg border py-2"
-        >
-          Close
-        </Button>
+    <button
+      onClick={onClick}
+      className="group text-left w-full p-5 rounded-xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#6f4f8b] dark:hover:border-[#8d70b0] hover:shadow-md transition-all duration-200"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <span className={`text-2xl p-2 rounded-lg ${color}`}>{icon}</span>
+        <span className="text-2xl font-bold text-stone-900 dark:text-white">{count}</span>
       </div>
-    </div>
+      <p className="font-semibold text-stone-900 dark:text-white group-hover:text-[#6f4f8b] dark:group-hover:text-[#d4c0ea] transition-colors">
+        {label}
+      </p>
+      <p className="text-xs text-stone-500 dark:text-slate-400 mt-1">{description}</p>
+    </button>
   );
-};
+}
 
 export default function AdminDashboardPage({ user }: { user: AppUser }) {
   const { snapshot, error } = useAdminDashboard();
   const navigate = useNavigate();
 
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [isUserPanelOpen, setIsUserPanelOpen] = useState(false);
-
-  const handleUserClick = useCallback((userId: string) => {
-    setSelectedUserId(userId);
-    setIsUserPanelOpen(true);
-  }, []);
-
-  const handleToggleSuspend = (userId: string) => {
-    console.log("Toggle suspend:", userId);
-  };
-
-  const handleGroupView = (groupId: string) => {
-    navigate(`/admin/groups/${groupId}`);
-  };
-
   const metrics = useMemo(() => {
     if (!snapshot) return null;
+
+    const nonAdminProfiles = snapshot.profiles.filter((p) => p.id !== user.id);
 
     const totalSpend = snapshot.expenses.reduce(
       (sum, e) => sum + Number(e.amount || 0),
@@ -117,104 +78,182 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
       0
     );
 
-    const userRows = snapshot.profiles.map((p) => ({
-      id: p.id,
-      name: p.name || p.email,
-      email: p.email,
-      groupCount: 0,
-      lastActivity: toTimestamp(p.created_at),
-      activeRecently: true,
-    }));
+    const deactivatedCount = nonAdminProfiles.filter(
+      (p) => (p as any).is_active === false
+    ).length;
+
+    // Top groups by spend
+    const spendByGroup: Record<string, { name: string; total: number }> = {};
+    for (const e of snapshot.expenses) {
+      const gid = (e as any).group_id || "";
+      if (!gid) continue;
+      const gname = e.groups?.name || "Unknown";
+      if (!spendByGroup[gid]) spendByGroup[gid] = { name: gname, total: 0 };
+      spendByGroup[gid].total += Number(e.amount || 0);
+    }
+    const topGroups = Object.values(spendByGroup)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    // Recent activity feed (last 8 events)
+    const getProfile = (id: string | undefined | null) =>
+      snapshot.profiles.find((p) => p.id === id);
+
+    const events = [
+      ...snapshot.expenses.map((e) => ({
+        id: `exp-${e.id}`,
+        timestamp: e.created_at,
+        actor: getProfile(e.created_by)?.name || getProfile(e.created_by)?.email || "Unknown",
+        action: "Added expense",
+        detail: e.description || "—",
+        badge: "green" as const,
+      })),
+      ...snapshot.chores.map((c) => ({
+        id: `chore-${c.id}`,
+        timestamp: c.created_at,
+        actor: getProfile(c.created_by)?.name || getProfile(c.created_by)?.email || "Unknown",
+        action: "Created chore",
+        detail: c.name || "—",
+        badge: "purple" as const,
+      })),
+      ...snapshot.settlements.map((s) => ({
+        id: `set-${s.id}`,
+        timestamp: s.created_at,
+        actor: getProfile(s.from_user_id)?.name || getProfile(s.from_user_id)?.email || "Unknown",
+        action: "Updated balance",
+        detail: s.groups?.name || "—",
+        badge: "orange" as const,
+      })),
+    ]
+      .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime())
+      .slice(0, 8);
 
     return {
-      totalUsers: snapshot.profiles.length,
+      totalUsers: nonAdminProfiles.length,
+      activeUsers: nonAdminProfiles.length - deactivatedCount,
       totalGroups: snapshot.groups.length,
+      totalExpenses: snapshot.expenses.length,
       totalSpend,
       outstandingSettlements,
-      userRows,
+      deactivatedCount,
+      topGroups,
+      events,
     };
   }, [snapshot]);
 
-  if (!metrics && !error) return <div>Loading...</div>;
+  if (!metrics && !error) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
+  if (!metrics) return null;
 
   return (
     <>
       <PageHeader
         eyebrow="Operations"
         title="Admin Dashboard"
-        subtitle="Global operational view."
+        subtitle="System overview — monitor activity, users, and finances."
       />
 
-      {metrics && (
-        <>
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card title="Users">{metrics.totalUsers}</Card>
-            <Card title="Groups">{metrics.totalGroups}</Card>
-            <Card title="Total Spend">
-              {formatMoney(metrics.totalSpend)}
-            </Card>
-            <Card title="Outstanding Unpaid">
-              {formatMoney(metrics.outstandingSettlements)}
-            </Card>
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        {[
+          { label: "Total Users", value: metrics.totalUsers, sub: `${metrics.deactivatedCount} deactivated` },
+          { label: "Total Groups", value: metrics.totalGroups, sub: `${metrics.totalExpenses} expenses logged` },
+          { label: "Total Spend", value: formatMoney(metrics.totalSpend), sub: "across all groups" },
+          { label: "Outstanding", value: formatMoney(metrics.outstandingSettlements), sub: "unsettled balances" },
+        ].map((kpi) => (
+          <div
+            key={kpi.label}
+            className="p-5 rounded-xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500 mb-1">
+              {kpi.label}
+            </p>
+            <p className="text-3xl font-bold text-stone-900 dark:text-white">{kpi.value}</p>
+            <p className="text-xs text-stone-400 dark:text-slate-500 mt-1">{kpi.sub}</p>
           </div>
+        ))}
+      </div>
 
-          <Card title="Groups">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th>Group</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {snapshot?.groups.map((g) => (
-                  <tr key={g.id}>
-                    <td>{g.name}</td>
-                    <td>
-                      <Button
-                        onClick={() => handleGroupView(g.id)}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        onClick={() => console.log("Archive", g.id)}
-                      >
-                        Archive
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-
-          <Card title="Users">
-            <div className="space-y-2">
-              {metrics.userRows.map((u) => (
-                <div
-                  key={u.id}
-                  onClick={() => handleUserClick(u.id)}
-                  className="cursor-pointer flex justify-between p-2 hover:bg-gray-100"
-                >
-                  <div>
-                    <p>{u.name}</p>
-                    <p className="text-sm text-gray-500">{u.email}</p>
-                  </div>
-                  <Badge>{u.activeRecently ? "Active" : "Quiet"}</Badge>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </>
-      )}
-
-      {isUserPanelOpen && (
-        <UserDetailsPanel
-          user={metrics?.userRows.find((u) => u.id === selectedUserId)}
-          onClose={() => setIsUserPanelOpen(false)}
-          onToggleSuspend={handleToggleSuspend}
+      {/* Quick Navigation */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <NavCard
+          icon="👥"
+          label="Manage Users"
+          description="View, activate, or deactivate users"
+          count={metrics.totalUsers}
+          color="bg-purple-50 dark:bg-purple-950/30"
+          onClick={() => navigate("/admin/users")}
         />
-      )}
+        <NavCard
+          icon="🏠"
+          label="Manage Groups"
+          description="View details and archive groups"
+          count={metrics.totalGroups}
+          color="bg-blue-50 dark:bg-blue-950/30"
+          onClick={() => navigate("/admin/groups")}
+        />
+        <NavCard
+          icon="📋"
+          label="Audit Log"
+          description="Track all system actions"
+          count={metrics.events.length}
+          color="bg-amber-50 dark:bg-amber-950/30"
+          onClick={() => navigate("/admin/audit")}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <Card title="Recent Activity">
+          <div className="space-y-3 pt-2">
+            {metrics.events.length === 0 && (
+              <p className="text-sm text-stone-500 py-4 text-center">No recent activity.</p>
+            )}
+            {metrics.events.map((ev) => (
+              <div key={ev.id} className="flex items-start gap-3">
+                <Badge variant={ev.badge}>{ev.action}</Badge>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-stone-800 dark:text-white font-medium truncate">{ev.detail}</p>
+                  <p className="text-xs text-stone-400 dark:text-slate-500">by {ev.actor}</p>
+                </div>
+                <span className="text-xs text-stone-400 dark:text-slate-500 whitespace-nowrap">
+                  {formatRelative(ev.timestamp)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Top Groups by Spend */}
+        <Card title="Top Groups by Spend">
+          <div className="space-y-3 pt-2">
+            {metrics.topGroups.length === 0 && (
+              <p className="text-sm text-stone-500 py-4 text-center">No expense data yet.</p>
+            )}
+            {metrics.topGroups.map((g, i) => {
+              const pct = metrics.totalSpend > 0 ? (g.total / metrics.totalSpend) * 100 : 0;
+              return (
+                <div key={g.name}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-stone-800 dark:text-white">
+                      <span className="text-stone-400 dark:text-slate-500 mr-2">#{i + 1}</span>
+                      {g.name}
+                    </span>
+                    <span className="text-stone-600 dark:text-slate-300">{formatMoney(g.total)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-stone-100 dark:bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[#6f4f8b] dark:bg-[#8d70b0] transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
     </>
   );
 }
+

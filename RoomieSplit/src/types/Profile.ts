@@ -7,4 +7,5 @@ export interface Profile {
   payment_method: string | null;
   avatar_path: string | null;
   created_at: string;
+  is_active?: boolean;
 }
