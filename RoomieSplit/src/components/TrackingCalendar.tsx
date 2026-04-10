@@ -340,7 +340,7 @@ export default function TrackingCalendar({
                 setMonthCursor(previousMonth);
                 setSelectedDateKey(formatDateKey(startOfMonth(previousMonth)));
               }}
-              className="rs-action-icon"
+              className="rs-action-icon !rounded-[4px]"
               aria-label="Previous month"
             >
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
@@ -363,7 +363,7 @@ export default function TrackingCalendar({
                 setMonthCursor(nextMonth);
                 setSelectedDateKey(formatDateKey(startOfMonth(nextMonth)));
               }}
-              className="rs-action-icon"
+              className="rs-action-icon !rounded-[4px]"
               aria-label="Next month"
             >
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
@@ -379,7 +379,7 @@ export default function TrackingCalendar({
                 setMonthCursor(startOfMonth(today));
                 setSelectedDateKey(formatDateKey(today));
               }}
-              className="rounded-lg border border-stone-200/90 bg-white/90 px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-300 hover:bg-stone-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+              className="rounded-[4px] border border-stone-200/90 bg-white/90 px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-300 hover:bg-stone-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
             >
               Today
             </button>
@@ -392,7 +392,7 @@ export default function TrackingCalendar({
             ['Payments', monthStats.payments, 'border-emerald-200/90 bg-emerald-50/72 text-emerald-950 dark:border-emerald-500/22 dark:bg-emerald-500/10 dark:text-emerald-100'],
             ['Scheduled', monthStats.scheduled, 'border-amber-200/90 bg-amber-50/72 text-amber-950 dark:border-amber-500/22 dark:bg-amber-500/10 dark:text-amber-100'],
           ] as const).map(([label, value, className]) => (
-            <div key={label} className={`rounded-lg border px-3 py-3 ${className}`}>
+            <div key={label} className={`rounded-[4px] border px-3 py-3 ${className}`}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-75">
                 {label}
               </p>
@@ -424,14 +424,14 @@ export default function TrackingCalendar({
                 key={dayKey}
                 type="button"
                 onClick={() => setSelectedDateKey(dayKey)}
-                className={`relative min-h-28 rounded-lg border px-3 py-3 text-left transition sm:min-h-32 ${
+                className={`relative min-h-28 rounded-[4px] border px-3 py-3 text-left transition sm:min-h-32 ${
                   isSelected
                     ? 'border-[#8c74aa]/55 bg-[#f5f0fb] dark:border-[#b59ad6]/40 dark:bg-[#211a2a]'
                     : 'border-stone-200/80 bg-white/82 hover:border-stone-300 hover:bg-stone-50 dark:border-slate-800/70 dark:bg-slate-950/35 dark:hover:border-slate-700 dark:hover:bg-slate-900/70'
                 } ${!isCurrentMonth ? 'opacity-50' : ''}`}
               >
                 <span
-                  className={`absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${
+                  className={`absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-[4px] text-sm font-bold ${
                     isToday
                       ? 'bg-stone-900 text-white dark:bg-slate-100 dark:text-slate-950'
                       : isSelected
@@ -448,7 +448,7 @@ export default function TrackingCalendar({
                     return (
                       <div
                         key={event.id}
-                        className={`rounded-lg px-2.5 py-2 text-xs font-medium ${tone.chip}`}
+                        className={`rounded-[4px] px-2.5 py-2 text-xs font-medium ${tone.chip}`}
                       >
                         <div className="truncate">
                           <span className="mr-1">{event.icon}</span>
@@ -484,7 +484,7 @@ export default function TrackingCalendar({
           {(['chore', 'payment', 'scheduled'] as const).map((type) => {
             const tone = eventTone(type);
             return (
-              <span key={type} className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold ${tone.badge}`}>
+              <span key={type} className={`rounded-[4px] px-2.5 py-1 text-[11px] font-semibold ${tone.badge}`}>
                 {tone.label}
               </span>
             );
@@ -492,11 +492,11 @@ export default function TrackingCalendar({
         </div>
 
         {loading ? (
-          <p className="rounded-lg border border-dashed border-stone-200/90 bg-white/75 px-4 py-8 text-center text-sm text-stone-500 dark:border-slate-800 dark:bg-slate-900/55 dark:text-slate-400">
+          <p className="rounded-[4px] border border-dashed border-stone-200/90 bg-white/75 px-4 py-8 text-center text-sm text-stone-500 dark:border-slate-800 dark:bg-slate-900/55 dark:text-slate-400">
             Loading tracking data...
           </p>
         ) : selectedDateEvents.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-stone-200/90 bg-white/75 px-4 py-8 text-center text-sm text-stone-500 dark:border-slate-800 dark:bg-slate-900/55 dark:text-slate-400">
+          <p className="rounded-[4px] border border-dashed border-stone-200/90 bg-white/75 px-4 py-8 text-center text-sm text-stone-500 dark:border-slate-800 dark:bg-slate-900/55 dark:text-slate-400">
             Nothing scheduled for this day.
           </p>
         ) : (
@@ -507,10 +507,10 @@ export default function TrackingCalendar({
               return (
                 <div
                   key={event.id}
-                  className={`rounded-lg px-3 py-3 ${tone.chip}`}
+                  className={`rounded-[4px] px-3 py-3 ${tone.chip}`}
                 >
                   <div className="flex items-start gap-2.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/75 bg-white/70 text-lg dark:border-slate-800/70 dark:bg-slate-950/35">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] border border-white/75 bg-white/70 text-lg dark:border-slate-800/70 dark:bg-slate-950/35">
                       {event.icon}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -518,7 +518,7 @@ export default function TrackingCalendar({
                         <p className="truncate text-sm font-semibold">
                           {event.title}
                         </p>
-                        <span className={`rounded-lg px-2 py-0.5 text-[10px] font-semibold ${tone.badge}`}>
+                        <span className={`rounded-[4px] px-2 py-0.5 text-[10px] font-semibold ${tone.badge}`}>
                           {tone.label}
                         </span>
                       </div>

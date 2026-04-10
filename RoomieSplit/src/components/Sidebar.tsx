@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactElement, SVGProps } from 'react';
 import type { AppUser } from '../types/auth';
+import Button from './Button';
 
 interface NavItem {
   label: string;
@@ -155,6 +156,13 @@ export default function Sidebar({
 
   const navItems = user.isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
   const displayName = user.name?.trim() || user.email || 'Roomie';
+  const signOutIcon = (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75h-2A1.75 1.75 0 0 0 3.75 5.5v9A1.75 1.75 0 0 0 5.5 16.25h2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.5 6.5 15 10l-3.5 3.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h7" />
+    </svg>
+  );
 
   return (
     <>
@@ -249,13 +257,14 @@ export default function Sidebar({
                   type="button"
                   onClick={onSignOut}
                   title="Sign out"
-                  className="text-sm font-medium text-stone-500 transition hover:text-red-600 dark:text-slate-400 dark:hover:text-red-300"
+                  aria-label="Sign out"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-red-300/75 bg-red-50/92 text-red-700 transition hover:border-red-400 hover:bg-red-100 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
                 >
-                  Out
+                  {signOutIcon}
                 </button>
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-3">
+              <div className="space-y-3">
                 <div className="flex min-w-0 items-center gap-3">
                   {avatarUrl ? (
                     <img
@@ -274,13 +283,16 @@ export default function Sidebar({
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={onSignOut}
-                  className="text-sm font-medium text-stone-500 transition hover:text-red-600 dark:text-slate-400 dark:hover:text-red-300"
+                  variant="danger"
+                  size="sm"
+                  className="w-full justify-center"
                 >
+                  {signOutIcon}
                   Sign out
-                </button>
+                </Button>
               </div>
             )}
           </div>
