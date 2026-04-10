@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { Users, Home, ClipboardList, DollarSign, TrendingUp, AlertCircle, BarChart2 } from "lucide-react";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import PageHeader from "../components/PageHeader";
@@ -28,18 +29,20 @@ function formatRelative(value: string | null | undefined) {
 
 // Quick nav card component
 function NavCard({
-  icon,
+  icon: Icon,
   label,
   description,
   count,
   color,
+  iconColor,
   onClick,
 }: {
-  icon: string;
+  icon: React.ElementType;
   label: string;
   description: string;
   count: number;
   color: string;
+  iconColor: string;
   onClick: () => void;
 }) {
   return (
@@ -48,7 +51,9 @@ function NavCard({
       className="group text-left w-full p-5 rounded-xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#6f4f8b] dark:hover:border-[#8d70b0] hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-start justify-between mb-3">
-        <span className={`text-2xl p-2 rounded-lg ${color}`}>{icon}</span>
+        <span className={`p-2.5 rounded-xl ${color}`}>
+          <Icon size={20} className={iconColor} />
+        </span>
         <span className="text-2xl font-bold text-stone-900 dark:text-white">{count}</span>
       </div>
       <p className="font-semibold text-stone-900 dark:text-white group-hover:text-[#6f4f8b] dark:group-hover:text-[#d4c0ea] transition-colors">
@@ -156,18 +161,23 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
       {/* KPI Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Users", value: metrics.totalUsers, sub: `${metrics.deactivatedCount} deactivated` },
-          { label: "Total Groups", value: metrics.totalGroups, sub: `${metrics.totalExpenses} expenses logged` },
-          { label: "Total Spend", value: formatMoney(metrics.totalSpend), sub: "across all groups" },
-          { label: "Outstanding", value: formatMoney(metrics.outstandingSettlements), sub: "unsettled balances" },
+          { label: "Total Users", value: metrics.totalUsers, sub: `${metrics.deactivatedCount} deactivated`, Icon: Users, iconColor: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-950/30" },
+          { label: "Total Groups", value: metrics.totalGroups, sub: `${metrics.totalExpenses} expenses logged`, Icon: Home, iconColor: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30" },
+          { label: "Total Spend", value: formatMoney(metrics.totalSpend), sub: "across all groups", Icon: DollarSign, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+          { label: "Outstanding", value: formatMoney(metrics.outstandingSettlements), sub: "unsettled balances", Icon: AlertCircle, iconColor: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30" },
         ].map((kpi) => (
           <div
             key={kpi.label}
             className="p-5 rounded-xl border border-stone-200 dark:border-slate-800 bg-white dark:bg-slate-900"
           >
-            <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500 mb-1">
-              {kpi.label}
-            </p>
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`p-2 rounded-lg ${kpi.bg}`}>
+                <kpi.Icon size={16} className={kpi.iconColor} />
+              </span>
+              <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500">
+                {kpi.label}
+              </p>
+            </div>
             <p className="text-3xl font-bold text-stone-900 dark:text-white">{kpi.value}</p>
             <p className="text-xs text-stone-400 dark:text-slate-500 mt-1">{kpi.sub}</p>
           </div>
@@ -177,27 +187,30 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
       {/* Quick Navigation */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <NavCard
-          icon="👥"
+          icon={Users}
           label="Manage Users"
           description="View, activate, or deactivate users"
           count={metrics.totalUsers}
           color="bg-purple-50 dark:bg-purple-950/30"
+          iconColor="text-purple-600 dark:text-purple-400"
           onClick={() => navigate("/admin/users")}
         />
         <NavCard
-          icon="🏠"
+          icon={Home}
           label="Manage Groups"
           description="View details and archive groups"
           count={metrics.totalGroups}
           color="bg-blue-50 dark:bg-blue-950/30"
+          iconColor="text-blue-600 dark:text-blue-400"
           onClick={() => navigate("/admin/groups")}
         />
         <NavCard
-          icon="📋"
+          icon={ClipboardList}
           label="Audit Log"
           description="Track all system actions"
           count={metrics.events.length}
           color="bg-amber-50 dark:bg-amber-950/30"
+          iconColor="text-amber-600 dark:text-amber-400"
           onClick={() => navigate("/admin/audit")}
         />
       </div>
