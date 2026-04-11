@@ -276,7 +276,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                       : 'Unassigned'}
                   </Badge>
                 </div>
-                <div className="flex w-24 justify-center shrink-0">
+                <div className="flex w-24 justify-center shrink-0 ml-1">
                   {chore.is_completed ? <Badge variant="green">Completed</Badge> : <Badge variant="orange">Pending</Badge>}
                 </div>
 
