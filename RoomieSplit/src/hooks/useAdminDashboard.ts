@@ -17,6 +17,7 @@ export function useAdminDashboard() {
 
     if (loadError) {
       setError(loadError.message);
+      setSnapshot({ groups: [], members: [], profiles: [], expenses: [], chores: [], settlements: [] });
       setLoading(false);
       return;
     }

@@ -40,6 +40,7 @@ export interface AdminDashboardSnapshot {
   settlements: AdminSettlement[];
 }
 
+
 function createError(message: string): ServiceError {
   return { message };
 }
@@ -63,7 +64,7 @@ export async function getAdminDashboardSnapshot(): Promise<{
       .order("joined_at", { ascending: false }),
     supabase
       .from("profiles")
-      .select("id, name, email, nickname, phone, payment_method, avatar_path, created_at")
+      .select("id, name, email, nickname, phone, payment_method, avatar_path, created_at, is_active")
       .order("created_at", { ascending: false }),
     supabase
       .from("expenses")

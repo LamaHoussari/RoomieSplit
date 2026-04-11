@@ -1,9 +1,9 @@
-import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Home, ClipboardList, DollarSign, TrendingUp, AlertCircle, BarChart2 } from "lucide-react";
+import { Users, Home, ClipboardList, DollarSign, AlertCircle } from "lucide-react";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import PageHeader from "../components/PageHeader";
+import { Skeleton, SkeletonCard } from "../components/Skeleton";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import { getSettlementRemaining, roundCurrency } from "../lib/finance";
 import type { AppUser } from "../types/auth";
@@ -65,72 +65,65 @@ function NavCard({
 }
 
 export default function AdminDashboardPage({ user }: { user: AppUser }) {
-  const { snapshot, error } = useAdminDashboard();
+  const { snapshot, loading } = useAdminDashboard();
   const navigate = useNavigate();
 
-  const metrics = useMemo(() => {
+  const metrics = (() => {
     if (!snapshot) return null;
 
-    const nonAdminProfiles = snapshot.profiles.filter((p) => p.id !== user.id);
-
-    const totalSpend = snapshot.expenses.reduce(
-      (sum, e) => sum + Number(e.amount || 0),
-      0
-    );
-
+    const nonAdminProfiles = snapshot.profiles.filter((profile) => profile.id !== user.id);
+    const totalSpend = snapshot.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
     const outstandingSettlements = snapshot.settlements.reduce(
-      (sum, s) => sum + getSettlementRemaining(s),
+      (sum, settlement) => sum + getSettlementRemaining(settlement),
       0
     );
+    const deactivatedCount = nonAdminProfiles.filter((profile) => profile.is_active === false).length;
 
-    const deactivatedCount = nonAdminProfiles.filter(
-      (p) => (p as any).is_active === false
-    ).length;
-
-    // Top groups by spend
     const spendByGroup: Record<string, { name: string; total: number }> = {};
-    for (const e of snapshot.expenses) {
-      const gid = (e as any).group_id || "";
-      if (!gid) continue;
-      const gname = e.groups?.name || "Unknown";
-      if (!spendByGroup[gid]) spendByGroup[gid] = { name: gname, total: 0 };
-      spendByGroup[gid].total += Number(e.amount || 0);
-    }
-    const topGroups = Object.values(spendByGroup)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
+    for (const expense of snapshot.expenses) {
+      if (!expense.group_id) continue;
 
-    // Recent activity feed (last 8 events)
-    const getProfile = (id: string | undefined | null) =>
-      snapshot.profiles.find((p) => p.id === id);
+      const groupName = expense.groups?.name || "Unknown";
+      if (!spendByGroup[expense.group_id]) {
+        spendByGroup[expense.group_id] = { name: groupName, total: 0 };
+      }
+
+      spendByGroup[expense.group_id].total += Number(expense.amount || 0);
+    }
+
+    const profileById = new Map(snapshot.profiles.map((profile) => [profile.id, profile]));
+    const resolveActor = (profileId: string | null | undefined) => {
+      const profile = profileById.get(profileId ?? "");
+      return profile?.name || profile?.email || "Unknown";
+    };
 
     const events = [
-      ...snapshot.expenses.map((e) => ({
-        id: `exp-${e.id}`,
-        timestamp: e.created_at,
-        actor: getProfile(e.created_by)?.name || getProfile(e.created_by)?.email || "Unknown",
+      ...snapshot.expenses.map((expense) => ({
+        id: `exp-${expense.id}`,
+        timestamp: expense.created_at,
+        actor: resolveActor(expense.created_by),
         action: "Added expense",
-        detail: e.description || "—",
+        detail: expense.description || "—",
         badge: "green" as const,
       })),
-      ...snapshot.chores.map((c) => ({
-        id: `chore-${c.id}`,
-        timestamp: c.created_at,
-        actor: getProfile(c.created_by)?.name || getProfile(c.created_by)?.email || "Unknown",
+      ...snapshot.chores.map((chore) => ({
+        id: `chore-${chore.id}`,
+        timestamp: chore.created_at,
+        actor: resolveActor(chore.created_by),
         action: "Created chore",
-        detail: c.name || "—",
+        detail: chore.name || "—",
         badge: "purple" as const,
       })),
-      ...snapshot.settlements.map((s) => ({
-        id: `set-${s.id}`,
-        timestamp: s.created_at,
-        actor: getProfile(s.from_user_id)?.name || getProfile(s.from_user_id)?.email || "Unknown",
+      ...snapshot.settlements.map((settlement) => ({
+        id: `set-${settlement.id}`,
+        timestamp: settlement.created_at,
+        actor: resolveActor(settlement.from_user_id),
         action: "Updated balance",
-        detail: s.groups?.name || "—",
+        detail: settlement.groups?.name || "—",
         badge: "orange" as const,
       })),
     ]
-      .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime())
+      .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
       .slice(0, 8);
 
     return {
@@ -141,13 +134,62 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
       totalSpend,
       outstandingSettlements,
       deactivatedCount,
-      topGroups,
+      topGroups: Object.values(spendByGroup)
+        .sort((left, right) => right.total - left.total)
+        .slice(0, 5),
       events,
     };
-  }, [snapshot]);
+  })();
 
-  if (!metrics && !error) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
+  if (loading) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Operations"
+          title="Admin Dashboard"
+          subtitle="System overview — monitor activity, users, and finances."
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-28" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="rs-panel p-6">
+            <Skeleton className="h-5 w-32 mb-4" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-3">
+                <Skeleton className="h-6 w-24" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-3 w-12" />
+              </div>
+            ))}
+          </div>
+          <div className="rs-panel p-6">
+            <Skeleton className="h-5 w-40 mb-4" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="mb-3">
+                <div className="flex justify-between mb-1">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-1.5 w-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (!metrics) return null;
 
   return (
@@ -269,4 +311,4 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
     </>
   );
 }
-
+

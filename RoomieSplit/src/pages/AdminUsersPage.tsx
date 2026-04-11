@@ -1,10 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
+import { SkeletonRow } from '../components/Skeleton';
 import { useAdminDashboard } from '../hooks/useAdminDashboard';
 import { Input } from '../components/FormField';
 import Button from '../components/Button';
+import type { Profile } from '../types/Profile';
+
+type UserDetailsModalProps = {
+  user: Profile;
+  onClose: () => void;
+};
+
+type ConfirmDeactivateModalProps = {
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+};
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "No activity";
@@ -13,7 +26,7 @@ function formatDate(value: string | null | undefined) {
   return parsed.toLocaleDateString();
 }
 
-const UserDetailsModal = ({ user, onClose }: any) => {
+const UserDetailsModal = ({ user, onClose }: UserDetailsModalProps) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -34,7 +47,7 @@ const UserDetailsModal = ({ user, onClose }: any) => {
   );
 };
 
-const ConfirmDeactivateModal = ({ onConfirm, onCancel, isLoading }: any) => {
+const ConfirmDeactivateModal = ({ onConfirm, onCancel, isLoading }: ConfirmDeactivateModalProps) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={!isLoading ? onCancel : undefined} />
@@ -59,7 +72,7 @@ const ConfirmDeactivateModal = ({ onConfirm, onCancel, isLoading }: any) => {
 };
 
 export default function Users() {
-  const { snapshot, loading, error, deactivateUser, activateUser } = useAdminDashboard();
+  const { snapshot, loading, deactivateUser, activateUser } = useAdminDashboard();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [userToDeactivateId, setUserToDeactivateId] = useState<string | null>(null);
@@ -82,23 +95,37 @@ export default function Users() {
     await activateUser(id);
   };
 
-  const filteredProfiles = useMemo(() => {
-    if (!snapshot?.profiles) return [];
-    if (!searchQuery.trim()) return snapshot.profiles;
-    
-    const query = searchQuery.toLowerCase();
-    return snapshot.profiles.filter(p => 
+  const profiles = snapshot?.profiles ?? [];
+  const filteredProfiles = !searchQuery.trim()
+    ? profiles
+    : profiles.filter(p => {
+        const query = searchQuery.toLowerCase();
+        return (
       (p.name?.toLowerCase() || '').includes(query) || 
       (p.email?.toLowerCase() || '').includes(query)
+        );
+      });
+
+  const selectedProfile = profiles.find(p => p.id === selectedProfileId);
+
+  if (loading) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Administration"
+          title="Users Management"
+          subtitle="Manage all users here: view, edit, or deactivate users."
+        />
+        <Card title="Users">
+          <div className="space-y-3 pt-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonRow key={i} />
+            ))}
+          </div>
+        </Card>
+      </>
     );
-  }, [snapshot?.profiles, searchQuery]);
-
-  const selectedProfile = useMemo(() => {
-    return snapshot?.profiles.find(p => p.id === selectedProfileId);
-  }, [snapshot?.profiles, selectedProfileId]);
-
-  if (loading) return <div className="p-6">Loading users...</div>;
-  if (error) return <div className="p-6 text-red-500">Error loading users: {error}</div>;
+  }
 
   return (
     <>

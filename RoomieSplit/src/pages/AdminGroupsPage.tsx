@@ -1,10 +1,27 @@
-import React, { useState, useMemo } from 'react';
+import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
+import { SkeletonTableRow } from '../components/Skeleton';
 import { useAdminDashboard } from '../hooks/useAdminDashboard';
 import Button from '../components/Button';
 import { Input } from '../components/FormField';
+import type { AdminGroupMember } from '../services/adminService';
+import type { Group } from '../types/Group';
+
+type GroupDetailsModalProps = {
+  group: Group;
+  members: AdminGroupMember[];
+  adminName: string | null;
+  onClose: () => void;
+};
+
+type ConfirmArchiveModalProps = {
+  groupName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+};
 
 function formatDate(value: string | null | undefined) {
   if (!value) return '—';
@@ -13,7 +30,7 @@ function formatDate(value: string | null | undefined) {
   return parsed.toLocaleDateString();
 }
 
-const GroupDetailsModal = ({ group, members, adminName, onClose }: any) => {
+const GroupDetailsModal = ({ group, members, adminName, onClose }: GroupDetailsModalProps) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -48,7 +65,7 @@ const GroupDetailsModal = ({ group, members, adminName, onClose }: any) => {
           <div className="px-6 pb-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500 mb-2">Members</p>
             <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-              {members.map((m: any) => (
+              {members.map((m) => (
                 <div key={m.id} className="flex items-center justify-between p-2 rounded-lg bg-stone-50 dark:bg-slate-800">
                   <div>
                     <p className="text-sm font-medium text-stone-800 dark:text-white">
@@ -76,7 +93,7 @@ const GroupDetailsModal = ({ group, members, adminName, onClose }: any) => {
   );
 };
 
-const ConfirmArchiveModal = ({ groupName, onConfirm, onCancel, isLoading }: any) => {
+const ConfirmArchiveModal = ({ groupName, onConfirm, onCancel, isLoading }: ConfirmArchiveModalProps) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={!isLoading ? onCancel : undefined} />
@@ -99,28 +116,18 @@ const ConfirmArchiveModal = ({ groupName, onConfirm, onCancel, isLoading }: any)
 };
 
 export default function Groups() {
-  const { snapshot, loading, error, archiveGroup } = useAdminDashboard();
+  const { snapshot, loading, archiveGroup } = useAdminDashboard();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [groupToArchiveId, setGroupToArchiveId] = useState<string | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
 
-  const filteredGroups = useMemo(() => {
-    if (!snapshot?.groups) return [];
-    if (!searchQuery.trim()) return snapshot.groups;
-    const q = searchQuery.toLowerCase();
-    return snapshot.groups.filter((g) => g.name.toLowerCase().includes(q));
-  }, [snapshot?.groups, searchQuery]);
-
-  const selectedGroup = useMemo(
-    () => snapshot?.groups.find((g) => g.id === selectedGroupId),
-    [snapshot?.groups, selectedGroupId]
-  );
-
-  const groupToArchive = useMemo(
-    () => snapshot?.groups.find((g) => g.id === groupToArchiveId),
-    [snapshot?.groups, groupToArchiveId]
-  );
+  const groups = snapshot?.groups ?? [];
+  const filteredGroups = !searchQuery.trim()
+    ? groups
+    : groups.filter((group) => group.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const selectedGroup = groups.find((group) => group.id === selectedGroupId);
+  const groupToArchive = groups.find((group) => group.id === groupToArchiveId);
 
   const getMembersForGroup = (groupId: string) =>
     snapshot?.members.filter((m) => m.group_id === groupId) ?? [];
@@ -140,8 +147,34 @@ export default function Groups() {
     setGroupToArchiveId(null);
   };
 
-  if (loading) return <div className="p-6">Loading groups...</div>;
-  if (error) return <div className="p-6 text-red-500">Error loading groups: {error}</div>;
+  if (loading) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Administration"
+          title="Groups Management"
+          subtitle="Manage all groups here: view details or archive groups."
+        />
+        <Card title="Groups">
+          <table className="w-full text-left mt-2">
+            <thead>
+              <tr className="border-b border-stone-100 dark:border-slate-800">
+                <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Group</th>
+                <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Members</th>
+                <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white">Created</th>
+                <th className="pb-3 text-sm font-semibold text-stone-900 dark:text-white text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonTableRow key={i} cols={4} />
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>
@@ -175,7 +208,6 @@ export default function Groups() {
           <tbody className="divide-y divide-stone-100 dark:divide-slate-800">
             {filteredGroups.map((group) => {
               const members = getMembersForGroup(group.id);
-              const adminName = getAdminName(group.id);
               return (
                 <tr key={group.id} className="hover:bg-stone-50 dark:hover:bg-slate-800/40 transition-colors">
                   <td className="py-4 text-stone-900 dark:text-white font-medium">{group.name}</td>
@@ -224,4 +256,4 @@ export default function Groups() {
       )}
     </>
   );
-}
+}
