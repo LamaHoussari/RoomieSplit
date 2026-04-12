@@ -269,6 +269,48 @@
   }
 }
 
+/* Loading Screen */
+@keyframes loadingPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.95); }
+}
+
+@keyframes loadingFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--rs-bg);
+  gap: 1.25rem;
+}
+
+.loading-logo-wrapper {
+  animation: loadingPulse 1.8s ease-in-out infinite;
+}
+
+.loading-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  animation: loadingFadeIn 400ms ease-out both;
+}
+
+.loading-text {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--rs-text-muted);
+  letter-spacing: 0.04em;
+  animation: loadingFadeIn 400ms ease-out 150ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-pop-in,

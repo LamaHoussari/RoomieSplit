@@ -4,6 +4,7 @@ import LoginPage       from '../pages/LoginPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
+import LoadingScreen from '../components/LoadingScreen';
 import DashboardPage   from '../pages/DashboardPage';
 import GroupsPage      from '../pages/GroupsPage';
 import GroupDetailPage from '../pages/GroupDetailPage';
@@ -88,6 +89,7 @@ function AnimatedRoutes() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
       </Routes>
+      {loading && <LoadingScreen />}
     </div>
   );
 }
