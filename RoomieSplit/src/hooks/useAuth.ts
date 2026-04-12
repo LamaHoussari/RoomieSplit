@@ -7,27 +7,18 @@ import {
   signUpWithEmail,
   subscribeToAuthChanges,
 } from "../services/authService";
-import {
-  ADMIN_EMAIL,
-  clearAdminSession,
-  createLocalAdminUser,
-  getStoredAdminSession,
-  isAdminCredentials,
-  isReservedAdminEmail,
-  storeAdminSession,
-} from "../lib/adminAuth";
+import { checkIsSystemAdmin } from "../lib/adminAuth";
 
-function mapUser(
+async function loadUserProfile(
   user: { id: string; email?: string | null } | null,
-): AppUser | null {
+): Promise<AppUser | null> {
   if (!user) return null;
-  const normalizedEmail = user.email?.trim().toLowerCase() ?? null;
+  const isAdmin = await checkIsSystemAdmin(user.id);
   return {
     id: user.id,
     email: user.email ?? null,
     name: user.email?.split("@")[0] ?? null,
-    isAdmin: normalizedEmail === ADMIN_EMAIL,
-    authSource: "supabase",
+    isAdmin,
   };
 }
 
@@ -53,14 +44,16 @@ export function useAuth() {
         setLoading(false);
         return;
       }
-      setUser(mapUser(data.user) ?? getStoredAdminSession());
+      const appUser = await loadUserProfile(data.user);
+      setUser(appUser);
       setLoading(false);
     }
     loadUser();
     const {
       data: { subscription },
-    } = subscribeToAuthChanges((_event, session) => {
-      setUser(mapUser(session?.user ?? null) ?? getStoredAdminSession());
+    } = subscribeToAuthChanges(async (_event, session) => {
+      const appUser = await loadUserProfile(session?.user ?? null);
+      setUser(appUser);
     });
 
     return () => {
@@ -73,14 +66,11 @@ export function useAuth() {
     const id = setTimeout(() => setError(""), 5000);
     return () => clearTimeout(id);
   }, [error]);
-  async function signUp(email: string, passowrd: string) {
+
+  async function signUp(email: string, password: string) {
     setError("");
     setsuccessMessage("");
-    if (isReservedAdminEmail(email)) {
-      setError("This email is reserved for the admin dashboard.");
-      return false;
-    }
-    const { error } = await signUpWithEmail(email, passowrd);
+    const { error } = await signUpWithEmail(email, password);
     if (error) {
       setError(error.message);
       return false;
@@ -89,27 +79,10 @@ export function useAuth() {
     return true;
   }
 
-  async function signIn(email: string, passowrd: string) {
+  async function signIn(email: string, password: string) {
     setError("");
     setsuccessMessage("");
-
-    if (isAdminCredentials(email, passowrd)) {
-      clearAdminSession();
-
-      const adminSignInResult = await signInWithEmail(email, passowrd);
-      if (!adminSignInResult.error) {
-        setsuccessMessage("Signed in as admin.");
-        return true;
-      }
-
-      const localAdminUser = createLocalAdminUser();
-      storeAdminSession(localAdminUser);
-      setUser(localAdminUser);
-      setsuccessMessage("Signed in as local admin.");
-      return true;
-    }
-
-    const { error } = await signInWithEmail(email, passowrd);
+    const { error } = await signInWithEmail(email, password);
     if (error) {
       setError(error.message);
       return false;
@@ -121,20 +94,12 @@ export function useAuth() {
   async function signOut() {
     setError("");
     setsuccessMessage("");
-    const localAdminSession = getStoredAdminSession();
-
-    if (user?.authSource === "local-admin" || localAdminSession) {
-      clearAdminSession();
-      setUser(null);
-      return true;
-    }
-
     const { error } = await signOutUser();
     if (error) {
       setError(error.message);
       return false;
     }
-    setsuccessMessage("Signed out successfully!!!"); 
+    setsuccessMessage("Signed out successfully!!!");
     return true;
   }
 

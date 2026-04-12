@@ -76,7 +76,6 @@ export default function ProfilePage({ user }: { user: AppUser }) {
 
   const isDirty =
     draft.name !== saved.name ||
-    draft.email !== saved.email ||
     draft.nickname !== saved.nickname ||
     draft.phone !== saved.phone ||
     draft.paymentMethod !== saved.paymentMethod;
@@ -197,10 +196,9 @@ export default function ProfilePage({ user }: { user: AppUser }) {
           <FormField label="Email">
             <Input
               value={draft.email}
-              onChange={e => setDraft(d => ({ ...d, email: e.target.value }))}
               type="email"
-              readOnly={!isEditing}
-              className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
+              readOnly
+              className="cursor-default bg-stone-100 dark:bg-slate-800/70"
             />
           </FormField>
           <FormField label="Phone Number (optional)">

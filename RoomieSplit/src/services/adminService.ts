@@ -64,7 +64,7 @@ export async function getAdminDashboardSnapshot(): Promise<{
       .order("joined_at", { ascending: false }),
     supabase
       .from("profiles")
-      .select("id, name, email, nickname, phone, payment_method, avatar_path, created_at, is_active")
+      .select("id, name, email, nickname, phone, payment_method, avatar_path, created_at, is_active, is_system_admin")
       .order("created_at", { ascending: false }),
     supabase
       .from("expenses")
@@ -107,4 +107,17 @@ export async function getAdminDashboardSnapshot(): Promise<{
     },
     error: null,
   };
+}
+
+export async function adminSetUserActive(userId: string, isActive: boolean) {
+  return await supabase.rpc("admin_set_user_active", {
+    p_user_id: userId,
+    p_is_active: isActive,
+  });
+}
+
+export async function adminArchiveGroup(groupId: string) {
+  return await supabase.rpc("admin_archive_group", {
+    p_group_id: groupId,
+  });
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { getAvatarUrl } from '../services/avatarService';
 import type { Profile } from '../types/Profile';
 
 export function useProfile(userId: string) {
@@ -25,6 +26,6 @@ export function useProfile(userId: string) {
     profile,
     loading,
     name: profile?.name ?? null,
-    avatarUrl: profile?.avatar_path ?? null,
+    avatarUrl: getAvatarUrl(profile?.avatar_path ?? null),
   };
 }

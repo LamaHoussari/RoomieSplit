@@ -239,13 +239,37 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                   className="flex items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-stone-100/80 dark:hover:bg-white/5"
                 >
                   <Avatar initials={getInitials(memberName)} colorClass={member.color_class || ''} />
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-stone-900 dark:text-slate-100">
+                  <div className="min-w-0 group/member relative">
+                    <p className="truncate text-base font-semibold text-stone-900 dark:text-slate-100 cursor-pointer">
                       {memberName}
                     </p>
                     <p className="text-sm text-stone-500 dark:text-slate-400">
                       {member.role === 'admin' ? 'Admin' : 'Member'}
                     </p>
+                    {/* Member info popover */}
+                    <div className="pointer-events-none absolute left-0 top-full z-30 mt-1 w-60 rounded-xl border border-stone-200 bg-white p-3 shadow-xl opacity-0 transition-opacity group-hover/member:opacity-100 dark:border-slate-700 dark:bg-slate-800">
+                      {member.profiles?.email && (
+                        <p className="truncate text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Email: </span>
+                          {member.profiles.email}
+                        </p>
+                      )}
+                      {member.profiles?.phone && (
+                        <p className="mt-1 text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Phone: </span>
+                          {member.profiles.phone}
+                        </p>
+                      )}
+                      {member.profiles?.payment_method && (
+                        <p className="mt-1 text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Payment: </span>
+                          {member.profiles.payment_method}
+                        </p>
+                      )}
+                      {!member.profiles?.email && !member.profiles?.phone && !member.profiles?.payment_method && (
+                        <p className="text-xs italic text-stone-400 dark:text-slate-500">No additional info</p>
+                      )}
+                    </div>
                   </div>
                   <div className="ml-auto flex shrink-0 items-center gap-2">
                     <span

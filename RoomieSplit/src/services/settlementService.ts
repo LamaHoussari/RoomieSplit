@@ -1,10 +1,6 @@
 import { supabase } from "../lib/supabaseClient";
 import type { NewSettlement } from "../types/Settlement";
 
-function createError(message: string) {
-    return { message };
-}
-
 export async function createSettlement(settlement: NewSettlement) {
     return await supabase.from("settlements").insert([settlement]);
 }
@@ -67,48 +63,16 @@ export async function recordSettlementPayment(
     settlementId: string,
     paymentAmount: number,
 ) {
-    const rpcResult = await supabase.rpc("record_settlement_payment", {
+    return await supabase.rpc("record_settlement_payment", {
         p_settlement_id: settlementId,
         p_amount: paymentAmount,
     });
+}
 
-    if (!rpcResult.error) {
-        return rpcResult;
-    }
-
-    const { data: settlement, error: settlementError } = await supabase
-        .from("settlements")
-        .select("amount, paid")
-        .eq("id", settlementId)
-        .single();
-
-    if (settlementError || !settlement) {
-        return {
-            data: null,
-            error: createError(rpcResult.error.message),
-        };
-    }
-
-    const nextPaid = Math.min(
-        Number(settlement.amount || 0),
-        Number(settlement.paid || 0) + Number(paymentAmount || 0),
-    );
-
-    const fallbackResult = await supabase
-        .from("settlements")
-        .update({ paid: nextPaid })
-        .eq("id", settlementId);
-
-    if (!fallbackResult.error) {
-        return fallbackResult;
-    }
-
-    return {
-        data: null,
-        error: createError(
-            `Unable to record payment. RPC failed: ${rpcResult.error.message}. Direct update failed: ${fallbackResult.error.message}.`,
-        ),
-    };
+export async function syncExpenseSettlements(expenseId: string) {
+    return await supabase.rpc("sync_expense_settlements", {
+        p_expense_id: expenseId,
+    });
 }
 
 export async function setSettlementArchivedAt(

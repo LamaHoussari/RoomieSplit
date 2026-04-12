@@ -71,7 +71,7 @@ export default function AdminDashboardPage({ user }: { user: AppUser }) {
   const metrics = (() => {
     if (!snapshot) return null;
 
-    const nonAdminProfiles = snapshot.profiles.filter((profile) => profile.id !== user.id);
+    const nonAdminProfiles = snapshot.profiles.filter((profile) => !profile.is_system_admin);
     const totalSpend = snapshot.expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
     const outstandingSettlements = snapshot.settlements.reduce(
       (sum, settlement) => sum + getSettlementRemaining(settlement),

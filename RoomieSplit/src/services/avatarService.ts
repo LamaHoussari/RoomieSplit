@@ -22,14 +22,12 @@ export async function generateAndUploadAvatar(
     return null;
   }
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-
-  return publicUrl;
+  return filePath;
 }
 
-export function getAvatarUrl(filePath: string): string {
+export function getAvatarUrl(filePath: string | null): string | null {
+  if (!filePath) return null;
+  if (filePath.startsWith("http")) return filePath;
   const {
     data: { publicUrl },
   } = supabase.storage.from(BUCKET).getPublicUrl(filePath);

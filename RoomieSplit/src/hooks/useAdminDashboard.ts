@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   getAdminDashboardSnapshot,
+  adminSetUserActive,
+  adminArchiveGroup,
   type AdminDashboardSnapshot,
 } from "../services/adminService";
 
@@ -27,43 +29,33 @@ export function useAdminDashboard() {
   }, []);
 
   const deactivateUser = useCallback(async (userId: string) => {
-    try {
-      // Simulate an API call delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      // Update local state to mark user as deactivated instead of filtering
-      setSnapshot((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          profiles: prev.profiles.map((p) => 
-            p.id === userId ? { ...p, is_active: false } : p
-          ),
-        };
-      });
-      return { error: null };
-    } catch (err: any) {
-      return { error: err.message };
-    }
+    const { error: rpcError } = await adminSetUserActive(userId, false);
+    if (rpcError) return { error: rpcError.message };
+    setSnapshot((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        profiles: prev.profiles.map((p) =>
+          p.id === userId ? { ...p, is_active: false } : p
+        ),
+      };
+    });
+    return { error: null };
   }, []);
 
   const activateUser = useCallback(async (userId: string) => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      setSnapshot((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          profiles: prev.profiles.map((p) => 
-            p.id === userId ? { ...p, is_active: true } : p
-          ),
-        };
-      });
-      return { error: null };
-    } catch (err: any) {
-      return { error: err.message };
-    }
+    const { error: rpcError } = await adminSetUserActive(userId, true);
+    if (rpcError) return { error: rpcError.message };
+    setSnapshot((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        profiles: prev.profiles.map((p) =>
+          p.id === userId ? { ...p, is_active: true } : p
+        ),
+      };
+    });
+    return { error: null };
   }, []);
 
   useEffect(() => {
@@ -80,20 +72,17 @@ export function useAdminDashboard() {
   }, [error]);
 
   const archiveGroup = useCallback(async (groupId: string) => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setSnapshot((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          groups: prev.groups.filter((g) => g.id !== groupId),
-          members: prev.members.filter((m) => m.group_id !== groupId),
-        };
-      });
-      return { error: null };
-    } catch (err: any) {
-      return { error: err.message };
-    }
+    const { error: rpcError } = await adminArchiveGroup(groupId);
+    if (rpcError) return { error: rpcError.message };
+    setSnapshot((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        groups: prev.groups.filter((g) => g.id !== groupId),
+        members: prev.members.filter((m) => m.group_id !== groupId),
+      };
+    });
+    return { error: null };
   }, []);
 
   return {

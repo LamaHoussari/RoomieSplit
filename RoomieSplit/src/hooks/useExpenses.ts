@@ -17,10 +17,10 @@ import {
   updateExpenseWithSplits,
 } from "../services/expensesService";
 import {
-  createSettlement,
   deleteSettlementsByExpense,
   getSettlementsByExpense,
   setSettlementsArchivedAt,
+  syncExpenseSettlements,
 } from "../services/settlementService";
 
 const SUCCESS_MESSAGE_DURATION_MS = 2200;
@@ -98,41 +98,6 @@ export function useExpenses(
     ];
   }
 
-  async function syncExpenseSettlements(
-    expense: Pick<Expense, "id" | "group_id" | "payer_id" | "created_by">,
-    splits: NewExpenseSplit[],
-  ) {
-    const linkedSplits = normalizeSplits(splits).filter(
-      (split) =>
-        split.user_id !== expense.payer_id &&
-        roundCurrency(split.share_amount ?? 0) > 0,
-    );
-
-    const { error: deleteError } = await deleteSettlementsByExpense(expense.id);
-    if (deleteError) {
-      return { error: deleteError };
-    }
-
-    for (const split of linkedSplits) {
-      const { error: createError } = await createSettlement({
-        group_id: expense.group_id,
-        from_user_id: split.user_id,
-        to_user_id: expense.payer_id,
-        amount: roundCurrency(split.share_amount ?? 0),
-        paid: 0,
-        created_by: expense.created_by,
-        expense_id: expense.id,
-      });
-
-      if (createError) {
-        await deleteSettlementsByExpense(expense.id);
-        return { error: createError };
-      }
-    }
-
-    return { error: null };
-  }
-
   async function loadExpenses() {
     if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setExpenses([]);
@@ -202,13 +167,11 @@ export function useExpenses(
     }
 
     if (normalizedExpense.is_paid && data) {
-      const { error: syncError } = await syncExpenseSettlements(
-        data as Expense,
-        normalizedSplits,
-      );
+      const expenseId = (data as { id: string }).id ?? (data as string);
+      const { error: syncError } = await syncExpenseSettlements(expenseId);
 
       if (syncError) {
-        await deleteExpenseService(data.id);
+        await deleteExpenseService(expenseId);
         setError(syncError.message);
         return false;
       }
@@ -253,7 +216,7 @@ export function useExpenses(
     const { error } = await deleteExpenseService(expenseId);
     if (error) {
       if (expense.is_paid) {
-        await syncExpenseSettlements(expense, expense.expense_splits ?? []);
+        await syncExpenseSettlements(expenseId);
       }
 
       setError(error.message);
@@ -436,14 +399,7 @@ export function useExpenses(
     }
 
     if (expense.is_paid && financialChanged) {
-      const { error: syncError } = await syncExpenseSettlements(
-        {
-          ...expense,
-          payer_id: nextPayerId,
-          created_by: normalizedUpdates.created_by ?? expense.created_by,
-        },
-        normalizedSplits,
-      );
+      const { error: syncError } = await syncExpenseSettlements(expenseId);
 
       if (syncError) {
         setError(syncError.message);
@@ -503,10 +459,7 @@ export function useExpenses(
         return false;
       }
 
-      const { error: syncError } = await syncExpenseSettlements(
-        targetExpense,
-        currentSplits,
-      );
+      const { error: syncError } = await syncExpenseSettlements(expenseId);
 
       if (syncError) {
         await updateExpense(expenseId, { is_paid: false });
@@ -531,7 +484,7 @@ export function useExpenses(
 
       const { error } = await updateExpense(expenseId, { is_paid: false });
       if (error) {
-        await syncExpenseSettlements(targetExpense, currentSplits);
+        await syncExpenseSettlements(expenseId);
         setError(error.message);
         return false;
       }

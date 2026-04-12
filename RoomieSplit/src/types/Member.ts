@@ -9,6 +9,8 @@ export interface GroupMember {
   profiles?: {
     name: string;
     email: string | null;
+    phone?: string | null;
+    payment_method?: string | null;
   };
 }
 
