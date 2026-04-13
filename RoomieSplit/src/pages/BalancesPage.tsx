@@ -16,6 +16,8 @@ import {
   isSettlementSettled,
 } from '../lib/finance';
 import { SkeletonCard, SkeletonTableRow } from '../components/Skeleton';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 const memberHue = (name: string) => {
   let hue = 0;
@@ -151,6 +153,18 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }, [settlements, sortKey, sortDir]);
+
+  const {
+    pageItems: paginatedSettlements,
+    currentPage: settlementPage,
+    totalPages: settlementTotalPages,
+    totalItems: settlementTotalItems,
+    pageSize: settlementPageSize,
+    hasNextPage: settlementHasNext,
+    hasPrevPage: settlementHasPrev,
+    goToPage: settlementGoToPage,
+    setPageSize: settlementSetPageSize,
+  } = usePagination(sortedSettlements);
 
   return (
     <>
@@ -289,7 +303,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
               {settlementsLoading ? (
                 Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={8} />)
               ) : (
-              sortedSettlements.map(settlement => {
+              paginatedSettlements.map(settlement => {
                 const settled = isSettlementSettled(settlement);
                 const fromName = settlement.from_profile?.name ?? 'Unknown';
                 const toName = settlement.to_profile?.name ?? 'Unknown';
@@ -381,6 +395,17 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={settlementPage}
+          totalPages={settlementTotalPages}
+          totalItems={settlementTotalItems}
+          pageSize={settlementPageSize}
+          hasNextPage={settlementHasNext}
+          hasPrevPage={settlementHasPrev}
+          onPageChange={settlementGoToPage}
+          onPageSizeChange={settlementSetPageSize}
+        />
       </Card>
 
       {showNewSettlement && (

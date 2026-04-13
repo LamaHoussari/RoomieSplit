@@ -11,6 +11,8 @@ import { useChores } from '../hooks/useChores';
 import { useMembers } from '../hooks/useMembers';
 import { getChoreIcon } from '../lib/choreIcons';
 import { SkeletonRow } from '../components/Skeleton';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 interface ChoresPageProps {
   userId: string;
@@ -79,6 +81,18 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
       return dir === 'asc' ? cmp : -cmp;
     });
   }, [visibleChores, choreSort, members]);
+
+  const {
+    pageItems: paginatedChores,
+    currentPage: chorePage,
+    totalPages: choreTotalPages,
+    totalItems: choreTotalItems,
+    pageSize: chorePageSize,
+    hasNextPage: choreHasNext,
+    hasPrevPage: choreHasPrev,
+    goToPage: choreGoToPage,
+    setPageSize: choreSetPageSize,
+  } = usePagination(sortedChores);
 
   const choreToRemove = chores.find(chore => chore.id === confirmRemoveId);
   const choreToArchive = chores.find(chore => chore.id === confirmArchiveId);
@@ -229,7 +243,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
               {showArchived ? 'No archived chores.' : 'No chores yet. Add one to get started!'}
             </p>
           ) : (
-          sortedChores.map(chore => (
+          paginatedChores.map(chore => (
             <div
               key={chore.id}
               className={`flex flex-col gap-4 rounded-2xl px-2 py-4 transition-colors sm:flex-row sm:items-center ${
@@ -354,6 +368,17 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
           ))
           )}
         </div>
+
+        <Pagination
+          currentPage={chorePage}
+          totalPages={choreTotalPages}
+          totalItems={choreTotalItems}
+          pageSize={chorePageSize}
+          hasNextPage={choreHasNext}
+          hasPrevPage={choreHasPrev}
+          onPageChange={choreGoToPage}
+          onPageSizeChange={choreSetPageSize}
+        />
       </Card>
 
       {showModal && (

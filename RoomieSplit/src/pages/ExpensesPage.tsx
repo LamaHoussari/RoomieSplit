@@ -16,6 +16,8 @@ import type { Settlement } from '../types/Settlement';
 import DatePicker from '../components/DatePicker';
 import { isSettlementSettled, roundCurrency, splitAmountEvenly } from '../lib/finance';
 import { SkeletonCard, SkeletonTableRow } from '../components/Skeleton';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 interface ExpenseDraft {
   title: string;
@@ -301,6 +303,18 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
     });
     return sorted;
   }, [visibleExpenses, sortKey, sortDir]);
+  const {
+    pageItems: paginatedExpenses,
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    setPageSize,
+  } = usePagination(sortedExpenses);
+
   const settlementsByExpenseId = useMemo(() => {
     const grouped = new Map<string, typeof settlements>();
 
@@ -527,7 +541,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
               {dataLoading ? (
                 Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={7} />)
               ) : (
-              sortedExpenses.map(expense => {
+              paginatedExpenses.map(expense => {
                 const status = getExpenseStatus(expense, settlementsByExpenseId);
                 const archiveAllowed = canArchiveExpense(expense, settlementsByExpenseId);
 
@@ -621,6 +635,17 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          hasNextPage={hasNextPage}
+          hasPrevPage={hasPrevPage}
+          onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
+        />
       </Card>
 
       {showModal && (
