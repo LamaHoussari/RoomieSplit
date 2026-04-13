@@ -141,7 +141,10 @@ export default function Sidebar({
 
   useEffect(() => {
     if (mobileOpen) {
-      setEverOpened(true);
+      async function openSidebar() {
+        setEverOpened(true);
+      }
+      openSidebar();
     }
   }, [mobileOpen]);
 

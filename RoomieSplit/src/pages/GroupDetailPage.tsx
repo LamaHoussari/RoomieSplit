@@ -248,6 +248,12 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                     </p>
                     {/* Member info popover */}
                     <div className="pointer-events-none absolute left-0 top-full z-30 mt-1 w-60 rounded-xl border border-stone-200 bg-white p-3 shadow-xl opacity-0 transition-opacity group-hover/member:opacity-100 dark:border-slate-700 dark:bg-slate-800">
+                      {member.profiles?.nickname && (
+                        <p className="truncate text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Nickname: </span>
+                          {member.profiles.nickname}
+                        </p>
+                      )}
                       {member.profiles?.email && (
                         <p className="truncate text-xs text-stone-600 dark:text-slate-300">
                           <span className="font-medium text-stone-500 dark:text-slate-400">Email: </span>
@@ -256,13 +262,13 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                       )}
                       {member.profiles?.phone && (
                         <p className="mt-1 text-xs text-stone-600 dark:text-slate-300">
-                          <span className="font-medium text-stone-500 dark:text-slate-400">Phone: </span>
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Phone number: </span>
                           {member.profiles.phone}
                         </p>
                       )}
                       {member.profiles?.payment_method && (
                         <p className="mt-1 text-xs text-stone-600 dark:text-slate-300">
-                          <span className="font-medium text-stone-500 dark:text-slate-400">Payment: </span>
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Preferred payment method: </span>
                           {member.profiles.payment_method}
                         </p>
                       )}

@@ -13,14 +13,14 @@ export async function addGroupMember(member: NewGroupMember, userId: string) {
 export async function getMembersByGroup(groupId: string) {
     return await supabase
         .from("group_members")
-        .select("*, profiles(name, email, phone, payment_method)")
+        .select("*, profiles(name, nickname, email, phone, payment_method)")
         .eq("group_id", groupId);
 }
 
 export async function getMembersByGroups(groupIds: string[]) {
     return await supabase
         .from("group_members")
-        .select("*, profiles(name, email, phone, payment_method)")
+        .select("*, profiles(name, nickname, email, phone, payment_method)")
         .in("group_id", groupIds);
 }
 

@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Skeleton } from '../components/Skeleton';
 import { useNavigate } from 'react-router-dom';
 
-const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
+const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Wish', 'Other'] as const;
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '');
@@ -51,8 +51,11 @@ export default function ProfilePage({ user }: { user: AppUser }) {
       phone: profile.phone || '',
       paymentMethod: profile.payment_method || '',
     };
-    setDraft(loaded);
-    setSaved(loaded);
+    async function loadDraft() {
+      setDraft(loaded);
+      setSaved(loaded);
+    }
+    loadDraft();
   }, [profile]);
 
   const [currentPassword, setCurrentPassword] = useState('');
