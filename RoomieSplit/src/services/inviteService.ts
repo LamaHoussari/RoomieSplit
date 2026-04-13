@@ -50,6 +50,11 @@ export async function addMemberByEmail(groupId: string, userId: string) {
 
 /**
  * Send an invitation email via Resend API directly.
+ *
+ * SECURITY NOTE: In production the Resend API key is sent from the browser,
+ * which exposes it in DevTools. For a production deployment, move this call
+ * to a Supabase Edge Function or backend proxy so the key never leaves the
+ * server. The Vite dev-server proxy already hides it during local development.
  */
 export async function sendInviteEmail(
   email: string,

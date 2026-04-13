@@ -167,22 +167,11 @@ export function useExpenses(
       return false;
     }
 
-    const { data, error } = await createExpense(normalizedExpense, normalizedSplits);
+    const { error } = await createExpense(normalizedExpense, normalizedSplits);
 
     if (error) {
       setError(friendlyError(error.message));
       return false;
-    }
-
-    if (normalizedExpense.is_paid && data) {
-      const expenseId = (data as { id: string }).id ?? (data as string);
-      const { error: syncError } = await syncExpenseSettlements(expenseId);
-
-      if (syncError) {
-        await deleteExpenseService(expenseId);
-        setError(friendlyError(syncError.message));
-        return false;
-      }
     }
 
     setSuccessMessage("Expense added successfully.");

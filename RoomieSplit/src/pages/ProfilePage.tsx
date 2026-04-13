@@ -5,8 +5,8 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import FormField, { Input, Select } from '../components/FormField';
 import { signInWithEmail, updateUserPassword } from '../services/authService';
+import { updateProfile } from '../services/profileService';
 import { useProfile } from '../hooks/useProfile';
-import { supabase } from '../lib/supabaseClient';
 import { Skeleton } from '../components/Skeleton';
 import { friendlyError } from '../lib/friendlyError';
 import { useNavigate } from 'react-router-dom';
@@ -42,6 +42,8 @@ export default function ProfilePage({ user }: { user: AppUser }) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -83,6 +85,12 @@ export default function ProfilePage({ user }: { user: AppUser }) {
     const id = setTimeout(() => setPhoneError(''), 5000);
     return () => clearTimeout(id);
   }, [phoneError]);
+
+  useEffect(() => {
+    if (!profileError) return;
+    const id = setTimeout(() => setProfileError(''), 5000);
+    return () => clearTimeout(id);
+  }, [profileError]);
 
   const isDirty =
     draft.name !== saved.name ||
@@ -284,28 +292,40 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 </Button>
                 <Button
                   size="sm"
-                  disabled={!isDirty || (!!draft.phone && !isValidPhone(draft.phone))}
+                  disabled={!isDirty || profileSaving || (!!draft.phone && !isValidPhone(draft.phone))}
                   onClick={async () => {
                     if (draft.phone && !isValidPhone(draft.phone)) {
                       setPhoneError('Please enter a valid 8-digit phone number.');
                       return;
                     }
                     setPhoneError('');
-                    await supabase.from('profiles').update({
+                    setProfileError('');
+                    setProfileSaving(true);
+                    const { error } = await updateProfile(user.id, {
                       name: draft.name,
                       nickname: draft.nickname || null,
                       phone: draft.phone || null,
                       payment_method: draft.paymentMethod || null,
-                    }).eq('id', user.id);
+                    });
+                    setProfileSaving(false);
+                    if (error) {
+                      setProfileError(friendlyError(error.message));
+                      return;
+                    }
                     setSaved(draft);
                     setIsEditing(false);
                   }}
                 >
-                  Save changes
+                  {profileSaving ? 'Saving...' : 'Save changes'}
                 </Button>
               </div>
             )}
           </div>
+          {profileError && (
+            <p className="mt-2 rounded-xl border border-red-200/80 bg-red-50/80 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
+              {profileError}
+            </p>
+          )}
         </Card>
 
         <Card title="Security">
