@@ -135,7 +135,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
     setSelectedNextAdminId(requiresAdminReplacement ? adminReplacementCandidates[0]?.id ?? '' : '');
     setShowLeaveGroupModal(true);
   };
-  console.log("memebrs:", members);
+
   return (
     <>
       {showInvite && groupId && group && (
