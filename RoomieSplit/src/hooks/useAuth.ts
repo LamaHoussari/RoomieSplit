@@ -1,26 +1,13 @@
 import { useEffect, useState } from "react";
 import type { AppUser } from "../types/auth";
 import {
-  getCurrentUser,
+  getCurrentSession,
   signInWithEmail,
   signOutUser,
   signUpWithEmail,
   subscribeToAuthChanges,
 } from "../services/authService";
 import { checkIsSystemAdmin } from "../lib/adminAuth";
-
-async function loadUserProfile(
-  user: { id: string; email?: string | null } | null,
-): Promise<AppUser | null> {
-  if (!user) return null;
-  const isAdmin = await checkIsSystemAdmin(user.id);
-  return {
-    id: user.id,
-    email: user.email ?? null,
-    name: user.email?.split("@")[0] ?? null,
-    isAdmin,
-  };
-}
 
 export function useAuth() {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -37,23 +24,69 @@ export function useAuth() {
     async function loadUser() {
       setLoading(true);
       setError("");
-      const { data, error } = await getCurrentUser();
+      try {
+        const { data, error } = await getCurrentSession();
 
-      if (error) {
-        setError(error.message);
+        if (error) {
+          setError(error.message);
+          return;
+        }
+
+        const sessionUser = data.session?.user ?? null;
+
+        if (!sessionUser) {
+          setUser(null);
+          return;
+        }
+
+        // Set basic user immediately so the app is usable
+        setUser({
+          id: sessionUser.id,
+          email: sessionUser.email ?? null,
+          name: sessionUser.email?.split("@")[0] ?? null,
+          isAdmin: false,
+        });
+
+        // Load admin status in background — don't block auth
+        checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
+          setUser((prev) =>
+            prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev
+          );
+        }).catch(() => {});
+      } catch {
+        setUser(null);
+      } finally {
         setLoading(false);
-        return;
       }
-      const appUser = await loadUserProfile(data.user);
-      setUser(appUser);
-      setLoading(false);
     }
     loadUser();
+
     const {
       data: { subscription },
     } = subscribeToAuthChanges(async (_event, session) => {
-      const appUser = await loadUserProfile(session?.user ?? null);
-      setUser(appUser);
+      const sessionUser = session?.user ?? null;
+
+      if (!sessionUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // Set basic user immediately
+      setUser({
+        id: sessionUser.id,
+        email: sessionUser.email ?? null,
+        name: sessionUser.email?.split("@")[0] ?? null,
+        isAdmin: false,
+      });
+      setLoading(false);
+
+      // Load admin status in background
+      checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
+        setUser((prev) =>
+          prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev
+        );
+      }).catch(() => {});
     });
 
     return () => {

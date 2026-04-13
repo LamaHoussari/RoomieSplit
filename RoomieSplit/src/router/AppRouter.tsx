@@ -36,14 +36,14 @@ function AnimatedRoutes() {
     signIn, // signin action
     signOut, // signout action
   } = useAuth();
-  
+
   return (
     <div className="page-transition">
       <Routes>
-        <Route path="/" element={<Navigate to={user ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} replace />} />
+        <Route path="/" element={<Navigate to={user && !loading ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/login" element={user ? (
+        <Route path="/login" element={user && !loading ? (
           <Navigate to={user.isAdmin ? "/admin" : "/dashboard"} replace />
         ) : (
           <LoginPage 
@@ -55,7 +55,7 @@ function AnimatedRoutes() {
             loading={loading}
           />
         )} />
-        {user && (
+        {user ? (
         <Route element={<MainLayout onSignOut={signOut} user={user}/>}>
           {user.isAdmin ? (
             <>
@@ -84,12 +84,13 @@ function AnimatedRoutes() {
             </>
           )}
         </Route>
+        ): (
+          <Route path="*" element={loading ? <LoadingScreen /> : <Navigate to="/login" replace />} />
         )}
         {!user && !loading && (
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
       </Routes>
-      {loading && <LoadingScreen />}
     </div>
   );
 }
