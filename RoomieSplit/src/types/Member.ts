@@ -8,6 +8,7 @@ export interface GroupMember {
   joined_at: string;
   profiles?: {
     name: string;
+    nickname?: string | null;
     email: string | null;
     phone?: string | null;
     payment_method?: string | null;

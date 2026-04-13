@@ -8,6 +8,7 @@ import {
   subscribeToAuthChanges,
 } from "../services/authService";
 import { checkIsSystemAdmin } from "../lib/adminAuth";
+import { friendlyError } from "../lib/friendlyError";
 
 export function useAuth() {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -28,7 +29,7 @@ export function useAuth() {
         const { data, error } = await getCurrentSession();
 
         if (error) {
-          setError(error.message);
+          setError(friendlyError(error.message));
           return;
         }
 
@@ -100,15 +101,21 @@ export function useAuth() {
     return () => clearTimeout(id);
   }, [error]);
 
+  useEffect(() => {
+    if (!successMessage) return;
+    const id = setTimeout(() => setsuccessMessage(""), 4000);
+    return () => clearTimeout(id);
+  }, [successMessage]);
+
   async function signUp(email: string, password: string) {
     setError("");
     setsuccessMessage("");
     const { error } = await signUpWithEmail(email, password);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
-    setsuccessMessage("Account created successfully!!!");
+    setsuccessMessage("Account created successfully.");
     return true;
   }
 
@@ -117,10 +124,10 @@ export function useAuth() {
     setsuccessMessage("");
     const { error } = await signInWithEmail(email, password);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
-    setsuccessMessage("Signed in successfully!!!");
+    setsuccessMessage("Signed in successfully.");
     return true;
   }
 
@@ -129,10 +136,10 @@ export function useAuth() {
     setsuccessMessage("");
     const { error } = await signOutUser();
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
-    setsuccessMessage("Signed out successfully!!!");
+    setsuccessMessage("Signed out successfully.");
     return true;
   }
 

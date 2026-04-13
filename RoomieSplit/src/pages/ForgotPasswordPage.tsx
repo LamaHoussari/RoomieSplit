@@ -5,6 +5,7 @@ import AuthShell from '../components/AuthShell';
 import Button from '../components/Button';
 import FormField, { Input } from '../components/FormField';
 import { requestPasswordReset } from '../services/authService';
+import { friendlyError } from '../lib/friendlyError';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -42,7 +43,7 @@ export default function ForgotPasswordPage() {
     const { error: resetError } = await requestPasswordReset(normalizedEmail, redirectTo);
 
     if (resetError) {
-      setError(resetError.message);
+      setError(friendlyError(resetError.message));
       setLoading(false);
       return;
     }

@@ -14,6 +14,7 @@ import { getGroupById, deleteGroup } from '../services/groupService';
 import { removeMember, updateMemberRole } from '../services/memberService';
 import type { Group } from '../types/Group';
 import { computeMemberBalance } from '../lib/finance';
+import { friendlyError } from '../lib/friendlyError';
 
 const getInitials = (name?: string) =>
   (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -98,7 +99,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
       const { error: promoteError } = await updateMemberRole(nextAdmin.id, 'admin');
       if (promoteError) {
         setLeavingGroup(false);
-        setPageFeedback({ type: 'error', message: promoteError.message });
+        setPageFeedback({ type: 'error', message: friendlyError(promoteError.message) });
         return;
       }
     }
@@ -109,7 +110,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
         await loadMembers();
       }
       setLeavingGroup(false);
-      setPageFeedback({ type: 'error', message: leaveError.message });
+      setPageFeedback({ type: 'error', message: friendlyError(leaveError.message) });
       return;
     }
 
@@ -134,7 +135,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
     setSelectedNextAdminId(requiresAdminReplacement ? adminReplacementCandidates[0]?.id ?? '' : '');
     setShowLeaveGroupModal(true);
   };
-
+  console.log("memebrs:", members);
   return (
     <>
       {showInvite && groupId && group && (
@@ -299,7 +300,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                             onClick={async () => {
                               if (!confirm(`Remove ${memberName} from the group?`)) return;
                               const { error } = await removeMember(member.id);
-                              if (error) setPageFeedback({ type: 'error', message: error.message });
+                              if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
                               else loadMembers();
                             }}
                           >
@@ -383,7 +384,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
               if (!confirm(`Are you sure you want to delete "${group?.name}"? This action cannot be undone.`)) return;
               if (!groupId) return;
               const { error } = await deleteGroup(groupId);
-              if (error) setPageFeedback({ type: 'error', message: error.message });
+              if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
               else navigate('/groups');
             }}
           >

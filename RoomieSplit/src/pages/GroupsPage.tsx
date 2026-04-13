@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
@@ -7,6 +7,7 @@ import FormField, { Input } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { lookupUserByEmail, addMemberByEmail, sendInviteEmail } from '../services/inviteService';
 import { SkeletonCard } from '../components/Skeleton';
+import { friendlyError } from '../lib/friendlyError';
 
 interface GroupsPageProps {
   userId: string;
@@ -24,6 +25,12 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
   const [emailError, setEmailError] = useState('');
   const [creating, setCreating] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!pageFeedback) return;
+    const id = setTimeout(() => setPageFeedback(null), 5000);
+    return () => clearTimeout(id);
+  }, [pageFeedback]);
 
   const canCreate = groupName.trim() !== '' && inviteEmails.length > 0 && !creating;
 
@@ -60,14 +67,14 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
         const { data: user, error: lookupError } = await lookupUserByEmail(email);
 
         if (lookupError) {
-          inviteFailures.push(`${email}: ${lookupError.message}`);
+          inviteFailures.push(`${email}: ${friendlyError(lookupError.message)}`);
           continue;
         }
 
         if (user) {
           const { error: memberError } = await addMemberByEmail(newGroup.id, user.id);
           if (memberError) {
-            inviteFailures.push(`${email}: ${memberError.message}`);
+            inviteFailures.push(`${email}: ${friendlyError(memberError.message)}`);
             continue;
           }
           addedCount += 1;
@@ -85,7 +92,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
       if (inviteFailures.length > 0) {
         setPageFeedback({
           type: 'error',
-          message: `Group created, but some invites failed: ${inviteFailures.join(' ')}`,
+          message: `Group created, but some invites couldn't be sent. Please try inviting them again from the group page.`,
         });
       } else {
         const details: string[] = [];

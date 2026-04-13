@@ -10,6 +10,7 @@ import {
   subscribeToAuthChanges,
   updateUserPassword,
 } from '../services/authService';
+import { friendlyError } from '../lib/friendlyError';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ export default function ResetPasswordPage() {
     const { error: updateError } = await updateUserPassword(password);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(friendlyError(updateError.message));
       setLoading(false);
       return;
     }

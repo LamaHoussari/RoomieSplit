@@ -8,6 +8,7 @@ import { signInWithEmail, updateUserPassword } from '../services/authService';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabaseClient';
 import { Skeleton } from '../components/Skeleton';
+import { friendlyError } from '../lib/friendlyError';
 import { useNavigate } from 'react-router-dom';
 
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Wish', 'Other'] as const;
@@ -76,6 +77,12 @@ export default function ProfilePage({ user }: { user: AppUser }) {
     const id = setTimeout(() => setPwError(''), 5000);
     return () => clearTimeout(id);
   }, [pwError]);
+
+  useEffect(() => {
+    if (!phoneError) return;
+    const id = setTimeout(() => setPhoneError(''), 5000);
+    return () => clearTimeout(id);
+  }, [phoneError]);
 
   const isDirty =
     draft.name !== saved.name ||
@@ -214,7 +221,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
               }}
               onBlur={() => {
                 if (draft.phone && !isValidPhone(draft.phone)) {
-                  setPhoneError('Enter a valid 8-digit phone number.');
+                  setPhoneError('Please enter a valid 8-digit phone number.');
                 } else {
                   setPhoneError('');
                 }
@@ -280,7 +287,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                   disabled={!isDirty || (!!draft.phone && !isValidPhone(draft.phone))}
                   onClick={async () => {
                     if (draft.phone && !isValidPhone(draft.phone)) {
-                      setPhoneError('Enter a valid 8-digit phone number.');
+                      setPhoneError('Please enter a valid 8-digit phone number.');
                       return;
                     }
                     setPhoneError('');
@@ -334,7 +341,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
 
             const { error: updateErr } = await updateUserPassword(newPassword);
             if (updateErr) {
-              setPwError(updateErr.message);
+              setPwError(friendlyError(updateErr.message));
               setPwLoading(false);
               return;
             }
