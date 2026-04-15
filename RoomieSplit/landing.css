@@ -1,0 +1,120 @@
+:root {
+  --rs-accent: #6f4f8b;
+  --rs-accent-strong: #5d4177;
+  --rs-bg: #f6f6f8;
+  --rs-border: rgba(111, 90, 133, 0.16);
+  --rs-text: #16141a;
+  --rs-text-muted: #6a6474;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--rs-text);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(111, 79, 139, 0.18), transparent 35%),
+    radial-gradient(circle at 85% 80%, rgba(111, 79, 139, 0.12), transparent 40%),
+    var(--rs-bg);
+}
+
+.landing {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing__card {
+  width: min(640px, 100%);
+  padding: clamp(1.75rem, 5vw, 3rem);
+  border: 1px solid var(--rs-border);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 14px;
+  box-shadow: 0 20px 45px -30px rgba(38, 30, 49, 0.35);
+  backdrop-filter: blur(8px);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.landing__kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rs-text-muted);
+}
+
+.landing h1 {
+  margin: 0.7rem 0 0;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  line-height: 1.06;
+}
+
+.landing__copy {
+  margin: 1rem auto 0;
+  width: min(48ch, 100%);
+  color: var(--rs-text-muted);
+  font-size: clamp(1rem, 2.2vw, 1.1rem);
+}
+
+.landing__cta {
+  margin-top: 1.5rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.8rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--rs-accent), #8162a0);
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  box-shadow: 0 12px 28px -16px rgba(70, 43, 94, 0.7);
+}
+
+.landing__cta:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, var(--rs-accent-strong), #6f4f8b);
+}
+
+.landing__cta:focus-visible {
+  outline: 3px solid rgba(111, 79, 139, 0.25);
+  outline-offset: 2px;
+}
+
+.landing__glow {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: rgba(111, 79, 139, 0.16);
+  filter: blur(36px);
+  z-index: 0;
+}
+
+.landing__glow--left {
+  top: 18%;
+  left: 8%;
+}
+
+.landing__glow--right {
+  right: 6%;
+  bottom: 15%;
+}
+
+@media (max-width: 520px) {
+  .landing__card {
+    text-align: left;
+  }
+}
