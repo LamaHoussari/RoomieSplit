@@ -17,6 +17,7 @@ import {
   updateExpenseWithSplits,
 } from "../services/expensesService";
 import {
+  createSettlement,
   deleteSettlementsByExpense,
   getSettlementsByExpense,
   setSettlementsArchivedAt,
@@ -100,6 +101,67 @@ export function useExpenses(
     ];
   }
 
+  async function ensureExpenseSettlementPlan(
+    expenseId: string,
+    expense: NewExpense,
+    splits: NewExpenseSplit[],
+  ): Promise<{ message: string } | null> {
+    const owingSplits = splits.filter(
+      (split) =>
+        split.user_id !== expense.payer_id &&
+        roundCurrency(split.share_amount ?? 0) > 0,
+    );
+
+    if (!owingSplits.length) {
+      return null;
+    }
+
+    const { data: existingSettlements, error: existingError } =
+      await getSettlementsByExpense(expenseId, "all");
+
+    if (existingError) {
+      return existingError;
+    }
+
+    const existingOwers = new Set(
+      (existingSettlements ?? [])
+        .filter((settlement) => settlement.to_user_id === expense.payer_id)
+        .map((settlement) => settlement.from_user_id),
+    );
+    const missingSplits = owingSplits.filter(
+      (split) => !existingOwers.has(split.user_id),
+    );
+
+    if (!missingSplits.length) {
+      return null;
+    }
+
+    const syncResult =
+      (await syncExpenseSettlements(expenseId)) ?? { error: null };
+
+    if (!syncResult.error) {
+      return null;
+    }
+
+    for (const split of missingSplits) {
+      const { error } = await createSettlement({
+        group_id: expense.group_id,
+        from_user_id: split.user_id,
+        to_user_id: expense.payer_id,
+        amount: roundCurrency(split.share_amount ?? 0),
+        paid: 0,
+        created_by: expense.created_by,
+        expense_id: expenseId,
+      });
+
+      if (error) {
+        return error;
+      }
+    }
+
+    return null;
+  }
+
   async function loadExpenses() {
     if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setExpenses([]);
@@ -167,11 +229,35 @@ export function useExpenses(
       return false;
     }
 
-    const { error } = await createExpense(normalizedExpense, normalizedSplits);
+    const { data: createdExpenseId, error } = await createExpense(
+      normalizedExpense,
+      normalizedSplits,
+    );
 
     if (error) {
       setError(friendlyError(error.message));
       return false;
+    }
+
+    const expenseId =
+      typeof createdExpenseId === "string"
+        ? createdExpenseId
+        : (createdExpenseId as { id?: string } | null)?.id;
+
+    if (expenseId) {
+      const planError = await ensureExpenseSettlementPlan(
+        expenseId,
+        normalizedExpense,
+        normalizedSplits,
+      );
+
+      if (planError) {
+        setError(
+          `Expense was added, but the settlement plan could not be created: ${friendlyError(planError.message)}`,
+        );
+        await loadExpenses();
+        return true;
+      }
     }
 
     setSuccessMessage("Expense added successfully.");

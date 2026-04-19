@@ -12,6 +12,7 @@ vi.mock("../../services/expensesService", () => ({
 }));
 
 vi.mock("../../services/settlementService", () => ({
+  createSettlement: vi.fn(),
   getSettlementsByExpense: vi.fn(),
   deleteSettlementsByExpense: vi.fn(),
   syncExpenseSettlements: vi.fn(),
@@ -24,18 +25,24 @@ import {
   getExpensesByGroup,
 } from "../../services/expensesService";
 import {
+  createSettlement,
   getSettlementsByExpense,
+  syncExpenseSettlements,
 } from "../../services/settlementService";
 import { mockExpenses, TEST_GROUP_ID } from "../fixtures";
 
 const mockedGetExpenses = vi.mocked(getExpensesByGroup);
 const mockedCreateExpense = vi.mocked(createExpense);
+const mockedCreateSettlement = vi.mocked(createSettlement);
 const mockedGetSettlements = vi.mocked(getSettlementsByExpense);
+const mockedSyncExpenseSettlements = vi.mocked(syncExpenseSettlements);
 
 describe("useExpenses", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.clearAllMocks();
+    mockedGetSettlements.mockResolvedValue({ data: [], error: null } as never);
+    mockedSyncExpenseSettlements.mockResolvedValue({ data: null, error: null } as never);
   });
 
   afterEach(() => {
@@ -174,6 +181,49 @@ describe("useExpenses", () => {
 
       expect(success).toBe(true);
       expect(result.current.successMessage).toBeTruthy();
+    });
+
+    it("creates missing settlement rows when settlement sync is unavailable", async () => {
+      mockedGetExpenses.mockResolvedValue({ data: [], error: null } as never);
+      mockedCreateExpense.mockResolvedValue({ data: "expense-new", error: null } as never);
+      mockedGetSettlements.mockResolvedValue({ data: [], error: null } as never);
+      mockedSyncExpenseSettlements.mockResolvedValue({
+        data: null,
+        error: { message: "function sync_expense_settlements does not exist" },
+      } as never);
+      mockedCreateSettlement.mockResolvedValue({ data: null, error: null } as never);
+
+      const { result } = renderHook(() => useExpenses(TEST_GROUP_ID));
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let success: boolean | undefined;
+      await waitFor(async () => {
+        success = await result.current.addExpense(
+          {
+            group_id: TEST_GROUP_ID,
+            description: "Groceries",
+            amount: 100,
+            payer_id: "u1",
+            created_by: "u1",
+            date: "2025-03-15",
+          },
+          [
+            { user_id: "u1", share_amount: 50 },
+            { user_id: "u2", share_amount: 50 },
+          ],
+        );
+      });
+
+      expect(success).toBe(true);
+      expect(mockedCreateSettlement).toHaveBeenCalledWith({
+        group_id: TEST_GROUP_ID,
+        from_user_id: "u2",
+        to_user_id: "u1",
+        amount: 50,
+        paid: 0,
+        created_by: "u1",
+        expense_id: "expense-new",
+      });
     });
 
     it("sets error when createExpense RPC fails", async () => {
