@@ -1,0 +1,4 @@
+[build]
+  base = "RoomieSplit"
+  command = "npm run build"
+  publish = "dist"
