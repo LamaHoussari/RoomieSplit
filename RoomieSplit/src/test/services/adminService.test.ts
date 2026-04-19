@@ -96,8 +96,7 @@ describe("adminService", () => {
         select: mockSelect,
       });
 
-      let callCount = 0;
-      (supabase.from as any).mockImplementation((table) => {
+      (supabase.from as any).mockImplementation((table: string) => {
         if (table === "groups") return mockGroupsFrom();
         if (table === "group_members") return mockMembersFrom();
         if (table === "profiles") return mockProfilesFrom();
@@ -143,7 +142,7 @@ describe("adminService", () => {
 
       (supabase.rpc as any).mockImplementation(mockRpc);
 
-      const result = await adminSetUserActive("user-001", true);
+      await adminSetUserActive("user-001", true);
 
       expect(mockRpc).toHaveBeenCalledWith("admin_set_user_active", {
         p_user_id: "user-001",
@@ -185,7 +184,7 @@ describe("adminService", () => {
 
       (supabase.rpc as any).mockImplementation(mockRpc);
 
-      const result = await adminArchiveGroup("group-1");
+      await adminArchiveGroup("group-1");
 
       expect(mockRpc).toHaveBeenCalledWith("admin_archive_group", {
         p_group_id: "group-1",

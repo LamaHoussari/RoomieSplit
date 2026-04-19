@@ -137,7 +137,7 @@ describe("memberService", () => {
         nickname: "NewMember",
       };
 
-      const result = await memberService.addGroupMember(newMember, "user-001");
+      await memberService.addGroupMember(newMember, "user-001");
 
       expect(mockRpc).toHaveBeenCalledWith("add_group_member_by_admin", {
         p_group_id: "group-1",
@@ -214,7 +214,7 @@ describe("memberService", () => {
 
       (supabase.rpc as any).mockImplementation(mockRpc);
 
-      const result = await memberService.updateMemberRole("member-001", "admin");
+      await memberService.updateMemberRole("member-001", "admin");
 
       expect(mockRpc).toHaveBeenCalledWith("change_member_role", {
         p_member_id: "member-001",

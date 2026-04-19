@@ -10,7 +10,7 @@ export default defineConfig({
       '/api/resend': {
         target: 'https://api.resend.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/resend/, ''),
+        rewrite: (path: string) => path.replace(/^\/api\/resend/, ''),
       },
     },
   },
@@ -21,4 +21,4 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
   },
-})
+} as Parameters<typeof defineConfig>[0]);

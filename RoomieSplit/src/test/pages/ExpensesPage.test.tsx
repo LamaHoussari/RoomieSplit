@@ -42,7 +42,7 @@ describe('ExpensesPage', () => {
   it('renders without crashing', () => {
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -51,7 +51,7 @@ describe('ExpensesPage', () => {
   it('handles empty expenses', () => {
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -64,7 +64,7 @@ describe('ExpensesPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -80,7 +80,7 @@ describe('ExpensesPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -93,7 +93,7 @@ describe('ExpensesPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -107,7 +107,7 @@ describe('ExpensesPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();

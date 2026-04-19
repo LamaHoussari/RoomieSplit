@@ -6,7 +6,6 @@ import PageHeader from "../components/PageHeader";
 import { Skeleton, SkeletonCard } from "../components/Skeleton";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import { getSettlementRemaining, roundCurrency } from "../lib/finance";
-import type { AppUser } from "../types/auth";
 
 function formatMoney(value: number) {
   return `$${roundCurrency(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -64,7 +63,7 @@ function NavCard({
   );
 }
 
-export default function AdminDashboardPage({ user }: { user: AppUser }) {
+export default function AdminDashboardPage() {
   const { snapshot, loading } = useAdminDashboard();
   const navigate = useNavigate();
 

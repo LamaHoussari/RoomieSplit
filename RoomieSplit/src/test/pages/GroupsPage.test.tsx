@@ -29,7 +29,7 @@ describe('GroupsPage', () => {
   it('renders without crashing', () => {
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -38,7 +38,7 @@ describe('GroupsPage', () => {
   it('renders as container element', () => {
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container.children.length).toBeGreaterThan(0);
@@ -52,7 +52,7 @@ describe('GroupsPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -66,7 +66,7 @@ describe('GroupsPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -80,7 +80,7 @@ describe('GroupsPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -94,7 +94,7 @@ describe('GroupsPage', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();

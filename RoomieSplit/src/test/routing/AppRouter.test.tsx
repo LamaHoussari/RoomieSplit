@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 // Mock useAuth to control auth state
@@ -82,7 +82,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 // Simplified version of AnimatedRoutes for testing
 function TestRoutes() {
-  const { user, loading, error, successMessage, clearFeedback, signUp, signIn, signOut } = mockUseAuth();
+  const { user, loading } = mockUseAuth();
 
   return (
     <Routes>

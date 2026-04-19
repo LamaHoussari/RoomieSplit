@@ -25,14 +25,12 @@ import {
 } from "../../services/expensesService";
 import {
   getSettlementsByExpense,
-  deleteSettlementsByExpense,
 } from "../../services/settlementService";
 import { mockExpenses, TEST_GROUP_ID } from "../fixtures";
 
 const mockedGetExpenses = vi.mocked(getExpensesByGroup);
 const mockedCreateExpense = vi.mocked(createExpense);
 const mockedGetSettlements = vi.mocked(getSettlementsByExpense);
-const mockedDeleteSettlements = vi.mocked(deleteSettlementsByExpense);
 
 describe("useExpenses", () => {
   beforeEach(() => {

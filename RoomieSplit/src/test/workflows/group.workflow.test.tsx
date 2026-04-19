@@ -30,7 +30,7 @@ describe('Group Workflow', () => {
   it('renders groups page', () => {
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -44,7 +44,7 @@ describe('Group Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -58,7 +58,7 @@ describe('Group Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -75,7 +75,7 @@ describe('Group Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -89,7 +89,7 @@ describe('Group Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -103,7 +103,7 @@ describe('Group Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -117,7 +117,7 @@ describe('Group Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <GroupsPage />
+        <GroupsPage userId="test-user" />
       </BrowserRouter>
     );
     expect(container).toBeDefined();

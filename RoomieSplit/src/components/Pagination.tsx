@@ -59,7 +59,7 @@ export default function Pagination({
         {onPageSizeChange && (
           <div className="w-20">
             <Select
-              value={pageSize}
+              value={String(pageSize)}
               onChange={e => onPageSizeChange(Number(e.target.value))}
               className="py-1.5 text-xs"
             >

@@ -86,7 +86,7 @@ describe("groupService", () => {
         currency: "USD",
       };
 
-      const result = await groupService.createGroup(newGroup, "user-001");
+      await groupService.createGroup(newGroup, "user-001");
 
       // Should have called RPC first
       expect(mockRpcCall).toHaveBeenCalledWith("create_group_with_admin_member", expect.any(Object));
@@ -192,7 +192,7 @@ describe("groupService", () => {
 
       (supabase.rpc as any).mockImplementation(mockRpc);
 
-      const result = await groupService.joinGroupByCode("INVITE123");
+      await groupService.joinGroupByCode("INVITE123");
 
       expect(mockRpc).toHaveBeenCalledWith("join_group_by_code", {
         input_code: "INVITE123",
@@ -221,7 +221,7 @@ describe("groupService", () => {
 
       (supabase.rpc as any).mockImplementation(mockRpc);
 
-      const result = await groupService.joinGroupByCodeWithFallback(
+      await groupService.joinGroupByCodeWithFallback(
         "INVITE123",
         "user-001"
       );

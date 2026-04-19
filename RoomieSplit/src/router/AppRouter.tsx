@@ -59,7 +59,7 @@ function AnimatedRoutes() {
         <Route element={<MainLayout onSignOut={signOut} user={user}/>}>
           {user.isAdmin ? (
             <>
-              <Route path="/admin" element={<AdminDashboardPage user={user} />} />
+              <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/admin/users" element={<Users />} />
               <Route path="/admin/groups" element={<Groups />} />
               <Route path="/admin/audit" element={<AuditLog />} />

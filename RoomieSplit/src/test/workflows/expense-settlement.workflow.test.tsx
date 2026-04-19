@@ -42,7 +42,7 @@ describe('Expense & Settlement Workflow', () => {
   it('renders expenses page', () => {
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -51,7 +51,7 @@ describe('Expense & Settlement Workflow', () => {
   it('shows empty expenses list initially', () => {
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -64,7 +64,7 @@ describe('Expense & Settlement Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -77,7 +77,7 @@ describe('Expense & Settlement Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -89,7 +89,7 @@ describe('Expense & Settlement Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -105,7 +105,7 @@ describe('Expense & Settlement Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -118,7 +118,7 @@ describe('Expense & Settlement Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();
@@ -134,7 +134,7 @@ describe('Expense & Settlement Workflow', () => {
     });
     const { container } = render(
       <BrowserRouter>
-        <ExpensesPage />
+        <ExpensesPage userId="test-user" chosenGroup="test-group" setChosenGroup={() => {}} />
       </BrowserRouter>
     );
     expect(container).toBeDefined();

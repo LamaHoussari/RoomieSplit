@@ -180,7 +180,7 @@ describe("choreService", () => {
       });
 
       const updates = { name: "Updated" };
-      const result = await choreService.updateChore("chore-1", updates);
+      await choreService.updateChore("chore-1", updates);
 
       expect(mockUpdate).toHaveBeenCalledWith(updates);
       expect(mockEq).toHaveBeenCalledWith("id", "chore-1");
@@ -202,7 +202,7 @@ describe("choreService", () => {
       });
 
       const updates = { is_completed: true, completed_at: now };
-      const result = await choreService.updateChore("chore-1", updates);
+      await choreService.updateChore("chore-1", updates);
 
       expect(mockUpdate).toHaveBeenCalledWith(updates);
     });
@@ -268,7 +268,7 @@ describe("choreService", () => {
         update: mockUpdate,
       });
 
-      const result = await choreService.setChoreArchivedAt("chore-1", now);
+      await choreService.setChoreArchivedAt("chore-1", now);
 
       expect(mockUpdate).toHaveBeenCalledWith({ archived_at: now });
       expect(mockEq).toHaveBeenCalledWith("id", "chore-1");
@@ -288,7 +288,7 @@ describe("choreService", () => {
         update: mockUpdate,
       });
 
-      const result = await choreService.setChoreArchivedAt("chore-1", null);
+      await choreService.setChoreArchivedAt("chore-1", null);
 
       expect(mockUpdate).toHaveBeenCalledWith({ archived_at: null });
     });

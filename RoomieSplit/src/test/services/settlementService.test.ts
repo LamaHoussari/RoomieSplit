@@ -53,7 +53,7 @@ describe("settlementService", () => {
         expense_id: "expense-1",
       };
 
-      const result = await settlementService.createSettlement(newSettlement as any);
+      await settlementService.createSettlement(newSettlement as any);
 
       expect(supabase.from).toHaveBeenCalledWith("settlements");
       expect(mockInsert).toHaveBeenCalledWith([newSettlement]);
@@ -162,7 +162,7 @@ describe("settlementService", () => {
         select: mockSelect,
       });
 
-      const result = await settlementService.getSettlementsByGroup("group-1", true);
+      await settlementService.getSettlementsByGroup("group-1", true);
 
       expect(mockNot).toHaveBeenCalledWith("archived_at", "is", null);
     });
@@ -191,7 +191,7 @@ describe("settlementService", () => {
         select: mockSelect,
       });
 
-      const result = await settlementService.getSettlementsByGroups(
+      await settlementService.getSettlementsByGroups(
         ["group-1", "group-2"],
         false
       );
@@ -251,7 +251,7 @@ describe("settlementService", () => {
         select: mockSelect,
       });
 
-      const result = await settlementService.getSettlementsByExpense("expense-1", "archived");
+      await settlementService.getSettlementsByExpense("expense-1", "archived");
 
       expect(mockNot).toHaveBeenCalledWith("archived_at", "is", null);
     });
@@ -266,7 +266,7 @@ describe("settlementService", () => {
 
       (supabase.rpc as any).mockImplementation(mockRpc);
 
-      const result = await settlementService.recordSettlementPayment("settlement-1", 50);
+      await settlementService.recordSettlementPayment("settlement-1", 50);
 
       expect(mockRpc).toHaveBeenCalledWith("record_settlement_payment", {
         p_settlement_id: "settlement-1",
@@ -315,7 +315,7 @@ describe("settlementService", () => {
         update: mockUpdate,
       });
 
-      const result = await settlementService.setSettlementArchivedAt("settlement-1", now);
+      await settlementService.setSettlementArchivedAt("settlement-1", now);
 
       expect(mockUpdate).toHaveBeenCalledWith({ archived_at: now });
       expect(mockEq).toHaveBeenCalledWith("id", "settlement-1");
@@ -335,7 +335,7 @@ describe("settlementService", () => {
         update: mockUpdate,
       });
 
-      const result = await settlementService.setSettlementArchivedAt("settlement-1", null);
+      await settlementService.setSettlementArchivedAt("settlement-1", null);
 
       expect(mockUpdate).toHaveBeenCalledWith({ archived_at: null });
     });
@@ -350,7 +350,7 @@ describe("settlementService", () => {
 
       (supabase.rpc as any).mockImplementation(mockRpc);
 
-      const result = await settlementService.syncExpenseSettlements("expense-1");
+      await settlementService.syncExpenseSettlements("expense-1");
 
       expect(mockRpc).toHaveBeenCalledWith("sync_expense_settlements", {
         p_expense_id: "expense-1",
@@ -373,7 +373,7 @@ describe("settlementService", () => {
         delete: mockDelete,
       });
 
-      const result = await settlementService.deleteSettlementsByExpense("expense-1");
+      await settlementService.deleteSettlementsByExpense("expense-1");
 
       expect(mockDelete).toHaveBeenCalled();
       expect(mockEq).toHaveBeenCalledWith("expense_id", "expense-1");
