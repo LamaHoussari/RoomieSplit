@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-import '@testing-library/jest-dom';
-=======
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
@@ -21,4 +18,3 @@ vi.stubGlobal("import", {
     },
   },
 });
->>>>>>> 44cfd732609e5c25fd849c369027d487a426ea32
