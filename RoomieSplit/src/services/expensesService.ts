@@ -2,24 +2,15 @@ import { supabase } from "../lib/supabaseClient";
 import type { NewExpense, NewExpenseSplit } from "../types/Expense";
 
 export async function createExpense(expense: NewExpense, splits: NewExpenseSplit[]) {
-    const { data, error } = await supabase
-        .from("expenses")
-        .insert([expense])
-        .select()
-        .single();
-
-    if (error || !data) return { data, error };
-
-    const splitsWithId = splits.map((s) => ({ ...s, expense_id: data.id }));
-    const { error: splitError } = await supabase
-        .from("expense_splits")
-        .insert(splitsWithId);
-
-    if (splitError) {
-        await supabase.from("expenses").delete().eq("id", data.id);
-    }
-
-    return { data, error: splitError };
+    return await supabase.rpc("create_expense_with_splits", {
+        p_group_id: expense.group_id,
+        p_description: expense.description,
+        p_amount: expense.amount,
+        p_payer_id: expense.payer_id,
+        p_date: expense.date,
+        p_is_paid: expense.is_paid ?? false,
+        p_splits: splits.map(s => ({ user_id: s.user_id, share_amount: Number(s.share_amount ?? 0) })),
+    });
 }
 
 export async function getExpensesByGroup(groupId: string, archived = false) {
@@ -67,19 +58,13 @@ export async function updateExpenseWithSplits(
     updates: Partial<NewExpense>,
     newSplits: NewExpenseSplit[]
 ) {
-    const { error: updateError } = await supabase
-        .from("expenses")
-        .update(updates)
-        .eq("id", expenseId);
-
-    if (updateError) return { error: updateError };
-
-    await supabase.from("expense_splits").delete().eq("expense_id", expenseId);
-
-    const splitsWithId = newSplits.map((s) => ({ ...s, expense_id: expenseId }));
-    const { error: splitError } = await supabase
-        .from("expense_splits")
-        .insert(splitsWithId);
-
-    return { error: splitError };
+    return await supabase.rpc("update_expense_with_splits", {
+        p_expense_id: expenseId,
+        p_description: updates.description ?? null,
+        p_amount: updates.amount ?? null,
+        p_payer_id: updates.payer_id ?? null,
+        p_date: updates.date ?? null,
+        p_is_paid: updates.is_paid ?? null,
+        p_splits: newSplits.map(s => ({ user_id: s.user_id, share_amount: Number(s.share_amount ?? 0) })),
+    });
 }

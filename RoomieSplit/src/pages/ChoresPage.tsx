@@ -4,11 +4,15 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
+import MetricCard from '../components/MetricCard';
 import FormField, { Input, Select } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { useChores } from '../hooks/useChores';
 import { useMembers } from '../hooks/useMembers';
 import { getChoreIcon } from '../lib/choreIcons';
+import { SkeletonRow } from '../components/Skeleton';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 interface ChoresPageProps {
   userId: string;
@@ -78,9 +82,24 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
     });
   }, [visibleChores, choreSort, members]);
 
+  const {
+    pageItems: paginatedChores,
+    currentPage: chorePage,
+    totalPages: choreTotalPages,
+    totalItems: choreTotalItems,
+    pageSize: chorePageSize,
+    hasNextPage: choreHasNext,
+    hasPrevPage: choreHasPrev,
+    goToPage: choreGoToPage,
+    setPageSize: choreSetPageSize,
+  } = usePagination(sortedChores);
+
   const choreToRemove = chores.find(chore => chore.id === confirmRemoveId);
   const choreToArchive = chores.find(chore => chore.id === confirmArchiveId);
   const choreToUnarchive = chores.find(chore => chore.id === confirmUnarchiveId);
+  const pendingCount = chores.filter(chore => !chore.is_completed).length;
+  const completedCount = chores.filter(chore => chore.is_completed).length;
+  const assignedCount = chores.filter(chore => Boolean(chore.assigned_to)).length;
 
   const handleAddChore = async () => {
     if (!choreName.trim() || !groupId) return;
@@ -120,6 +139,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   return (
     <>
       <PageHeader
+        eyebrow="Household flow"
         title="Chores"
         subtitle={showArchived ? 'Archived household tasks' : 'Track household tasks and assignments'}
         filters={
@@ -186,22 +206,27 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
       />
 
       {(error || successMessage) && (
-        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
-          error
-            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
-            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
-        }`}>
+        <div className={`mb-6 rs-alert ${error ? 'rs-alert-error' : 'rs-alert-success'}`}>
           {error || successMessage}
         </div>
       )}
 
       {showArchived && (
-        <h2 className="mb-4 text-lg font-display font-semibold text-amber-700 dark:text-amber-300">
-          Archived Chores
-        </h2>
+        <div className="mb-4 rs-alert rs-alert-warning">Archived chores stay out of the active task list until restored.</div>
+      )}
+
+      {!showArchived && (
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <MetricCard label="Pending" value={String(pendingCount)} detail="Still needs attention." tone="warning" />
+          <MetricCard label="Completed" value={String(completedCount)} detail="Already checked off." tone="success" />
+          <MetricCard label="Assigned" value={String(assignedCount)} detail="Currently owned by a roommate." tone="accent" />
+        </div>
       )}
 
       <Card
+        eyebrow={showArchived ? 'History' : 'Task list'}
+        title={showArchived ? 'Archived chores' : 'Active chores'}
+        description={showArchived ? 'Restore chores here if they belong back in the working rotation.' : 'Sort, complete, archive, and rebalance task ownership from one list.'}
         className={`overflow-hidden ${
           showArchived
             ? 'border-amber-200/80 bg-amber-50/55 dark:border-amber-900/30 dark:bg-amber-950/10'
@@ -210,13 +235,15 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
       >
         <div className="-mx-2">
           {loading ? (
-            <p className="py-12 text-center text-sm text-stone-400 dark:text-slate-500">Loading chores…</p>
+            <div className="space-y-2 py-4">
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
+            </div>
           ) : visibleChores.length === 0 ? (
             <p className="py-12 text-center text-sm text-stone-400 dark:text-slate-500">
               {showArchived ? 'No archived chores.' : 'No chores yet. Add one to get started!'}
             </p>
           ) : (
-          sortedChores.map(chore => (
+          paginatedChores.map(chore => (
             <div
               key={chore.id}
               className={`flex flex-col gap-4 rounded-2xl px-2 py-4 transition-colors sm:flex-row sm:items-center ${
@@ -263,7 +290,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                       : 'Unassigned'}
                   </Badge>
                 </div>
-                <div className="flex w-24 justify-center shrink-0">
+                <div className="flex w-24 justify-center shrink-0 ml-1">
                   {chore.is_completed ? <Badge variant="green">Completed</Badge> : <Badge variant="orange">Pending</Badge>}
                 </div>
 
@@ -341,6 +368,17 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
           ))
           )}
         </div>
+
+        <Pagination
+          currentPage={chorePage}
+          totalPages={choreTotalPages}
+          totalItems={choreTotalItems}
+          pageSize={chorePageSize}
+          hasNextPage={choreHasNext}
+          hasPrevPage={choreHasPrev}
+          onPageChange={choreGoToPage}
+          onPageSizeChange={choreSetPageSize}
+        />
       </Card>
 
       {showModal && (
@@ -423,3 +461,4 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
     </>
   );
 }
+

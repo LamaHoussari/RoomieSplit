@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { NewGroup, Group } from "../types/Group";
 import { getGroupsByUser, createGroup, joinGroupByCodeWithFallback } from "../services/groupService";
+import { friendlyError } from "../lib/friendlyError";
 
 // Custom hook for loading and adding groups for one specific user
 export function useGroups(userId: string | null) {
@@ -24,7 +25,7 @@ export function useGroups(userId: string | null) {
     const { data, error } = await getGroupsByUser(userId);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       setLoading(false);
       return [] as Group[];
     }
@@ -64,7 +65,7 @@ export function useGroups(userId: string | null) {
     const { data, error } = await createGroup(group, userId);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return null;
     }
 
@@ -80,7 +81,7 @@ export function useGroups(userId: string | null) {
     setSuccessMessage("");
     const { error } = await joinGroupByCodeWithFallback(code, userId);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
     setSuccessMessage("Joined group successfully.");

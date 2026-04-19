@@ -3,12 +3,15 @@ import type { AppUser } from '../types/auth';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import FormField, { Input } from '../components/FormField';
+import FormField, { Input, Select } from '../components/FormField';
 import { signInWithEmail, updateUserPassword } from '../services/authService';
+import { updateProfile } from '../services/profileService';
 import { useProfile } from '../hooks/useProfile';
-import { supabase } from '../lib/supabaseClient';
+import { Skeleton } from '../components/Skeleton';
+import { friendlyError } from '../lib/friendlyError';
+import { useNavigate } from 'react-router-dom';
 
-const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Zelle', 'Other'] as const;
+const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'PayPal', 'Venmo', 'Wish', 'Other'] as const;
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '');
@@ -25,7 +28,7 @@ function isValidPhone(value: string): boolean {
 }
 
 export default function ProfilePage({ user }: { user: AppUser }) {
-  const { profile, avatarUrl } = useProfile(user.id);
+  const { profile, loading: profileLoading, avatarUrl } = useProfile(user.id);
   const initialState = {
     name: user.name || '',
     email: user.email || '',
@@ -39,6 +42,8 @@ export default function ProfilePage({ user }: { user: AppUser }) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -49,8 +54,11 @@ export default function ProfilePage({ user }: { user: AppUser }) {
       phone: profile.phone || '',
       paymentMethod: profile.payment_method || '',
     };
-    setDraft(loaded);
-    setSaved(loaded);
+    async function loadDraft() {
+      setDraft(loaded);
+      setSaved(loaded);
+    }
+    loadDraft();
   }, [profile]);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -72,9 +80,20 @@ export default function ProfilePage({ user }: { user: AppUser }) {
     return () => clearTimeout(id);
   }, [pwError]);
 
+  useEffect(() => {
+    if (!phoneError) return;
+    const id = setTimeout(() => setPhoneError(''), 5000);
+    return () => clearTimeout(id);
+  }, [phoneError]);
+
+  useEffect(() => {
+    if (!profileError) return;
+    const id = setTimeout(() => setProfileError(''), 5000);
+    return () => clearTimeout(id);
+  }, [profileError]);
+
   const isDirty =
     draft.name !== saved.name ||
-    draft.email !== saved.email ||
     draft.nickname !== saved.nickname ||
     draft.phone !== saved.phone ||
     draft.paymentMethod !== saved.paymentMethod;
@@ -85,10 +104,61 @@ export default function ProfilePage({ user }: { user: AppUser }) {
     .slice(0, 2)
     .join('');
 
+  const navigate = useNavigate();  
+
   return (
     <>
-      <PageHeader title="Profile" subtitle="Manage your account" />
+       <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="mb-4 flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-800 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+        >
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10H5m0 0 4-4m-4 4 4 4" />
+          </svg>
+          Back
+        </button>
+      <PageHeader
+        eyebrow="Account"
+        title="Profile"
+        subtitle="Manage personal details, payment preferences, and account security."
+      />
 
+      {profileLoading ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="lg:col-span-2 rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+            <div className="flex items-center gap-5">
+              <Skeleton className="h-20 w-20 !rounded-full" />
+              <div className="flex-1 space-y-3">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-56" />
+              </div>
+            </div>
+          </div>
+          <div className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+            <Skeleton className="mb-4 h-5 w-28" />
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="mb-2 h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-3xl border border-stone-200/80 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:bg-slate-900/78">
+            <Skeleton className="mb-4 h-5 w-20" />
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="mb-2 h-4 w-32" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Avatar + Display Name */}
         <Card className="lg:col-span-2">
@@ -100,7 +170,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 className="h-20 w-20 flex-shrink-0 rounded-full object-cover shadow"
               />
             ) : (
-              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6f4f8b] to-[#392b48] text-2xl font-bold text-white shadow dark:from-[#a88bc9] dark:to-[#4b365f]">
+              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full border border-[#ddd0e9] bg-[#6f4f8b] text-2xl font-bold text-white shadow dark:border-[#4a375e] dark:bg-[#7e62a0]">
                 {initials}
               </div>
             )}
@@ -113,7 +183,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
               </p>
               {draft.nickname && (
                 <p className="mt-0.5 truncate text-sm italic text-stone-400 dark:text-slate-500">
-                  &ldquo;{draft.nickname}&rdquo;
+                  "{draft.nickname}"
                 </p>
               )}
             </div>
@@ -144,10 +214,9 @@ export default function ProfilePage({ user }: { user: AppUser }) {
           <FormField label="Email">
             <Input
               value={draft.email}
-              onChange={e => setDraft(d => ({ ...d, email: e.target.value }))}
               type="email"
-              readOnly={!isEditing}
-              className={!isEditing ? 'cursor-default bg-stone-100 dark:bg-slate-800/70' : ''}
+              readOnly
+              className="cursor-default bg-stone-100 dark:bg-slate-800/70"
             />
           </FormField>
           <FormField label="Phone Number (optional)">
@@ -160,7 +229,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
               }}
               onBlur={() => {
                 if (draft.phone && !isValidPhone(draft.phone)) {
-                  setPhoneError('Enter a valid 8-digit phone number.');
+                  setPhoneError('Please enter a valid 8-digit phone number.');
                 } else {
                   setPhoneError('');
                 }
@@ -175,24 +244,23 @@ export default function ProfilePage({ user }: { user: AppUser }) {
             )}
           </FormField>
           <FormField label="Preferred Payment Method">
-            {isEditing ? (
-              <select
-                value={draft.paymentMethod}
-                onChange={e => setDraft(d => ({ ...d, paymentMethod: e.target.value }))}
-                className="w-full rounded-xl border border-stone-300/80 bg-white px-4 py-2.5 text-sm text-stone-900 shadow-sm outline-none transition focus:border-[#8c74aa] focus:ring-2 focus:ring-[#8c74aa]/20 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-100 dark:focus:border-[#b59ad6] dark:focus:ring-[#b59ad6]/20"
-              >
-                <option value="">Select a method</option>
-                {PAYMENT_METHODS.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            ) : (
-              <Input
-                value={draft.paymentMethod || 'Not set'}
-                readOnly
-                className="cursor-default bg-stone-100 dark:bg-slate-800/70"
-              />
-            )}
+             {isEditing ? (
+                <Select
+                  value={draft.paymentMethod}
+                  onChange={e => setDraft(d => ({ ...d, paymentMethod: e.target.value }))}
+                >
+                  <option value="">Select a method</option>
+                  {PAYMENT_METHODS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </Select>
+              ) : (
+                <Input
+                  value={draft.paymentMethod || 'Not set'}
+                  readOnly
+                  className="cursor-default bg-stone-100 dark:bg-slate-800/70"
+                />
+              )}
           </FormField>
 
           <div className="mt-5 flex items-center justify-between gap-3">
@@ -224,28 +292,40 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                 </Button>
                 <Button
                   size="sm"
-                  disabled={!isDirty || (!!draft.phone && !isValidPhone(draft.phone))}
+                  disabled={!isDirty || profileSaving || (!!draft.phone && !isValidPhone(draft.phone))}
                   onClick={async () => {
                     if (draft.phone && !isValidPhone(draft.phone)) {
-                      setPhoneError('Enter a valid 8-digit phone number.');
+                      setPhoneError('Please enter a valid 8-digit phone number.');
                       return;
                     }
                     setPhoneError('');
-                    await supabase.from('profiles').update({
+                    setProfileError('');
+                    setProfileSaving(true);
+                    const { error } = await updateProfile(user.id, {
                       name: draft.name,
                       nickname: draft.nickname || null,
                       phone: draft.phone || null,
                       payment_method: draft.paymentMethod || null,
-                    }).eq('id', user.id);
+                    });
+                    setProfileSaving(false);
+                    if (error) {
+                      setProfileError(friendlyError(error.message));
+                      return;
+                    }
                     setSaved(draft);
                     setIsEditing(false);
                   }}
                 >
-                  Save changes
+                  {profileSaving ? 'Saving...' : 'Save changes'}
                 </Button>
               </div>
             )}
           </div>
+          {profileError && (
+            <p className="mt-2 rounded-xl border border-red-200/80 bg-red-50/80 px-4 py-2.5 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-300">
+              {profileError}
+            </p>
+          )}
         </Card>
 
         <Card title="Security">
@@ -281,7 +361,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
 
             const { error: updateErr } = await updateUserPassword(newPassword);
             if (updateErr) {
-              setPwError(updateErr.message);
+              setPwError(friendlyError(updateErr.message));
               setPwLoading(false);
               return;
             }
@@ -377,11 +457,12 @@ export default function ProfilePage({ user }: { user: AppUser }) {
             disabled={pwLoading}
             type="submit"
           >
-            {pwLoading ? 'Updating…' : 'Update password'}
+            {pwLoading ? 'Updating...' : 'Update password'}
           </Button>
           </form>
         </Card>
       </div>
+      )}
     </>
   );
 }

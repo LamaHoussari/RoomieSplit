@@ -17,13 +17,15 @@ import {
   updateExpenseWithSplits,
 } from "../services/expensesService";
 import {
-  createSettlement,
   deleteSettlementsByExpense,
   getSettlementsByExpense,
   setSettlementsArchivedAt,
+  syncExpenseSettlements,
 } from "../services/settlementService";
+import { friendlyError } from "../lib/friendlyError";
 
-const SUCCESS_MESSAGE_DURATION_MS = 2200;
+const SUCCESS_MESSAGE_DURATION_MS = 4000;
+const ERROR_MESSAGE_DURATION_MS = 5000;
 const getTodayDateKey = () => new Date().toISOString().slice(0, 10);
 
 function isFutureDatedExpense(date?: string | null) {
@@ -98,41 +100,6 @@ export function useExpenses(
     ];
   }
 
-  async function syncExpenseSettlements(
-    expense: Pick<Expense, "id" | "group_id" | "payer_id" | "created_by">,
-    splits: NewExpenseSplit[],
-  ) {
-    const linkedSplits = normalizeSplits(splits).filter(
-      (split) =>
-        split.user_id !== expense.payer_id &&
-        roundCurrency(split.share_amount ?? 0) > 0,
-    );
-
-    const { error: deleteError } = await deleteSettlementsByExpense(expense.id);
-    if (deleteError) {
-      return { error: deleteError };
-    }
-
-    for (const split of linkedSplits) {
-      const { error: createError } = await createSettlement({
-        group_id: expense.group_id,
-        from_user_id: split.user_id,
-        to_user_id: expense.payer_id,
-        amount: roundCurrency(split.share_amount ?? 0),
-        paid: 0,
-        created_by: expense.created_by,
-        expense_id: expense.id,
-      });
-
-      if (createError) {
-        await deleteSettlementsByExpense(expense.id);
-        return { error: createError };
-      }
-    }
-
-    return { error: null };
-  }
-
   async function loadExpenses() {
     if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
       setExpenses([]);
@@ -147,7 +114,7 @@ export function useExpenses(
       : await getExpensesByGroups(allGroupIds!, showArchived);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       setLoading(false);
       return;
     }
@@ -174,6 +141,12 @@ export function useExpenses(
     return () => window.clearTimeout(timeoutId);
   }, [successMessage]);
 
+  useEffect(() => {
+    if (!error) return;
+    const id = window.setTimeout(() => setError(""), ERROR_MESSAGE_DURATION_MS);
+    return () => window.clearTimeout(id);
+  }, [error]);
+
   async function addExpense(expense: NewExpense, splits: NewExpenseSplit[]) {
     setError("");
     setSuccessMessage("");
@@ -194,24 +167,11 @@ export function useExpenses(
       return false;
     }
 
-    const { data, error } = await createExpense(normalizedExpense, normalizedSplits);
+    const { error } = await createExpense(normalizedExpense, normalizedSplits);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
-    }
-
-    if (normalizedExpense.is_paid && data) {
-      const { error: syncError } = await syncExpenseSettlements(
-        data as Expense,
-        normalizedSplits,
-      );
-
-      if (syncError) {
-        await deleteExpenseService(data.id);
-        setError(syncError.message);
-        return false;
-      }
     }
 
     setSuccessMessage("Expense added successfully.");
@@ -233,30 +193,30 @@ export function useExpenses(
       await getSettlementsByExpense(expenseId);
 
     if (linkedError) {
-      setError(linkedError.message);
+      setError(friendlyError(linkedError.message));
       return false;
     }
 
     if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
       setError(
-        "This expense already has recorded payments. Remove or adjust those payments before deleting the expense.",
+        "This expense has recorded payments. Please remove or adjust those payments first.",
       );
       return false;
     }
 
     const { error: settlementError } = await deleteSettlementsByExpense(expenseId);
     if (settlementError) {
-      setError(settlementError.message);
+      setError(friendlyError(settlementError.message));
       return false;
     }
 
     const { error } = await deleteExpenseService(expenseId);
     if (error) {
       if (expense.is_paid) {
-        await syncExpenseSettlements(expense, expense.expense_splits ?? []);
+        await syncExpenseSettlements(expenseId);
       }
 
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
@@ -279,12 +239,12 @@ export function useExpenses(
       await getSettlementsByExpense(expenseId);
 
     if (linkedError) {
-      setError(linkedError.message);
+      setError(friendlyError(linkedError.message));
       return false;
     }
 
     if (!expense.is_paid) {
-      setError("Only settled expenses can be archived.");
+      setError("Only paid expenses can be archived.");
       return false;
     }
 
@@ -301,7 +261,7 @@ export function useExpenses(
     });
 
     if (hasUnsettledBalances) {
-      setError("Settle all linked balances before archiving this expense.");
+      setError("Please settle all linked balances before archiving this expense.");
       return false;
     }
 
@@ -312,7 +272,7 @@ export function useExpenses(
 
     const { error: expenseError } = await setExpenseArchivedAt(expenseId, archivedAt);
     if (expenseError) {
-      setError(expenseError.message);
+      setError(friendlyError(expenseError.message));
       return false;
     }
 
@@ -322,7 +282,7 @@ export function useExpenses(
     );
     if (settlementError) {
       await setExpenseArchivedAt(expenseId, null);
-      setError(settlementError.message);
+      setError(friendlyError(settlementError.message));
       return false;
     }
 
@@ -346,13 +306,13 @@ export function useExpenses(
       await getSettlementsByExpense(expenseId, "archived");
 
     if (linkedError) {
-      setError(linkedError.message);
+      setError(friendlyError(linkedError.message));
       return false;
     }
 
     const { error: expenseError } = await setExpenseArchivedAt(expenseId, null);
     if (expenseError) {
-      setError(expenseError.message);
+      setError(friendlyError(expenseError.message));
       return false;
     }
 
@@ -362,7 +322,7 @@ export function useExpenses(
     );
     if (settlementError) {
       await setExpenseArchivedAt(expenseId, previousArchivedAt);
-      setError(settlementError.message);
+      setError(friendlyError(settlementError.message));
       return false;
     }
 
@@ -412,13 +372,13 @@ export function useExpenses(
         await getSettlementsByExpense(expenseId);
 
       if (linkedError) {
-        setError(linkedError.message);
+        setError(friendlyError(linkedError.message));
         return false;
       }
 
       if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
         setError(
-          "You cannot change the amount, payer, or split members after payments have been recorded for this expense.",
+          "You can't change the amount, payer, or split after payments have been recorded.",
         );
         return false;
       }
@@ -431,22 +391,15 @@ export function useExpenses(
     );
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
     if (expense.is_paid && financialChanged) {
-      const { error: syncError } = await syncExpenseSettlements(
-        {
-          ...expense,
-          payer_id: nextPayerId,
-          created_by: normalizedUpdates.created_by ?? expense.created_by,
-        },
-        normalizedSplits,
-      );
+      const { error: syncError } = await syncExpenseSettlements(expenseId);
 
       if (syncError) {
-        setError(syncError.message);
+        setError(friendlyError(syncError.message));
         return false;
       }
     }
@@ -475,7 +428,7 @@ export function useExpenses(
       await getSettlementsByExpense(expenseId);
 
     if (linkedError) {
-      setError(linkedError.message);
+      setError(friendlyError(linkedError.message));
       return false;
     }
 
@@ -492,25 +445,22 @@ export function useExpenses(
 
       if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
         setError(
-          "This expense already has recorded payments attached. Refresh the page before changing its paid state.",
+          "This expense has recorded payments. Please refresh and try again.",
         );
         return false;
       }
 
       const { error } = await updateExpense(expenseId, { is_paid: true });
       if (error) {
-        setError(error.message);
+        setError(friendlyError(error.message));
         return false;
       }
 
-      const { error: syncError } = await syncExpenseSettlements(
-        targetExpense,
-        currentSplits,
-      );
+      const { error: syncError } = await syncExpenseSettlements(expenseId);
 
       if (syncError) {
         await updateExpense(expenseId, { is_paid: false });
-        setError(syncError.message);
+        setError(friendlyError(syncError.message));
         return false;
       }
 
@@ -518,21 +468,21 @@ export function useExpenses(
     } else {
       if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
         setError(
-          "You cannot mark this expense as unpaid after payments have been recorded against it.",
+          "You can't mark this expense as unpaid after payments have been recorded.",
         );
         return false;
       }
 
       const { error: settlementError } = await deleteSettlementsByExpense(expenseId);
       if (settlementError) {
-        setError(settlementError.message);
+        setError(friendlyError(settlementError.message));
         return false;
       }
 
       const { error } = await updateExpense(expenseId, { is_paid: false });
       if (error) {
-        await syncExpenseSettlements(targetExpense, currentSplits);
-        setError(error.message);
+        await syncExpenseSettlements(expenseId);
+        setError(friendlyError(error.message));
         return false;
       }
 

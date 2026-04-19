@@ -8,6 +8,7 @@ import {
   setChoreArchivedAt,
   updateChore as updateChoreService,
 } from "../services/choreService";
+import { friendlyError } from "../lib/friendlyError";
 
 export function useChores(
   groupId: string | null,
@@ -33,7 +34,7 @@ export function useChores(
       : await getChoresByGroups(allGroupIds!, showArchived);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       setChores([]);
       setLoading(false);
       return;
@@ -70,7 +71,7 @@ export function useChores(
     const { error } = await createChore(chore);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
@@ -86,7 +87,7 @@ export function useChores(
     setSuccessMessage("");
     const { error } = await deleteChoreService(choreId);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
     setSuccessMessage("Chore removed.");
@@ -100,7 +101,7 @@ export function useChores(
 
     const { error } = await setChoreArchivedAt(choreId, new Date().toISOString());
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
@@ -115,7 +116,7 @@ export function useChores(
 
     const { error } = await setChoreArchivedAt(choreId, null);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
@@ -128,7 +129,7 @@ export function useChores(
     setError("");
     const { error } = await updateChoreService(choreId, { is_completed: isCompleted });
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
     await loadChores();

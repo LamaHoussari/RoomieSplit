@@ -4,6 +4,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
+import MetricCard from '../components/MetricCard';
 import FormField, { Input, Select } from '../components/FormField';
 import { useGroups } from '../hooks/useGroups';
 import { useExpenses } from '../hooks/useExpenses';
@@ -14,6 +15,9 @@ import type { GroupMember } from '../types/Member';
 import type { Settlement } from '../types/Settlement';
 import DatePicker from '../components/DatePicker';
 import { isSettlementSettled, roundCurrency, splitAmountEvenly } from '../lib/finance';
+import { SkeletonCard, SkeletonTableRow } from '../components/Skeleton';
+import Pagination from '../components/Pagination';
+import { usePagination } from '../hooks/usePagination';
 
 interface ExpenseDraft {
   title: string;
@@ -219,6 +223,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
 
   const {
     expenses,
+    loading: expensesLoading,
     error,
     successMessage,
     addExpense,
@@ -227,8 +232,10 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
     removeExpense,
     editExpense,
   } = useExpenses(groupId, allGroupIds, showArchived);
-  const { settlements } = useSettlements(groupId, allGroupIds, showArchived);
-  const { members: selectedGroupMembers } = useMembers(groupId);
+  const { settlements, loading: settlementsLoading } = useSettlements(groupId, allGroupIds, showArchived);
+  const { members: selectedGroupMembers, loading: membersLoading } = useMembers(groupId);
+
+  const dataLoading = expensesLoading || settlementsLoading || membersLoading;
   const addMemberIds = useMemo(
     () => new Set(selectedGroupMembers.map(member => member.user_id)),
     [selectedGroupMembers],
@@ -296,6 +303,18 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
     });
     return sorted;
   }, [visibleExpenses, sortKey, sortDir]);
+  const {
+    pageItems: paginatedExpenses,
+    currentPage,
+    totalPages,
+    totalItems,
+    pageSize,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    setPageSize,
+  } = usePagination(sortedExpenses);
+
   const settlementsByExpenseId = useMemo(() => {
     const grouped = new Map<string, typeof settlements>();
 
@@ -391,6 +410,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   return (
     <>
       <PageHeader
+        eyebrow="Shared ledger"
         title="Expenses"
         subtitle={showArchived ? 'Archived shared expenses' : 'All shared expenses'}
         filters={
@@ -436,42 +456,48 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
       />
 
       {(error || successMessage) && (
-        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
-          error
-            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
-            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
-        }`}>
+        <div className={`mb-6 rs-alert ${error ? 'rs-alert-error' : 'rs-alert-success'}`}>
           {error || successMessage}
         </div>
       )}
 
       {showArchived && (
-        <h2 className="mb-4 text-lg font-display font-semibold text-amber-700 dark:text-amber-300">
-          Archived Expenses
-        </h2>
+        <div className="mb-4 rs-alert rs-alert-warning">Archived expenses are hidden from the active ledger and totals.</div>
       )}
 
       {!showArchived && (
+        dataLoading ? (
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : (
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-3xl border border-stone-200/80 border-l-4 border-l-[#8c74aa]/70 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:border-l-[#b59ad6]/45 dark:bg-slate-900/78">
-            <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">Total spend</p>
-            <p className="font-display text-3xl font-extrabold tracking-tight text-stone-900 dark:text-slate-100">${formatMoney(totalAmount)}</p>
-            <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{expenses.length} expenses</p>
-          </div>
-          <div className="rounded-3xl border border-stone-200/80 border-l-4 border-l-violet-400/70 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:border-l-violet-300/40 dark:bg-slate-900/78">
-            <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">Scheduled</p>
-            <p className="font-display text-3xl font-extrabold tracking-tight text-violet-600 dark:text-violet-400">${formatMoney(scheduledAmount)}</p>
-            <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{scheduledExpenses.length} items</p>
-          </div>
-          <div className="rounded-3xl border border-stone-200/80 border-l-4 border-l-emerald-400/70 bg-white/82 p-6 shadow-[0_18px_48px_-32px_rgba(28,25,23,0.45)] dark:border-slate-800/70 dark:border-l-emerald-400/40 dark:bg-slate-900/78">
-            <p className="mb-2 text-sm font-semibold text-stone-500 dark:text-slate-400">Paid</p>
-            <p className="font-display text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">${formatMoney(paidAmount)}</p>
-            <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{expenses.filter(expense => expense.is_paid).length} items</p>
-          </div>
+          <MetricCard
+            label="Total spend"
+            value={`$${formatMoney(totalAmount)}`}
+            detail={`${expenses.length} expenses recorded.`}
+            tone="accent"
+          />
+          <MetricCard
+            label="Scheduled"
+            value={`$${formatMoney(scheduledAmount)}`}
+            detail={`${scheduledExpenses.length} upcoming items.`}
+            tone="warning"
+          />
+          <MetricCard
+            label="Paid"
+            value={`$${formatMoney(paidAmount)}`}
+            detail={`${expenses.filter(expense => expense.is_paid).length} items already covered.`}
+            tone="success"
+          />
         </div>
+        )
       )}
 
       <Card
+        eyebrow={showArchived ? 'History' : 'Ledger'}
+        title={showArchived ? 'Archived expense ledger' : 'Expense ledger'}
+        description={showArchived ? 'Restore archived items when they need to return to the active ledger.' : 'Sort the ledger, track progress, and manage expenses from one place.'}
         className={`overflow-hidden ${
           showArchived
             ? 'border-amber-200/80 bg-amber-50/55 dark:border-amber-900/30 dark:bg-amber-950/10'
@@ -512,7 +538,10 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
               </tr>
             </thead>
             <tbody>
-              {sortedExpenses.map(expense => {
+              {dataLoading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={7} />)
+              ) : (
+              paginatedExpenses.map(expense => {
                 const status = getExpenseStatus(expense, settlementsByExpenseId);
                 const archiveAllowed = canArchiveExpense(expense, settlementsByExpenseId);
 
@@ -601,10 +630,22 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
                     </td>
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          hasNextPage={hasNextPage}
+          hasPrevPage={hasPrevPage}
+          onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
+        />
       </Card>
 
       {showModal && (

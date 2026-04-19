@@ -2,15 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/public/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RoomieSplit</title>
+    <title>RoomieSplit | Shared Home, Sorted</title>
+    <link rel="icon" type="image/png" href="/FOR%20LIGHT%20MODE.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/landing.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <main class="landing">
+      <div class="landing__glow landing__glow--left" aria-hidden="true"></div>
+      <div class="landing__glow landing__glow--right" aria-hidden="true"></div>
+      <section class="landing__card">
+        <p class="landing__kicker">RoomieSplit</p>
+        <h1>Split bills, chores, and house life without the mess.</h1>
+        <p class="landing__copy">
+          Keep your home organized with one simple space for expenses, chores, and balances.
+        </p>
+        <button id="get-started-btn" class="landing__cta" type="button">Get Started</button>
+      </section>
+    </main>
+    <script src="/landing.js"></script>
   </body>
 </html>

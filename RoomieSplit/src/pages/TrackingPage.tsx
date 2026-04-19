@@ -26,6 +26,7 @@ export default function TrackingPage({ userId, chosenGroup, setChosenGroup }: Tr
   return (
     <>
       <PageHeader
+        eyebrow="Calendar"
         title="Tracking"
         subtitle="Calendar view of recurring chores, payments, and scheduled expenses."
         filters={

@@ -6,6 +6,7 @@ import {
   addMemberByEmail,
   sendInviteEmail,
 } from '../services/inviteService';
+import { friendlyError } from '../lib/friendlyError';
 
 interface InviteMemberModalProps {
   groupId: string;
@@ -63,7 +64,7 @@ export default function InviteMemberModal({
     const { data: profile, error: lookupErr } = await lookupUserByEmail(trimmed);
 
     if (lookupErr) {
-      setError(lookupErr.message);
+      setError(friendlyError(lookupErr.message));
       setLocalLoading(false);
       return;
     }
@@ -71,7 +72,7 @@ export default function InviteMemberModal({
     if (profile) {
       const { error: addErr } = await addMemberByEmail(groupId, profile.id);
       if (addErr) {
-        setError(addErr.message);
+        setError(friendlyError(addErr.message));
         setLocalLoading(false);
         return;
       }
@@ -89,7 +90,7 @@ export default function InviteMemberModal({
     );
 
     if (sendErr) {
-      setError(sendErr);
+      setError(friendlyError(sendErr));
       setLocalLoading(false);
       return;
     }
@@ -104,7 +105,7 @@ export default function InviteMemberModal({
       setCodeCopied(true);
       setTimeout(() => setCodeCopied(false), 2000);
     } catch {
-      setError('Failed to copy code.');
+      setError('Couldn\'t copy the code. Please select and copy it manually.');
     }
   }
 

@@ -3,5 +3,4 @@ export type AppUser = {
     email: string | null;
     name: string | null;
     isAdmin: boolean;
-    authSource: 'supabase' | 'local-admin';
 }

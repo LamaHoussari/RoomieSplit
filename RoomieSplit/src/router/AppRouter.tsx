@@ -4,6 +4,7 @@ import LoginPage       from '../pages/LoginPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
+import LoadingScreen from '../components/LoadingScreen';
 import DashboardPage   from '../pages/DashboardPage';
 import GroupsPage      from '../pages/GroupsPage';
 import GroupDetailPage from '../pages/GroupDetailPage';
@@ -12,6 +13,11 @@ import BalancesPage    from '../pages/BalancesPage';
 import ChoresPage      from '../pages/ChoresPage';
 import TrackingPage    from '../pages/TrackingPage';
 import ProfilePage     from '../pages/ProfilePage';
+import Users from '../pages/AdminUsersPage';
+import Groups from '../pages/AdminGroupsPage';
+import AuditLog from '../pages/AdminAuditlogPage';
+
+
 
 import { useAuth } from "../hooks/useAuth";
 import { useState } from 'react';
@@ -30,14 +36,14 @@ function AnimatedRoutes() {
     signIn, // signin action
     signOut, // signout action
   } = useAuth();
-  
+
   return (
     <div className="page-transition">
       <Routes>
-        <Route path="/" element={<Navigate to={user ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} replace />} />
+        <Route path="/" element={<Navigate to={user && !loading ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/login" element={user ? (
+        <Route path="/login" element={user && !loading ? (
           <Navigate to={user.isAdmin ? "/admin" : "/dashboard"} replace />
         ) : (
           <LoginPage 
@@ -49,12 +55,15 @@ function AnimatedRoutes() {
             loading={loading}
           />
         )} />
-        {user && (
+        {user ? (
         <Route element={<MainLayout onSignOut={signOut} user={user}/>}>
           {user.isAdmin ? (
             <>
               <Route path="/admin" element={<AdminDashboardPage user={user} />} />
-              <Route path="*" element={<Navigate to="/admin" replace />} />
+              <Route path="/admin/users" element={<Users />} />
+              <Route path="/admin/groups" element={<Groups />} />
+              <Route path="/admin/audit" element={<AuditLog />} />
+              <Route path="/*" element={<Navigate to="/" replace />} />
             </>
           ) : (
             <>
@@ -75,6 +84,8 @@ function AnimatedRoutes() {
             </>
           )}
         </Route>
+        ): (
+          <Route path="*" element={loading ? <LoadingScreen /> : <Navigate to="/login" replace />} />
         )}
         {!user && !loading && (
           <Route path="*" element={<Navigate to="/login" replace />} />

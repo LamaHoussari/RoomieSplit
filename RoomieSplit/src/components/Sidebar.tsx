@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
-import type { SVGProps } from 'react';
+import type { ReactElement, SVGProps } from 'react';
 import type { AppUser } from '../types/auth';
+import Button from './Button';
 
 interface NavItem {
   label: string;
   path: string;
-  icon: (props: SVGProps<SVGSVGElement>) => React.ReactElement;
+  icon: (props: SVGProps<SVGSVGElement>) => ReactElement;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -77,12 +78,40 @@ const NAV_ITEMS: NavItem[] = [
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
   {
-    label: 'Admin',
+    label: 'Overview',
     path: '/admin',
     icon: props => (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l7 4v5c0 4.971-2.91 8.963-7 10-4.09-1.037-7-5.029-7-10V7l7-4Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12.5l1.75 1.75L14.5 10" />
+        <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Users',
+    path: '/admin/users',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <path d="M16 11a4 4 0 1 0-8 0" />
+        <path d="M12 15c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Groups',
+    path: '/admin/groups',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <path d="M3 7h18M3 12h18M3 17h18" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Audit Log',
+    path: '/admin/audit',
+    icon: props => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+        <rect x="4" y="4" width="16" height="16" rx="2" />
+        <path d="M9 12h6M9 16h6M9 8h6" />
       </svg>
     ),
   },
@@ -110,10 +139,14 @@ export default function Sidebar({
   const closeMobile = useCallback(() => setMobileOpen?.(false), [setMobileOpen]);
   const [everOpened, setEverOpened] = useState(false);
 
-  // Track whether mobile menu was ever opened (for closing animation)
-  if (mobileOpen && !everOpened) {
-    setEverOpened(true);
-  }
+  useEffect(() => {
+    if (mobileOpen) {
+      async function openSidebar() {
+        setEverOpened(true);
+      }
+      openSidebar();
+    }
+  }, [mobileOpen]);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -126,13 +159,19 @@ export default function Sidebar({
 
   const navItems = user.isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
   const displayName = user.name?.trim() || user.email || 'Roomie';
-  const userLabel = user.isAdmin ? 'Admin session' : 'Welcome back';
+  const signOutIcon = (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75h-2A1.75 1.75 0 0 0 3.75 5.5v9A1.75 1.75 0 0 0 5.5 16.25h2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.5 6.5 15 10l-3.5 3.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h7" />
+    </svg>
+  );
 
   return (
     <>
       <div
         className={[
-          'fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm md:hidden',
+          'fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-sm md:hidden',
           mobileOpen ? 'sidebar-overlay-open' : everOpened ? 'sidebar-overlay-closed' : 'hidden',
         ].join(' ')}
         onClick={closeMobile}
@@ -140,13 +179,10 @@ export default function Sidebar({
 
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-50',
+          'fixed inset-y-0 left-0 z-50 h-full flex-shrink-0',
           'md:static md:inset-auto md:z-auto',
-          'h-full',
-          collapsed ? 'w-20' : 'w-64',
-          'flex flex-col flex-shrink-0',
-          'border-r border-stone-200/80 bg-white/78 shadow-[0_20px_48px_-36px_rgba(28,25,23,0.5)] backdrop-blur-xl',
-          'dark:border-slate-800/80 dark:bg-slate-950/78',
+          collapsed ? 'w-[84px]' : 'w-[248px]',
+          'border-r border-stone-200/55 bg-white/64 backdrop-blur-md dark:border-slate-800/55 dark:bg-slate-950/60',
           'md:transition-[width] md:duration-200 md:ease-in-out',
           mobileOpen
             ? 'sidebar-panel-open'
@@ -155,123 +191,114 @@ export default function Sidebar({
               : '-translate-x-full md:translate-x-0',
         ].join(' ')}
       >
-        <div
-          className={[
-            'flex h-14 items-center border-b border-stone-200/80 dark:border-slate-800/80',
-            collapsed ? 'justify-center px-0' : 'px-3',
-          ].join(' ')}
-        >
-          <button
-            type="button"
-            onClick={() => (mobileOpen ? closeMobile() : onToggleCollapsed?.())}
-            title={mobileOpen ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-label={mobileOpen ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-stone-700 transition-colors duration-150 hover:bg-stone-100/80 dark:text-slate-200 dark:hover:bg-white/5"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
-              <path
-                fillRule="evenodd"
-                d="M3 5.5A.75.75 0 0 1 3.75 4.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 5.5Zm0 4.5a.75.75 0 0 1 .75-.75h12.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 10Zm.75 3.75a.75.75 0 0 0 0 1.5h12.5a.75.75 0 0 0 0-1.5H3.75Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-
-          {!collapsed && (
-            <span className="ml-2 truncate text-sm font-semibold text-stone-900 dark:text-slate-100">
-              Menu
-            </span>
-          )}
-        </div>
-
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-3">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={closeMobile}
-              title={collapsed ? item.label : undefined}
-              className={({ isActive }) =>
-                [
-                  'flex items-center gap-3 rounded-xl px-3 py-3 text-base font-medium transition-colors duration-150',
-                  collapsed && 'justify-center',
-                  isActive
-                    ? 'bg-[#6f4f8b] text-white shadow-sm dark:bg-[#2b2136] dark:text-[#e2d4f0]'
-                    : 'text-stone-700/85 hover:bg-stone-100/80 hover:text-stone-950 dark:text-slate-300/80 dark:hover:bg-white/5 dark:hover:text-white',
-                ].filter(Boolean).join(' ')
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center">
-                    {item.icon({
-                      className: `h-[22px] w-[22px] ${isActive ? 'text-white dark:text-[#e2d4f0]' : 'text-stone-500 dark:text-slate-400'}`,
-                      'aria-hidden': true,
-                    })}
-                  </span>
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className={['border-t border-stone-200/80 p-3 dark:border-slate-800/80', collapsed ? 'px-2' : 'px-3'].join(' ')}>
-          {collapsed ? (
-            <div className="flex flex-col items-center gap-2">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={displayName}
-                  title={displayName}
-                  className="h-10 w-10 rounded-2xl object-cover"
-                />
-              ) : (
-                <div
-                  title={displayName}
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#6f4f8b]/12 text-sm font-bold text-[#6f4f8b] dark:bg-[#6f4f8b]/20 dark:text-[#d4c0ea]"
-                >
-                  {(displayName[0] ?? 'R').toUpperCase()}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={onSignOut}
-                title="Sign out"
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-red-200/70 bg-red-50/70 text-red-700 transition hover:bg-red-50 hover:text-red-800 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-950/30"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H3m0 0 3-3m-3 3 3 3" />
-                </svg>
-              </button>
-            </div>
-          ) : (
-            <div className="mx-auto flex w-full max-w-[208px] flex-col justify-center gap-3">
-              <div className="w-full text-left">
-                <p className="text-sm font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500">
-                  {userLabel}
-                </p>
-                <p className="mt-1 truncate text-base font-semibold text-stone-900 dark:text-slate-100">
-                  {displayName}
+        <div className="flex h-full flex-col">
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} border-b border-stone-200/55 px-3 py-3 dark:border-slate-800/55`}>
+            {!collapsed && (
+              <div className="min-w-0 px-1">
+                <p className="text-sm font-semibold text-stone-900 dark:text-white">
+                  {user.isAdmin ? 'Admin Menu' : 'Menu'}
                 </p>
               </div>
+            )}
 
-              <button
-                type="button"
-                onClick={onSignOut}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200/70 bg-red-50/70 px-3 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 hover:text-red-800
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white
-                dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-950/30 dark:focus-visible:ring-offset-slate-950"
+            <button
+              type="button"
+              onClick={() => (mobileOpen ? closeMobile() : onToggleCollapsed?.())}
+              title={mobileOpen ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={mobileOpen ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className="rs-action-icon"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className={`h-4 w-4 transition-transform ${collapsed && !mobileOpen ? 'rotate-180' : ''}`} aria-hidden="true">
+                <path fillRule="evenodd" d="M11.78 4.22a.75.75 0 0 1 0 1.06L7.06 10l4.72 4.72a.75.75 0 1 1-1.06 1.06l-5.25-5.25a.75.75 0 0 1 0-1.06l5.25-5.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+
+          <nav className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 py-4">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/admin'}
+                onClick={closeMobile}
+                title={collapsed ? item.label : undefined}
+                className={({ isActive }) =>
+                  [
+                    'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition',
+                    collapsed ? 'justify-center' : '',
+                    isActive
+                      ? 'bg-[#ede7f6] text-[#5e35b1] dark:bg-[#2e2545]'
+                      : 'text-stone-600 hover:bg-white/70 dark:text-slate-300',
+                  ].join(' ')
+                }
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H3m0 0 3-3m-3 3 3 3" />
-                </svg>
-                <span>Sign out</span>
-              </button>
-            </div>
-          )}
+                {item.icon({ className: 'h-5 w-5' })}
+                {!collapsed && <span>{item.label}</span>}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="border-t border-stone-200/55 px-3 py-3 dark:border-slate-800/55">
+            {collapsed ? (
+              <div className="flex flex-col items-center gap-2">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    title={displayName}
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    title={displayName}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#6f4f8b]/12 text-sm font-bold text-[#6f4f8b] dark:bg-[#6f4f8b]/20 dark:text-[#d4c0ea]"
+                  >
+                    {(displayName[0] ?? 'R').toUpperCase()}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={onSignOut}
+                  title="Sign out"
+                  aria-label="Sign out"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-[8px] border border-red-300/75 bg-red-50/92 text-red-700 transition hover:border-red-400 hover:bg-red-100 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
+                >
+                  {signOutIcon}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="h-9 w-9 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#6f4f8b]/12 text-sm font-bold text-[#6f4f8b] dark:bg-[#6f4f8b]/20 dark:text-[#d4c0ea]">
+                      {(displayName[0] ?? 'R').toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-stone-900 dark:text-white">
+                      {displayName}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={onSignOut}
+                  variant="danger"
+                  size="sm"
+                  className="w-full justify-center"
+                >
+                  {signOutIcon}
+                  Sign out
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
     </>

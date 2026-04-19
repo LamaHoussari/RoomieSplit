@@ -4,6 +4,7 @@ import Card from '../components/Card';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import PageHeader from '../components/PageHeader';
 import FormField, { Select } from '../components/FormField';
 import InviteMemberModal from '../components/InviteMemberModal';
 import { useMembers } from '../hooks/useMembers';
@@ -13,6 +14,7 @@ import { getGroupById, deleteGroup } from '../services/groupService';
 import { removeMember, updateMemberRole } from '../services/memberService';
 import type { Group } from '../types/Group';
 import { computeMemberBalance } from '../lib/finance';
+import { friendlyError } from '../lib/friendlyError';
 
 const getInitials = (name?: string) =>
   (name ?? '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -97,7 +99,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
       const { error: promoteError } = await updateMemberRole(nextAdmin.id, 'admin');
       if (promoteError) {
         setLeavingGroup(false);
-        setPageFeedback({ type: 'error', message: promoteError.message });
+        setPageFeedback({ type: 'error', message: friendlyError(promoteError.message) });
         return;
       }
     }
@@ -108,7 +110,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
         await loadMembers();
       }
       setLeavingGroup(false);
-      setPageFeedback({ type: 'error', message: leaveError.message });
+      setPageFeedback({ type: 'error', message: friendlyError(leaveError.message) });
       return;
     }
 
@@ -198,11 +200,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
       )}
 
       {pageFeedback && (
-        <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-medium ${
-          pageFeedback.type === 'error'
-            ? 'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300'
-            : 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300'
-        }`}>
+        <div className={`mb-6 rs-alert ${pageFeedback.type === 'error' ? 'rs-alert-error' : 'rs-alert-success'}`}>
           {pageFeedback.message}
         </div>
       )}
@@ -212,7 +210,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
         className="mb-6 inline-flex items-center gap-2 text-base font-semibold text-stone-700 transition-colors hover:text-stone-950 dark:text-slate-300 dark:hover:text-white"
         onClick={() => navigate('/groups')}
       >
-        <span className="flex h-9 w-9 items-center justify-center rounded-2xl border border-stone-200/80 bg-white/70 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/60">
+        <span className="rs-action-icon">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5" aria-hidden="true">
             <path
               fillRule="evenodd"
@@ -224,17 +222,14 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
         Back to Groups
       </button>
 
-      <div className="mb-8">
-        <h1 className="font-display text-4xl font-extrabold tracking-tight text-stone-900 dark:text-slate-100">
-          {group?.name ?? 'Loading...'}
-        </h1>
-        <p className="mt-2 text-base text-stone-500 dark:text-slate-400">
-          {members.length} members - Created {group?.created_at ? new Date(group.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Group"
+        title={group?.name ?? 'Loading...'}
+        subtitle={`${members.length} members currently belong to this group.`}
+      />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card title="Members" className="overflow-hidden">
+        <Card eyebrow="People" title="Members" description="Roles, balances, and membership changes in one place." className="overflow-hidden">
           <div className="-mx-2">
             {members.map(member => {
               const balance = computeMemberBalance(member.user_id, settlements);
@@ -245,13 +240,43 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                   className="flex items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-stone-100/80 dark:hover:bg-white/5"
                 >
                   <Avatar initials={getInitials(memberName)} colorClass={member.color_class || ''} />
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-stone-900 dark:text-slate-100">
+                  <div className="min-w-0 group/member relative">
+                    <p className="truncate text-base font-semibold text-stone-900 dark:text-slate-100 cursor-pointer">
                       {memberName}
                     </p>
                     <p className="text-sm text-stone-500 dark:text-slate-400">
                       {member.role === 'admin' ? 'Admin' : 'Member'}
                     </p>
+                    {/* Member info popover */}
+                    <div className="pointer-events-none absolute left-0 top-full z-30 mt-1 w-60 rounded-xl border border-stone-200 bg-white p-3 shadow-xl opacity-0 transition-opacity group-hover/member:opacity-100 dark:border-slate-700 dark:bg-slate-800">
+                      {member.profiles?.nickname && (
+                        <p className="truncate text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Nickname: </span>
+                          {member.profiles.nickname}
+                        </p>
+                      )}
+                      {member.profiles?.email && (
+                        <p className="truncate text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Email: </span>
+                          {member.profiles.email}
+                        </p>
+                      )}
+                      {member.profiles?.phone && (
+                        <p className="mt-1 text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Phone number: </span>
+                          {member.profiles.phone}
+                        </p>
+                      )}
+                      {member.profiles?.payment_method && (
+                        <p className="mt-1 text-xs text-stone-600 dark:text-slate-300">
+                          <span className="font-medium text-stone-500 dark:text-slate-400">Preferred payment method: </span>
+                          {member.profiles.payment_method}
+                        </p>
+                      )}
+                      {!member.profiles?.email && !member.profiles?.phone && !member.profiles?.payment_method && (
+                        <p className="text-xs italic text-stone-400 dark:text-slate-500">No additional info</p>
+                      )}
+                    </div>
                   </div>
                   <div className="ml-auto flex shrink-0 items-center gap-2">
                     <span
@@ -275,7 +300,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                             onClick={async () => {
                               if (!confirm(`Remove ${memberName} from the group?`)) return;
                               const { error } = await removeMember(member.id);
-                              if (error) setPageFeedback({ type: 'error', message: error.message });
+                              if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
                               else loadMembers();
                             }}
                           >
@@ -302,7 +327,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
           )}
         </Card>
 
-        <Card title="Group Stats">
+        <Card eyebrow="Details" title="Group Stats" description="Shared totals, invite access, and membership controls.">
           {[
             { label: 'Total Expenses', value: `$${formatMoney(totalExpenses)}`, color: 'text-stone-900 dark:text-slate-100' },
             { label: 'Expenses Count', value: String(expenses.length), color: 'text-stone-900 dark:text-slate-100' },
@@ -359,7 +384,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
               if (!confirm(`Are you sure you want to delete "${group?.name}"? This action cannot be undone.`)) return;
               if (!groupId) return;
               const { error } = await deleteGroup(groupId);
-              if (error) setPageFeedback({ type: 'error', message: error.message });
+              if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
               else navigate('/groups');
             }}
           >

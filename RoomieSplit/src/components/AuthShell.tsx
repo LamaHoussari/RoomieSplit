@@ -11,11 +11,11 @@ export default function AuthShell({ title, subtitle, children }: AuthShellProps)
   const { dark, toggle } = useTheme();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#fafaf9_0%,#f5f5f4_52%,#ffffff_100%)] p-6 transition-all duration-300 dark:bg-[linear-gradient(180deg,_#0f1720_0%,_#111827_100%)]">
+    <div className="flex min-h-screen items-center justify-center p-6 transition-all duration-300">
       <button
         type="button"
         onClick={toggle}
-        className="fixed right-5 top-5 inline-flex items-center justify-center rounded-2xl border border-stone-300/80 bg-white/80 p-2.5 text-stone-700 shadow-sm transition hover:bg-stone-100/80 hover:text-stone-950 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/80 dark:hover:text-white"
+        className="fixed right-5 top-5 z-10 rs-action-icon"
         aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {dark ? (
@@ -30,22 +30,19 @@ export default function AuthShell({ title, subtitle, children }: AuthShellProps)
       </button>
 
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center animate-slide-up-soft">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-3xl bg-[linear-gradient(135deg,#6f4f8b,#392b48)] shadow-sm dark:bg-[linear-gradient(135deg,#a88bc9,#4b365f)]" />
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-stone-900 dark:text-slate-100 sm:text-5xl">
-            Roomie<span className="text-[#6f4f8b] dark:text-[#d4c0ea]">Split</span>
+        <div className="mb-6 animate-slide-up-soft text-center">
+          <p className="rs-kicker">RoomieSplit</p>
+          <h1 className="mt-2 font-display text-3xl font-semibold text-stone-950 dark:text-white">
+            Shared expenses without the noise.
           </h1>
-          <p className="mt-2 text-base text-stone-500 dark:text-slate-400">
-            Shared expenses, zero disputes.
-          </p>
         </div>
 
-        <div className="rounded-3xl border border-stone-200/80 bg-white/86 p-7 shadow-[0_30px_80px_-46px_rgba(28,25,23,0.55)] backdrop-blur-sm animate-slide-up-soft dark:border-slate-800/70 dark:bg-slate-900/78 dark:shadow-black/35 sm:p-8">
-          <h2 className="mb-2 font-display text-2xl font-semibold text-stone-900 dark:text-slate-100">
+        <div className="rs-panel rs-panel-strong animate-slide-up-soft p-7 sm:p-8">
+          <h2 className="font-display text-2xl font-semibold text-stone-950 dark:text-white">
             {title}
           </h2>
           {subtitle && (
-            <p className="mb-6 text-sm text-stone-500 dark:text-slate-400">
+            <p className="mb-6 mt-3 text-sm text-stone-500 dark:text-slate-400">
               {subtitle}
             </p>
           )}

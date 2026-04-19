@@ -12,6 +12,7 @@ import {
   recordSettlementPayment as recordSettlementPaymentService,
   setSettlementArchivedAt,
 } from "../services/settlementService";
+import { friendlyError } from "../lib/friendlyError";
 
 export function useSettlements(
   groupId: string | null,
@@ -37,7 +38,7 @@ export function useSettlements(
       : await getSettlementsByGroups(allGroupIds!, showArchived);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       setLoading(false);
       return;
     }
@@ -74,7 +75,7 @@ export function useSettlements(
     const paid = roundCurrency(settlement.paid ?? 0);
 
     if (!amount || amount <= 0) {
-      setError("Enter a valid settlement amount.");
+      setError("Enter a valid amount.");
       return false;
     }
 
@@ -84,7 +85,7 @@ export function useSettlements(
     }
 
     if (paid > amount) {
-      setError("Paid amount cannot exceed the total settlement amount.");
+      setError("Paid amount can't be more than the total amount.");
       return false;
     }
 
@@ -95,7 +96,7 @@ export function useSettlements(
     });
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
@@ -115,7 +116,7 @@ export function useSettlements(
     setSuccessMessage("");
 
     if (settlement.from_user_id !== actingUserId) {
-      setError("Only the member who owes this balance can record its payment.");
+      setError("Only the person who owes this balance can record a payment.");
       return false;
     }
 
@@ -128,14 +129,14 @@ export function useSettlements(
     }
 
     if (amount > remaining) {
-      setError("Payment amount cannot exceed the remaining settlement balance.");
+      setError("Payment can't exceed the remaining balance.");
       return false;
     }
 
     const { error } = await recordSettlementPaymentService(settlement.id, amount);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
@@ -155,7 +156,7 @@ export function useSettlements(
     }
 
     if (!isSettlementSettled(settlement)) {
-      setError("Only settled balances can be archived.");
+      setError("Only fully settled balances can be archived.");
       return false;
     }
 
@@ -165,7 +166,7 @@ export function useSettlements(
     );
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 
@@ -181,7 +182,7 @@ export function useSettlements(
     const { error } = await setSettlementArchivedAt(settlementId, null);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 

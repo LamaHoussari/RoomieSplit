@@ -1,6 +1,7 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { GroupMember, NewGroupMember } from "../types/Member";
 import { addGroupMember, getMembersByGroup, getMembersByGroups } from "../services/memberService";
+import { friendlyError } from "../lib/friendlyError";
 
 export function useMembers(groupId: string | null, allGroupIds?: string[]) {
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -22,7 +23,7 @@ export function useMembers(groupId: string | null, allGroupIds?: string[]) {
       : await getMembersByGroups(allGroupIds!);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       setLoading(false);
       return;
     }
@@ -51,6 +52,18 @@ export function useMembers(groupId: string | null, allGroupIds?: string[]) {
     loadMembersWrapper();
   }, [groupId, allGroupIds?.join()]);
 
+  useEffect(() => {
+    if (!successMessage) return;
+    const id = setTimeout(() => setSuccessMessage(""), 4000);
+    return () => clearTimeout(id);
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(""), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
+
   async function addMember(member: NewGroupMember) {
     setError("");
     setSuccessMessage("");
@@ -58,7 +71,7 @@ export function useMembers(groupId: string | null, allGroupIds?: string[]) {
     const { error } = await addGroupMember(member, groupId!);
 
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message));
       return false;
     }
 

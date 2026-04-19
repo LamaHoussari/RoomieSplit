@@ -8,12 +8,20 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+<<<<<<< HEAD
     "test": "vitest"
+=======
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+>>>>>>> 44cfd732609e5c25fd849c369027d487a426ea32
   },
   "dependencies": {
     "@dicebear/collection": "^9.4.2",
     "@dicebear/core": "^9.4.2",
-    "@supabase/supabase-js": "^2.101.1",
+    "@supabase/supabase-js": "^2.103.0",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2"
@@ -23,6 +31,10 @@
     "@tailwindcss/postcss": "^4.2.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+<<<<<<< HEAD
+=======
+    "@testing-library/user-event": "^14.6.1",
+>>>>>>> 44cfd732609e5c25fd849c369027d487a426ea32
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
