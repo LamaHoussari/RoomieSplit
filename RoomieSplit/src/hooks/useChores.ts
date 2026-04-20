@@ -7,7 +7,6 @@ import {
   getChoresByGroups,
   setChoreArchivedAt,
   updateChore as updateChoreService,
-  getChoreById,
 } from "../services/choreService";
 import { friendlyError } from "../lib/friendlyError";
 
@@ -100,16 +99,14 @@ export function useChores(
     setError("");
     setSuccessMessage("");
 
-    const archivedAt = new Date().toISOString();
-    const { error } = await setChoreArchivedAt(choreId, archivedAt);
+    const { error } = await setChoreArchivedAt(choreId, new Date().toISOString());
     if (error) {
       setError(friendlyError(error.message));
       return false;
     }
 
     setSuccessMessage("Chore archived.");
-    // Optimistic update
-    setChores(chores.map(c => c.id === choreId ? { ...c, archived_at: archivedAt } : c));
+    await loadChores();
     return true;
   }
 
@@ -124,8 +121,7 @@ export function useChores(
     }
 
     setSuccessMessage("Chore restored.");
-    // Optimistic update
-    setChores(chores.map(c => c.id === choreId ? { ...c, archived_at: null } : c));
+    await loadChores();
     return true;
   }
 

@@ -11,7 +11,6 @@ import {
   getSettlementsByGroups,
   recordSettlementPayment as recordSettlementPaymentService,
   setSettlementArchivedAt,
-  getSettlementById,
 } from "../services/settlementService";
 import { friendlyError } from "../lib/friendlyError";
 
@@ -142,10 +141,7 @@ export function useSettlements(
     }
 
     setSuccessMessage("Payment recorded.");
-    // Optimistic update instead of full refetch
-    setSettlements(settlements.map(s =>
-      s.id === settlement.id ? { ...s, paid: roundCurrency((s.paid ?? 0) + amount) } : s
-    ));
+    await loadSettlements();
     return true;
   }
 
