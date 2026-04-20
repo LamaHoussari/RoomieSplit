@@ -8,21 +8,21 @@ export async function signUpWithEmail(email: string, password: string) {
         return { data, error };
     }
 
+    return { data, error: null };
+}
+
+export async function createUserProfile(userId: string, email: string) {
     const name = email.split("@")[0];
-    const avatarUrl = await generateAndUploadAvatar(data.user.id, name);
+    const avatarUrl = await generateAndUploadAvatar(userId, name);
 
     const { error: profileError } = await supabase.from("profiles").upsert({
-        id: data.user.id,
+        id: userId,
         name,
         email,
         avatar_path: avatarUrl,
     });
 
-    if (profileError) {
-        return { data, error: profileError };
-    }
-
-    return { data, error: null };
+    return { error: profileError };
 }
 
 export async function signInWithEmail(email: string, password: string) {

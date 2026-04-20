@@ -6,6 +6,7 @@ import {
   signOutUser,
   signUpWithEmail,
   subscribeToAuthChanges,
+  createUserProfile,
 } from "../services/authService";
 import { checkIsSystemAdmin } from "../lib/adminAuth";
 import { friendlyError } from "../lib/friendlyError";
@@ -48,6 +49,11 @@ export function useAuth() {
           isAdmin: false,
         });
 
+        // Create profile if it doesn't exist (handles new signups)
+        if (sessionUser.email) {
+          await createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
+        }
+
         // Load admin status in background — don't block auth
         checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
           setUser((prev) =>
@@ -81,6 +87,11 @@ export function useAuth() {
         isAdmin: false,
       });
       setLoading(false);
+
+      // Create profile if it doesn't exist (handles new signups)
+      if (sessionUser.email) {
+        await createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
+      }
 
       // Load admin status in background
       checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
