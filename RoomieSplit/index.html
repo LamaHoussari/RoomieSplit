@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RoomieSplit | Shared Home, Sorted</title>
+    <script>
+      (function () {
+        try {
+          if (window.sessionStorage.getItem("roomiesplit:landing-seen") === "true") {
+            window.location.replace("/app.html");
+          }
+        } catch (_error) {
+          // Storage can be unavailable in strict privacy modes; keep the landing usable.
+        }
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/FOR%20LIGHT%20MODE.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,6 +37,6 @@
         <button id="get-started-btn" class="landing__cta" type="button">Get Started</button>
       </section>
     </main>
-    <script src="/landing.js"></script>
+    <script type="module" src="/landing.js"></script>
   </body>
 </html>

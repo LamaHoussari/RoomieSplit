@@ -57,14 +57,15 @@ export default function Pagination({
           {startItem}–{endItem} of {totalItems}
         </p>
         {onPageSizeChange && (
-          <div className="w-20">
+          <div className="w-24">
             <Select
+              aria-label="Rows per page"
               value={String(pageSize)}
               onChange={e => onPageSizeChange(Number(e.target.value))}
               className="py-1.5 text-xs"
             >
               {pageSizeOptions.map(size => (
-                <option key={size} value={size}>{size} / page</option>
+                <option key={size} value={size}>{size}</option>
               ))}
             </Select>
           </div>

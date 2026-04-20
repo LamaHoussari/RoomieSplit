@@ -1,0 +1,14 @@
+# React Router app routes; keep "/" as the static landing page.
+/login            /app.html  200
+/forgot-password  /app.html  200
+/reset-password   /app.html  200
+/dashboard        /app.html  200
+/groups           /app.html  200
+/groups/*         /app.html  200
+/expenses         /app.html  200
+/balances         /app.html  200
+/chores           /app.html  200
+/tracking         /app.html  200
+/profile          /app.html  200
+/admin            /app.html  200
+/admin/*          /app.html  200
