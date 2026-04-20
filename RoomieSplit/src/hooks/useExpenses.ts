@@ -15,6 +15,7 @@ import {
   setExpenseArchivedAt,
   updateExpense,
   updateExpenseWithSplits,
+  getExpenseById,
 } from "../services/expensesService";
 import {
   createSettlement,
@@ -575,7 +576,10 @@ export function useExpenses(
       setSuccessMessage("Expense marked unpaid.");
     }
 
-    await loadExpenses();
+    // Optimistic update instead of full refetch
+    setExpenses(expenses.map(e => 
+      e.id === expenseId ? { ...e, is_paid: !currentlyPaid } : e
+    ));
     return true;
   }
 

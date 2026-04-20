@@ -46,3 +46,11 @@ export async function deleteChore(choreId: string) {
 export async function setChoreArchivedAt(choreId: string, archivedAt: string | null) {
     return await supabase.from("chores").update({ archived_at: archivedAt }).eq("id", choreId);
 }
+
+export async function getChoreById(choreId: string) {
+    return await supabase
+        .from("chores")
+        .select("*, assigned_profile:assigned_to(name)")
+        .eq("id", choreId)
+        .single();
+}

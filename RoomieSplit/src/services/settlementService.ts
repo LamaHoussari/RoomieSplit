@@ -97,3 +97,11 @@ export async function setSettlementsArchivedAt(
 export async function deleteSettlementsByExpense(expenseId: string) {
     return await supabase.from("settlements").delete().eq("expense_id", expenseId);
 }
+
+export async function getSettlementById(settlementId: string) {
+    return await supabase
+        .from("settlements")
+        .select("*, from_profile:from_user_id(name), to_profile:to_user_id(name), expense:expense_id(description)")
+        .eq("id", settlementId)
+        .single();
+}

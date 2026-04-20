@@ -11,6 +11,7 @@ import {
   getSettlementsByGroups,
   recordSettlementPayment as recordSettlementPaymentService,
   setSettlementArchivedAt,
+  getSettlementById,
 } from "../services/settlementService";
 import { friendlyError } from "../lib/friendlyError";
 
@@ -141,7 +142,10 @@ export function useSettlements(
     }
 
     setSuccessMessage("Payment recorded.");
-    await loadSettlements();
+    // Optimistic update instead of full refetch
+    setSettlements(settlements.map(s =>
+      s.id === settlement.id ? { ...s, paid: roundCurrency((s.paid ?? 0) + amount) } : s
+    ));
     return true;
   }
 
@@ -160,9 +164,10 @@ export function useSettlements(
       return false;
     }
 
+    const archivedAt = new Date().toISOString();
     const { error } = await setSettlementArchivedAt(
       settlementId,
-      new Date().toISOString(),
+      archivedAt,
     );
 
     if (error) {
@@ -171,7 +176,10 @@ export function useSettlements(
     }
 
     setSuccessMessage("Balance archived.");
-    await loadSettlements();
+    // Optimistic update
+    setSettlements(settlements.map(s =>
+      s.id === settlementId ? { ...s, archived_at: archivedAt } : s
+    ));
     return true;
   }
 
@@ -187,7 +195,10 @@ export function useSettlements(
     }
 
     setSuccessMessage("Balance restored.");
-    await loadSettlements();
+    // Optimistic update
+    setSettlements(settlements.map(s =>
+      s.id === settlementId ? { ...s, archived_at: null } : s
+    ));
     return true;
   }
 

@@ -68,3 +68,11 @@ export async function updateExpenseWithSplits(
         p_splits: newSplits.map(s => ({ user_id: s.user_id, share_amount: Number(s.share_amount ?? 0) })),
     });
 }
+
+export async function getExpenseById(expenseId: string) {
+    return await supabase
+        .from("expenses")
+        .select("*, profiles:payer_id(name), expense_splits(*, profiles:user_id(name))")
+        .eq("id", expenseId)
+        .single();
+}
