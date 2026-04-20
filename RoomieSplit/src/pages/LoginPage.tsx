@@ -39,6 +39,15 @@ export default function LoginPage({
     setMode(mode === 'login' ? 'register' : 'login');
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$';
+    let pwd = '';
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setPassword(pwd);
+  };
+
   function validate() {
     if (!email.trim() || !password.trim()) {
       setLocalError('Email and password are required.');
@@ -141,6 +150,18 @@ export default function LoginPage({
               >
                 Forgot password?
               </Link>
+            </div>
+          )}
+
+          {mode === 'register' && (
+            <div className="-mt-1 text-right text-sm">
+              <button
+                type="button"
+                onClick={generatePassword}
+                className="font-medium text-[#6f4f8b] hover:underline underline-offset-4 dark:text-[#d4c0ea]"
+              >
+                Suggested password
+              </button>
             </div>
           )}
 
