@@ -12,7 +12,7 @@ import { friendlyError } from "../lib/friendlyError";
 
 export function useChores(
   groupId: string | null,
-  allGroupIds?: string[],
+  groups?: any[],
   showArchived = false,
 ) {
   const [chores, setChores] = useState<Chore[]>([]);
@@ -22,7 +22,8 @@ export function useChores(
   const [successMessage, setSuccessMessage] = useState("");
 
   async function loadChores() {
-    if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
+    const allGroupIds = groups?.map(g => g.id) ?? [];
+    if (!groupId && allGroupIds.length === 0) {
       setChores([]);
       return;
     }
@@ -31,7 +32,7 @@ export function useChores(
 
     const { data, error } = groupId
       ? await getChoresByGroup(groupId, showArchived)
-      : await getChoresByGroups(allGroupIds!, showArchived);
+      : await getChoresByGroups(allGroupIds, showArchived);
 
     if (error) {
       setError(friendlyError(error.message));
@@ -50,7 +51,7 @@ export function useChores(
       await loadChores();
     }
     loadChoresWrapper();
-  }, [groupId, allGroupIds?.join(), showArchived]);
+  }, [groupId, groups?.length, showArchived]);
 
   useEffect(() => {
     if (!successMessage) return;

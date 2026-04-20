@@ -31,6 +31,7 @@ export function useAuth() {
 
         if (error) {
           setError(friendlyError(error.message));
+          setLoading(false);
           return;
         }
 
@@ -38,6 +39,7 @@ export function useAuth() {
 
         if (!sessionUser) {
           setUser(null);
+          setLoading(false);
           return;
         }
 
@@ -60,50 +62,56 @@ export function useAuth() {
             prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev
           );
         }).catch(() => {});
-      } catch {
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Auth error:", err);
         setUser(null);
-      } finally {
         setLoading(false);
       }
     }
     loadUser();
 
-    const {
-      data: { subscription },
-    } = subscribeToAuthChanges(async (_event, session) => {
-      const sessionUser = session?.user ?? null;
+    try {
+      const {
+        data: { subscription },
+      } = subscribeToAuthChanges(async (_event, session) => {
+        const sessionUser = session?.user ?? null;
 
-      if (!sessionUser) {
-        setUser(null);
+        if (!sessionUser) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        // Set basic user immediately
+        setUser({
+          id: sessionUser.id,
+          email: sessionUser.email ?? null,
+          name: sessionUser.email?.split("@")[0] ?? null,
+          isAdmin: false,
+        });
         setLoading(false);
-        return;
-      }
 
-      // Set basic user immediately
-      setUser({
-        id: sessionUser.id,
-        email: sessionUser.email ?? null,
-        name: sessionUser.email?.split("@")[0] ?? null,
-        isAdmin: false,
+        // Create profile if it doesn't exist (handles new signups)
+        if (sessionUser.email) {
+          await createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
+        }
+
+        // Load admin status in background
+        checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
+          setUser((prev) =>
+            prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev
+          );
+        }).catch(() => {});
       });
-      setLoading(false);
 
-      // Create profile if it doesn't exist (handles new signups)
-      if (sessionUser.email) {
-        await createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
-      }
-
-      // Load admin status in background
-      checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
-        setUser((prev) =>
-          prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev
-        );
-      }).catch(() => {});
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (err) {
+      console.error("Subscription error:", err);
+    }
   }, []);
 
   useEffect(() => {

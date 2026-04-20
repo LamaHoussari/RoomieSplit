@@ -35,7 +35,7 @@ function isFutureDatedExpense(date?: string | null) {
 
 export function useExpenses(
   groupId: string | null,
-  allGroupIds?: string[],
+  groups?: any[],
   showArchived = false,
 ) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -163,7 +163,8 @@ export function useExpenses(
   }
 
   async function loadExpenses() {
-    if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
+    const allGroupIds = groups?.map(g => g.id) ?? [];
+    if (!groupId && allGroupIds.length === 0) {
       setExpenses([]);
       return;
     }
@@ -173,7 +174,7 @@ export function useExpenses(
 
     const { data, error } = groupId
       ? await getExpensesByGroup(groupId, showArchived)
-      : await getExpensesByGroups(allGroupIds!, showArchived);
+      : await getExpensesByGroups(allGroupIds, showArchived);
 
     if (error) {
       setError(friendlyError(error.message));
@@ -191,7 +192,7 @@ export function useExpenses(
     }
 
     loadExpensesWrapper();
-  }, [groupId, allGroupIds?.join(), showArchived]);
+  }, [groupId, groups?.length, showArchived]);
 
   useEffect(() => {
     if (!successMessage) return;

@@ -16,7 +16,7 @@ import { friendlyError } from "../lib/friendlyError";
 
 export function useSettlements(
   groupId: string | null,
-  allGroupIds?: string[],
+  groups?: any[],
   showArchived = false,
 ) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
@@ -26,7 +26,8 @@ export function useSettlements(
   const [successMessage, setSuccessMessage] = useState("");
 
   async function loadSettlements() {
-    if (!groupId && (!allGroupIds || allGroupIds.length === 0)) {
+    const allGroupIds = groups?.map(g => g.id) ?? [];
+    if (!groupId && allGroupIds.length === 0) {
       setSettlements([]);
       return;
     }
@@ -35,7 +36,7 @@ export function useSettlements(
 
     const { data, error } = groupId
       ? await getSettlementsByGroup(groupId, showArchived)
-      : await getSettlementsByGroups(allGroupIds!, showArchived);
+      : await getSettlementsByGroups(allGroupIds, showArchived);
 
     if (error) {
       setError(friendlyError(error.message));
@@ -53,7 +54,7 @@ export function useSettlements(
       await loadSettlements();
     }
     loadSettlementsWrapper();
-  }, [groupId, allGroupIds?.join(), showArchived]);
+  }, [groupId, groups?.length, showArchived]);
 
   useEffect(() => {
     if (!successMessage) return;

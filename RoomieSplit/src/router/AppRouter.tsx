@@ -17,13 +17,10 @@ import Users from '../pages/AdminUsersPage';
 import Groups from '../pages/AdminGroupsPage';
 import AuditLog from '../pages/AdminAuditlogPage';
 
-
-
 import { useAuth } from "../hooks/useAuth";
 import { useState } from 'react';
 
 function AnimatedRoutes() {
-  
   const [chosenGroup, setChosenGroup] = useState<string>("");
 
   const {

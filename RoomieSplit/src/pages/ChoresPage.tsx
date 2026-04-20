@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -21,7 +21,6 @@ interface ChoresPageProps {
 
 export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: ChoresPageProps) {
   const { groups } = useGroups(userId);
-  const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
   const [showArchived, setShowArchived] = useState(false);
 
@@ -35,8 +34,8 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
     unarchiveChore,
     removeChore,
     toggleChore,
-  } = useChores(groupId, allGroupIds, showArchived);
-  const { members } = useMembers(groupId, allGroupIds);
+  } = useChores(groupId, groups, showArchived);
+  const { members } = useMembers(groupId, groups);
 
   const currentMember = members.find(member => member.user_id === userId);
   const isAdmin = currentMember?.role === 'admin';
