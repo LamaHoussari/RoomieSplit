@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -37,10 +37,11 @@ interface BalancesPageProps {
 
 export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: BalancesPageProps) {
   const { groups, loading: groupsLoading } = useGroups(userId);
+  const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
   const [showArchived, setShowArchived] = useState(false);
 
-  const { members, loading: membersLoading } = useMembers(groupId, groups);
+  const { members, loading: membersLoading } = useMembers(groupId, allGroupIds);
   const {
     settlements,
     loading: settlementsLoading,
@@ -50,7 +51,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
     unarchiveSettlement,
     recordPayment,
     addSettlement,
-  } = useSettlements(groupId, groups, showArchived);
+  } = useSettlements(groupId, allGroupIds, showArchived);
 
   const [payTarget, setPayTarget] = useState<Settlement | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Settlement | null>(null);

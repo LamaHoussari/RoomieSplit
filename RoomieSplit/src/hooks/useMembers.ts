@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import type { GroupMember, NewGroupMember } from "../types/Member";
 import { addGroupMember, getMembersByGroup, getMembersByGroups } from "../services/memberService";
 import { friendlyError } from "../lib/friendlyError";
+import type { Group } from "../types/Group";
 
-export function useMembers(groupId: string | null, groups?: any[]) {
+export function useMembers(groupId: string | null, groups?: Group[]) {
   const [members, setMembers] = useState<GroupMember[]>([]);
 
   const [loading, setLoading] = useState(false);

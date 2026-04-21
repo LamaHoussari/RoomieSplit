@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -218,6 +218,7 @@ function canArchiveExpense(
 
 export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: ExpensesPageProps) {
   const { groups } = useGroups(userId);
+  const allGroupIds = useMemo(() => groups.map(g => g.id), [groups]);
   const groupId = chosenGroup || null;
   const [showArchived, setShowArchived] = useState(false);
 
@@ -231,8 +232,8 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
     unarchiveExpense,
     removeExpense,
     editExpense,
-  } = useExpenses(groupId, groups, showArchived);
-  const { settlements, loading: settlementsLoading } = useSettlements(groupId, groups, showArchived);
+  } = useExpenses(groupId, allGroupIds, showArchived);
+  const { settlements, loading: settlementsLoading } = useSettlements(groupId, allGroupIds, showArchived);
   const { members: selectedGroupMembers, loading: membersLoading } = useMembers(groupId);
 
   const dataLoading = expensesLoading || settlementsLoading || membersLoading;

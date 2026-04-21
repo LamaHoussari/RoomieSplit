@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NewChore, Chore } from "../types/Chore";
+import type { Group } from "../types/Group";
 import {
   createChore,
   deleteChore as deleteChoreService,
@@ -12,7 +13,7 @@ import { friendlyError } from "../lib/friendlyError";
 
 export function useChores(
   groupId: string | null,
-  groups?: any[],
+  groups?: Group[],
   showArchived = false,
 ) {
   const [chores, setChores] = useState<Chore[]>([]);
