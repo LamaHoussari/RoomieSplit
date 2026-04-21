@@ -17,24 +17,33 @@ export function useGroups(userId: string | null) {
     // If there is no user, clear groups and stop
     if (!userId) {
       setGroups([]);
-      return [] as Group[];
-    }
-    setLoading(true);
-    setError("");
-
-    const { data, error } = await getGroupsByUser(userId);
-
-    if (error) {
-      setError(friendlyError(error.message));
       setLoading(false);
       return [] as Group[];
     }
 
-    const nextGroups = data ?? [];
-    setGroups(nextGroups);
+    setLoading(true);
+    setError("");
 
-    setLoading(false);
-    return nextGroups;
+    try {
+      const { data, error } = await getGroupsByUser(userId);
+
+      if (error) {
+        setError(friendlyError(error.message));
+        setGroups([]);
+        return [] as Group[];
+      }
+
+      const nextGroups = data ?? [];
+      setGroups(nextGroups);
+      return nextGroups;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(friendlyError(message));
+      setGroups([]);
+      return [] as Group[];
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Reload groups whenever userId changes

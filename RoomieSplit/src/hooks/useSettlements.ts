@@ -13,10 +13,11 @@ import {
   setSettlementArchivedAt,
 } from "../services/settlementService";
 import { friendlyError } from "../lib/friendlyError";
+import { normalizeGroupIds, type GroupReference } from "./groupReferences";
 
 export function useSettlements(
   groupId: string | null,
-  groups?: any[],
+  groups?: GroupReference[],
   showArchived = false,
 ) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
@@ -24,29 +25,38 @@ export function useSettlements(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const allGroupIds = normalizeGroupIds(groups);
+  const groupIdsKey = allGroupIds.join("|");
 
   async function loadSettlements() {
-    const allGroupIds = groups?.map(g => g.id) ?? [];
     if (!groupId && allGroupIds.length === 0) {
       setSettlements([]);
-      return;
-    }
-    setLoading(true);
-    setError("");
-
-    const { data, error } = groupId
-      ? await getSettlementsByGroup(groupId, showArchived)
-      : await getSettlementsByGroups(allGroupIds, showArchived);
-
-    if (error) {
-      setError(friendlyError(error.message));
       setLoading(false);
       return;
     }
 
-    setSettlements(data ?? []);
+    setLoading(true);
+    setError("");
 
-    setLoading(false);
+    try {
+      const { data, error } = groupId
+        ? await getSettlementsByGroup(groupId, showArchived)
+        : await getSettlementsByGroups(allGroupIds, showArchived);
+
+      if (error) {
+        setError(friendlyError(error.message));
+        setSettlements([]);
+        return;
+      }
+
+      setSettlements(data ?? []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(friendlyError(message));
+      setSettlements([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -54,7 +64,7 @@ export function useSettlements(
       await loadSettlements();
     }
     loadSettlementsWrapper();
-  }, [groupId, groups?.length, showArchived]);
+  }, [groupId, groupIdsKey, showArchived]);
 
   useEffect(() => {
     if (!successMessage) return;

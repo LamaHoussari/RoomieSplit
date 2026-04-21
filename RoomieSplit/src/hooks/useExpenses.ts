@@ -24,6 +24,7 @@ import {
   syncExpenseSettlements,
 } from "../services/settlementService";
 import { friendlyError } from "../lib/friendlyError";
+import { normalizeGroupIds, type GroupReference } from "./groupReferences";
 
 const SUCCESS_MESSAGE_DURATION_MS = 4000;
 const ERROR_MESSAGE_DURATION_MS = 5000;
@@ -35,7 +36,7 @@ function isFutureDatedExpense(date?: string | null) {
 
 export function useExpenses(
   groupId: string | null,
-  groups?: any[],
+  groups?: GroupReference[],
   showArchived = false,
 ) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -43,6 +44,8 @@ export function useExpenses(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const allGroupIds = normalizeGroupIds(groups);
+  const groupIdsKey = allGroupIds.join("|");
 
   function normalizeSplits(splits: NewExpenseSplit[]) {
     const shareMap = new Map<string, number>();
@@ -163,27 +166,34 @@ export function useExpenses(
   }
 
   async function loadExpenses() {
-    const allGroupIds = groups?.map(g => g.id) ?? [];
     if (!groupId && allGroupIds.length === 0) {
       setExpenses([]);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     setError("");
 
-    const { data, error } = groupId
-      ? await getExpensesByGroup(groupId, showArchived)
-      : await getExpensesByGroups(allGroupIds, showArchived);
+    try {
+      const { data, error } = groupId
+        ? await getExpensesByGroup(groupId, showArchived)
+        : await getExpensesByGroups(allGroupIds, showArchived);
 
-    if (error) {
-      setError(friendlyError(error.message));
+      if (error) {
+        setError(friendlyError(error.message));
+        setExpenses([]);
+        return;
+      }
+
+      setExpenses(data ?? []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(friendlyError(message));
+      setExpenses([]);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setExpenses(data ?? []);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -192,7 +202,7 @@ export function useExpenses(
     }
 
     loadExpensesWrapper();
-  }, [groupId, groups?.length, showArchived]);
+  }, [groupId, groupIdsKey, showArchived]);
 
   useEffect(() => {
     if (!successMessage) return;

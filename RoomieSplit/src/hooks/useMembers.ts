@@ -2,49 +2,58 @@ import { useEffect, useState } from "react";
 import type { GroupMember, NewGroupMember } from "../types/Member";
 import { addGroupMember, getMembersByGroup, getMembersByGroups } from "../services/memberService";
 import { friendlyError } from "../lib/friendlyError";
-import type { Group } from "../types/Group";
+import { normalizeGroupIds, type GroupReference } from "./groupReferences";
 
-export function useMembers(groupId: string | null, groups?: Group[]) {
+export function useMembers(groupId: string | null, groups?: GroupReference[]) {
   const [members, setMembers] = useState<GroupMember[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const allGroupIds = normalizeGroupIds(groups);
+  const groupIdsKey = allGroupIds.join("|");
 
   async function loadMembers() {
-    const allGroupIds = groups?.map(g => g.id) ?? [];
     if (!groupId && allGroupIds.length === 0) {
       setMembers([]);
-      return;
-    }
-    setLoading(true);
-    setError("");
-
-    const { data, error } = groupId
-      ? await getMembersByGroup(groupId)
-      : await getMembersByGroups(allGroupIds);
-
-    if (error) {
-      setError(friendlyError(error.message));
       setLoading(false);
       return;
     }
 
-    // Deduplicate by user_id when fetching across multiple groups
-    const list = data ?? [];
-    if (!groupId && allGroupIds) {
-      const seen = new Set<string>();
-      const unique = list.filter(m => {
-        if (seen.has(m.user_id)) return false;
-        seen.add(m.user_id);
-        return true;
-      });
-      setMembers(unique);
-    } else {
-      setMembers(list);
-    }
+    setLoading(true);
+    setError("");
 
-    setLoading(false);
+    try {
+      const { data, error } = groupId
+        ? await getMembersByGroup(groupId)
+        : await getMembersByGroups(allGroupIds);
+
+      if (error) {
+        setError(friendlyError(error.message));
+        setMembers([]);
+        return;
+      }
+
+      // Deduplicate by user_id when fetching across multiple groups
+      const list = data ?? [];
+      if (!groupId && allGroupIds.length > 0) {
+        const seen = new Set<string>();
+        const unique = list.filter(m => {
+          if (seen.has(m.user_id)) return false;
+          seen.add(m.user_id);
+          return true;
+        });
+        setMembers(unique);
+      } else {
+        setMembers(list);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(friendlyError(message));
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -52,7 +61,7 @@ export function useMembers(groupId: string | null, groups?: Group[]) {
       await loadMembers();
     }
     loadMembersWrapper();
-  }, [groupId, groups?.length]);
+  }, [groupId, groupIdsKey]);
 
   useEffect(() => {
     if (!successMessage) return;

@@ -7,6 +7,7 @@ vi.mock("../../services/authService", () => ({
   signUpWithEmail: vi.fn(),
   signInWithEmail: vi.fn(),
   signOutUser: vi.fn(),
+  createUserProfile: vi.fn().mockResolvedValue({ error: null }),
   subscribeToAuthChanges: vi.fn().mockReturnValue({
     data: { subscription: { unsubscribe: vi.fn() } },
   }),

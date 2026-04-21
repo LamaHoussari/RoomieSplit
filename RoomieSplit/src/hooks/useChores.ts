@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import type { NewChore, Chore } from "../types/Chore";
-import type { Group } from "../types/Group";
 import {
   createChore,
   deleteChore as deleteChoreService,
@@ -10,10 +9,11 @@ import {
   updateChore as updateChoreService,
 } from "../services/choreService";
 import { friendlyError } from "../lib/friendlyError";
+import { normalizeGroupIds, type GroupReference } from "./groupReferences";
 
 export function useChores(
   groupId: string | null,
-  groups?: Group[],
+  groups?: GroupReference[],
   showArchived = false,
 ) {
   const [chores, setChores] = useState<Chore[]>([]);
@@ -21,30 +21,38 @@ export function useChores(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const allGroupIds = normalizeGroupIds(groups);
+  const groupIdsKey = allGroupIds.join("|");
 
   async function loadChores() {
-    const allGroupIds = groups?.map(g => g.id) ?? [];
     if (!groupId && allGroupIds.length === 0) {
-      setChores([]);
-      return;
-    }
-    setLoading(true);
-    setError("");
-
-    const { data, error } = groupId
-      ? await getChoresByGroup(groupId, showArchived)
-      : await getChoresByGroups(allGroupIds, showArchived);
-
-    if (error) {
-      setError(friendlyError(error.message));
       setChores([]);
       setLoading(false);
       return;
     }
 
-    setChores(data ?? []);
+    setLoading(true);
+    setError("");
 
-    setLoading(false);
+    try {
+      const { data, error } = groupId
+        ? await getChoresByGroup(groupId, showArchived)
+        : await getChoresByGroups(allGroupIds, showArchived);
+
+      if (error) {
+        setError(friendlyError(error.message));
+        setChores([]);
+        return;
+      }
+
+      setChores(data ?? []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(friendlyError(message));
+      setChores([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -52,7 +60,7 @@ export function useChores(
       await loadChores();
     }
     loadChoresWrapper();
-  }, [groupId, groups?.length, showArchived]);
+  }, [groupId, groupIdsKey, showArchived]);
 
   useEffect(() => {
     if (!successMessage) return;
