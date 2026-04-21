@@ -11,6 +11,11 @@ import {
 import { checkIsSystemAdmin } from "../lib/adminAuth";
 import { friendlyError } from "../lib/friendlyError";
 
+type SessionUser = {
+  id: string;
+  email?: string | null;
+};
+
 export function useAuth() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,10 +27,35 @@ export function useAuth() {
     setsuccessMessage("");
   }
 
+  function applySessionUser(sessionUser: SessionUser) {
+    setUser({
+      id: sessionUser.id,
+      email: sessionUser.email ?? null,
+      name: sessionUser.email?.split("@")[0] ?? null,
+      isAdmin: false,
+    });
+    setLoading(false);
+
+    window.setTimeout(() => {
+      if (sessionUser.email) {
+        createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
+      }
+
+      checkIsSystemAdmin(sessionUser.id)
+        .then((isAdmin) => {
+          setUser((prev) =>
+            prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev,
+          );
+        })
+        .catch(() => {});
+    }, 0);
+  }
+
   useEffect(() => {
     async function loadUser() {
       setLoading(true);
       setError("");
+
       try {
         const { data, error } = await getCurrentSession();
 
@@ -43,39 +73,20 @@ export function useAuth() {
           return;
         }
 
-        // Set basic user immediately so the app is usable
-        setUser({
-          id: sessionUser.id,
-          email: sessionUser.email ?? null,
-          name: sessionUser.email?.split("@")[0] ?? null,
-          isAdmin: false,
-        });
-
-        // Create profile if it doesn't exist (handles new signups)
-        if (sessionUser.email) {
-          await createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
-        }
-
-        // Load admin status in background — don't block auth
-        checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
-          setUser((prev) =>
-            prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev
-          );
-        }).catch(() => {});
-
-        setLoading(false);
+        applySessionUser(sessionUser);
       } catch (err) {
         console.error("Auth error:", err);
         setUser(null);
         setLoading(false);
       }
     }
+
     loadUser();
 
     try {
       const {
         data: { subscription },
-      } = subscribeToAuthChanges(async (_event, session) => {
+      } = subscribeToAuthChanges((_event, session) => {
         const sessionUser = session?.user ?? null;
 
         if (!sessionUser) {
@@ -84,26 +95,7 @@ export function useAuth() {
           return;
         }
 
-        // Set basic user immediately
-        setUser({
-          id: sessionUser.id,
-          email: sessionUser.email ?? null,
-          name: sessionUser.email?.split("@")[0] ?? null,
-          isAdmin: false,
-        });
-        setLoading(false);
-
-        // Create profile if it doesn't exist (handles new signups)
-        if (sessionUser.email) {
-          await createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
-        }
-
-        // Load admin status in background
-        checkIsSystemAdmin(sessionUser.id).then((isAdmin) => {
-          setUser((prev) =>
-            prev && prev.id === sessionUser.id ? { ...prev, isAdmin } : prev
-          );
-        }).catch(() => {});
+        applySessionUser(sessionUser);
       });
 
       return () => {
@@ -153,11 +145,15 @@ export function useAuth() {
   async function signOut() {
     setError("");
     setsuccessMessage("");
+    setUser(null);
+    setLoading(false);
+
     const { error } = await signOutUser();
     if (error) {
       setError(friendlyError(error.message));
       return false;
     }
+
     setsuccessMessage("Signed out successfully.");
     return true;
   }

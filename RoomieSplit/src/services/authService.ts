@@ -30,7 +30,7 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 export async function signOutUser() {
-    return await supabase.auth.signOut();
+    return await supabase.auth.signOut({ scope: "local" });
 }
 
 export async function getCurrentUser() {
