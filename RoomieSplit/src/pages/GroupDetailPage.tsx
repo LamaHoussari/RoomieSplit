@@ -201,12 +201,14 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
       {showLeaveGroupModal && currentMember && (
         <Modal title="Leave Group" onClose={() => !leavingGroup && setShowLeaveGroupModal(false)}>
           <p className="text-sm leading-6 text-stone-600 dark:text-slate-300">
-            {requiresAdminReplacement
+            {isAdmin && requiresAdminReplacement
               ? `Choose who should become the new admin of "${group?.name ?? 'this group'}" before you leave.`
-              : `You can leave "${group?.name ?? 'this group'}" now. If you want, promote another member to admin first.`}
+              : isAdmin && adminReplacementCandidates.length > 0
+                ? `You can leave "${group?.name ?? 'this group'}" now. If you want, promote another member to admin first.`
+                : `Are you sure you want to leave "${group?.name ?? 'this group'}"?`}
           </p>
 
-          {adminReplacementCandidates.length > 0 && (
+          {isAdmin && adminReplacementCandidates.length > 0 && (
             <div className="mt-5">
               <FormField label={requiresAdminReplacement ? 'New admin' : 'Promote another admin (optional)'}>
                 <Select
