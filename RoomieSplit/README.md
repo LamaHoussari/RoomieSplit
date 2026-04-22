@@ -329,7 +329,7 @@ VITE_SUPABASE_ANON_KEY=...
 ```
 
 ### Deployment URL
-[DEPLOYMENT_URL_PLACEHOLDER]
+(https://roomie-split-p.netlify.app/)
 
 See [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) for complete deployment instructions.
 
