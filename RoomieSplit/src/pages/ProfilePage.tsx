@@ -7,6 +7,7 @@ import FormField, { Input, Select } from '../components/FormField';
 import { signInWithEmail, updateUserPassword } from '../services/authService';
 import { updateProfile } from '../services/profileService';
 import { useProfile } from '../hooks/useProfile';
+import { useAuth } from '../hooks/useAuth';
 import { Skeleton } from '../components/Skeleton';
 import { friendlyError } from '../lib/friendlyError';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +30,7 @@ function isValidPhone(value: string): boolean {
 
 export default function ProfilePage({ user }: { user: AppUser }) {
   const { profile, loading: profileLoading, avatarUrl } = useProfile(user.id);
+  const { refreshUser } = useAuth();
   const initialState = {
     name: user.name || '',
     email: user.email || '',
@@ -314,6 +316,7 @@ export default function ProfilePage({ user }: { user: AppUser }) {
                     }
                     setSaved(draft);
                     setIsEditing(false);
+                    refreshUser();
                   }}
                 >
                   {profileSaving ? 'Saving...' : 'Save changes'}

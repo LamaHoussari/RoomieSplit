@@ -10,6 +10,7 @@ import {
 } from "../services/authService";
 import { checkIsSystemAdmin } from "../lib/adminAuth";
 import { friendlyError } from "../lib/friendlyError";
+import { getProfileById } from "../services/profileService";
 
 type SessionUser = {
   id: string;
@@ -36,9 +37,21 @@ export function useAuth() {
     });
     setLoading(false);
 
-    window.setTimeout(() => {
+    window.setTimeout(async () => {
       if (sessionUser.email) {
         createUserProfile(sessionUser.id, sessionUser.email).catch(() => {});
+      }
+
+      // Fetch actual profile name from database
+      try {
+        const { data: profile } = await getProfileById(sessionUser.id);
+        if (profile?.name) {
+          setUser((prev) =>
+            prev && prev.id === sessionUser.id ? { ...prev, name: profile.name } : prev,
+          );
+        }
+      } catch (err) {
+        // Silently fail if profile fetch doesn't work
       }
 
       checkIsSystemAdmin(sessionUser.id)
@@ -158,6 +171,20 @@ export function useAuth() {
     return true;
   }
 
+  async function refreshUser() {
+    if (!user) return;
+    try {
+      const { data: profile } = await getProfileById(user.id);
+      if (profile?.name) {
+        setUser((prev) =>
+          prev && prev.id === user.id ? { ...prev, name: profile.name } : prev,
+        );
+      }
+    } catch (err) {
+      // Silently fail if profile fetch doesn't work
+    }
+  }
+
   return {
     user,
     loading,
@@ -167,5 +194,6 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
+    refreshUser,
   };
 }
