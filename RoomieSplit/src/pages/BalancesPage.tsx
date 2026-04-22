@@ -76,16 +76,22 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
     setPayAmount(String(getSettlementRemaining(settlement)));
   };
 
+  const [payError, setPayError] = useState<string | null>(null);
+
   const submitPay = async () => {
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0 || !payTarget) return;
     const remaining = getSettlementRemaining(payTarget);
     if (amount > remaining) {
-      setPageFeedback({ type: 'error', message: `Amount exceeds the remaining balance of $${formatMoney(remaining)}.` });
+      setPayError(`Amount exceeds the remaining balance of $${formatMoney(remaining)}.`);
       return;
     }
+    setPayError(null);
     const success = await recordPayment(payTarget, amount, userId);
-    if (success) setPayTarget(null);
+    if (success) {
+      setPayTarget(null);
+      setPayError(null);
+    }
   };
 
   const submitArchive = async () => {
@@ -446,7 +452,12 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       )}
 
       {payTarget && (
-        <Modal title="Record payment" onClose={() => setPayTarget(null)}>
+        <Modal title="Record payment" onClose={() => { setPayTarget(null); setPayError(null); }}>
+          {payError && (
+            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+              {payError}
+            </div>
+          )}
           <form onSubmit={e => { e.preventDefault(); submitPay(); }}>
           <div className="mb-6 flex items-center gap-3">
             {[payTarget.from_profile?.name ?? 'Unknown', payTarget.to_profile?.name ?? 'Unknown'].map((name, i) => {

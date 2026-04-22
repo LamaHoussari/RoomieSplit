@@ -33,6 +33,8 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
   const [showLeaveGroupModal, setShowLeaveGroupModal] = useState(false);
   const [selectedNextAdminId, setSelectedNextAdminId] = useState('');
   const [leavingGroup, setLeavingGroup] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   useEffect(() => {
@@ -118,20 +120,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
   };
 
   const handleLeaveGroup = async () => {
-    if (!currentMember || !canLeaveGroup || leavingGroup) return;
-
-    if (!isAdmin) {
-      if (!confirm(`Leave "${group?.name ?? 'this group'}"?`)) return;
-      await leaveGroup();
-      return;
-    }
-
-    if (adminReplacementCandidates.length === 0 && hasAnotherAdmin) {
-      if (!confirm(`Leave "${group?.name ?? 'this group'}"?`)) return;
-      await leaveGroup();
-      return;
-    }
-
+    if (!currentMember || !canLeaveGroup) return;
     setSelectedNextAdminId(requiresAdminReplacement ? adminReplacementCandidates[0]?.id ?? '' : '');
     setShowLeaveGroupModal(true);
   };
@@ -150,6 +139,63 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
           }}
           loading={membersLoading}
         />
+      )}
+
+      {removingMemberId && (
+        <Modal
+          title="Confirm Removal"
+          onClose={() => setRemovingMemberId(null)}
+        >
+          <p className="text-sm text-stone-600 dark:text-slate-300 mb-6">
+            Remove <span className="font-semibold">{members.find(m => m.id === removingMemberId)?.profiles?.name ?? 'this member'}</span> from the group?
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setRemovingMemberId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={async () => {
+                const { error } = await removeMember(removingMemberId);
+                if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
+                else loadMembers();
+                setRemovingMemberId(null);
+              }}
+            >
+              Remove
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {deletingGroup && (
+        <Modal
+          title="Delete Group"
+          onClose={() => setDeletingGroup(false)}
+        >
+          <p className="text-sm text-stone-600 dark:text-slate-300 mb-6">
+            Are you sure you want to delete <span className="font-semibold">{group?.name ?? 'this group'}</span>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDeletingGroup(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={async () => {
+                if (!groupId) return;
+                const { error } = await deleteGroup(groupId);
+                if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
+                else navigate('/groups');
+                setDeletingGroup(false);
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </Modal>
       )}
 
       {showLeaveGroupModal && currentMember && (
@@ -297,12 +343,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
                                 ? 'cursor-not-allowed text-gray-300 dark:text-gray-600'
                                 : 'text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20'
                             }`}
-                            onClick={async () => {
-                              if (!confirm(`Remove ${memberName} from the group?`)) return;
-                              const { error } = await removeMember(member.id);
-                              if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
-                              else loadMembers();
-                            }}
+                            onClick={() => setRemovingMemberId(member.id)}
                           >
                             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
                               <path d="M6.28 5.22a.75.75 0 0 1 1.06 0L10 7.94l2.66-2.72a.75.75 0 1 1 1.08 1.04L11.06 9l2.68 2.74a.75.75 0 1 1-1.08 1.04L10 10.06l-2.66 2.72a.75.75 0 0 1-1.08-1.04L8.94 9 6.28 6.26a.75.75 0 0 1 0-1.04Z" />
@@ -380,13 +421,7 @@ export default function GroupDetailPage({ userId }: GroupDetailPageProps) {
           <Button
             variant="danger"
             size="sm"
-            onClick={async () => {
-              if (!confirm(`Are you sure you want to delete "${group?.name}"? This action cannot be undone.`)) return;
-              if (!groupId) return;
-              const { error } = await deleteGroup(groupId);
-              if (error) setPageFeedback({ type: 'error', message: friendlyError(error.message) });
-              else navigate('/groups');
-            }}
+            onClick={() => setDeletingGroup(true)}
           >
             Delete Group
           </Button>

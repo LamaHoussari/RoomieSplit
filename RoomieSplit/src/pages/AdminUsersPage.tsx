@@ -96,9 +96,10 @@ export default function Users() {
   };
 
   const profiles = snapshot?.profiles ?? [];
+  const nonAdminProfiles = profiles.filter(p => !p.is_system_admin);
   const filteredProfiles = !searchQuery.trim()
-    ? profiles
-    : profiles.filter(p => {
+    ? nonAdminProfiles
+    : nonAdminProfiles.filter(p => {
         const query = searchQuery.toLowerCase();
         return (
       (p.name?.toLowerCase() || '').includes(query) || 
