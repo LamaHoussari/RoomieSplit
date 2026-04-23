@@ -8,6 +8,7 @@ export function useMembers(groupId: string | null, groups?: GroupReference[]) {
   const [members, setMembers] = useState<GroupMember[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const allGroupIds = normalizeGroupIds(groups);
@@ -75,27 +76,39 @@ export function useMembers(groupId: string | null, groups?: GroupReference[]) {
     return () => clearTimeout(id);
   }, [error]);
 
-  async function addMember(member: NewGroupMember) {
-    setError("");
-    setSuccessMessage("");
-
-    const { error } = await addGroupMember(member, groupId!);
-
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
+  async function runSaving<T>(operation: () => Promise<T>) {
+    setSaving(true);
+    try {
+      return await operation();
+    } finally {
+      setSaving(false);
     }
+  }
 
-    setSuccessMessage("Member added successfully.");
+  async function addMember(member: NewGroupMember) {
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
 
-    await loadMembers();
+      const { error } = await addGroupMember(member, groupId!);
 
-    return true;
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
+      }
+
+      setSuccessMessage("Member added successfully.");
+
+      await loadMembers();
+
+      return true;
+    });
   }
 
   return {
     members,
     loading,
+    saving,
     error,
     successMessage,
     addMember,

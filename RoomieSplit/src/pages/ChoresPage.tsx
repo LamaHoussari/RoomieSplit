@@ -28,6 +28,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   const {
     chores,
     loading,
+    saving,
     error,
     successMessage,
     addChore,
@@ -101,7 +102,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   const assignedCount = chores.filter(chore => Boolean(chore.assigned_to)).length;
 
   const handleAddChore = async () => {
-    if (!choreName.trim() || !groupId) return;
+    if (saving || !choreName.trim() || !groupId) return;
     const success = await addChore({
       group_id: groupId,
       name: choreName.trim(),
@@ -118,19 +119,19 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
   };
 
   const handleRemoveChore = async () => {
-    if (!confirmRemoveId) return;
-    await removeChore(confirmRemoveId);
-    setConfirmRemoveId(null);
+    if (saving || !confirmRemoveId) return;
+    const success = await removeChore(confirmRemoveId);
+    if (success) setConfirmRemoveId(null);
   };
 
   const handleArchiveChore = async () => {
-    if (!confirmArchiveId) return;
+    if (saving || !confirmArchiveId) return;
     const success = await archiveChore(confirmArchiveId);
     if (success) setConfirmArchiveId(null);
   };
 
   const handleUnarchiveChore = async () => {
-    if (!confirmUnarchiveId) return;
+    if (saving || !confirmUnarchiveId) return;
     const success = await unarchiveChore(confirmUnarchiveId);
     if (success) setConfirmUnarchiveId(null);
   };
@@ -351,6 +352,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
                     type="button"
                     title={chore.is_completed ? 'Mark undone' : 'Mark done'}
                     onClick={() => toggleChore(chore.id, !chore.is_completed)}
+                    disabled={saving}
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-all duration-150
                       ${chore.is_completed
                         ? 'border-emerald-500 bg-emerald-500 text-white hover:border-emerald-600 hover:bg-emerald-600'
@@ -381,7 +383,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
       </Card>
 
       {showModal && (
-        <Modal title="Add Chore" onClose={() => setShowModal(false)}>
+        <Modal title="Add Chore" onClose={() => !saving && setShowModal(false)}>
           <form onSubmit={e => { e.preventDefault(); handleAddChore(); }}>
           <FormField label="Chore name">
             <Input placeholder="e.g. Take out trash" value={choreName} onChange={e => setChoreName(e.target.value)} />
@@ -401,15 +403,17 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
             </Select>
           </FormField>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button size="sm" type="submit">Add</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={saving}>
+              {saving ? 'Adding...' : 'Add'}
+            </Button>
           </div>
           </form>
         </Modal>
       )}
 
       {choreToRemove && (
-        <Modal title="Remove chore?" onClose={() => setConfirmRemoveId(null)}>
+        <Modal title="Remove chore?" onClose={() => !saving && setConfirmRemoveId(null)}>
           <form onSubmit={e => { e.preventDefault(); handleRemoveChore(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will permanently remove{' '}
@@ -417,9 +421,9 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
             from the list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmRemoveId(null)}>Cancel</Button>
-            <Button variant="danger" size="sm" type="submit">
-              Remove
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmRemoveId(null)} disabled={saving}>Cancel</Button>
+            <Button variant="danger" size="sm" type="submit" disabled={saving}>
+              {saving ? 'Removing...' : 'Remove'}
             </Button>
           </div>
           </form>
@@ -427,7 +431,7 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
       )}
 
       {choreToArchive && (
-        <Modal title="Archive chore?" onClose={() => setConfirmArchiveId(null)}>
+        <Modal title="Archive chore?" onClose={() => !saving && setConfirmArchiveId(null)}>
           <form onSubmit={e => { e.preventDefault(); handleArchiveChore(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will hide{' '}
@@ -435,15 +439,17 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
             from the active chore list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmArchiveId(null)}>Cancel</Button>
-            <Button size="sm" type="submit">Archive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmArchiveId(null)} disabled={saving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={saving}>
+              {saving ? 'Archiving...' : 'Archive'}
+            </Button>
           </div>
           </form>
         </Modal>
       )}
 
       {choreToUnarchive && (
-        <Modal title="Restore chore?" onClose={() => setConfirmUnarchiveId(null)}>
+        <Modal title="Restore chore?" onClose={() => !saving && setConfirmUnarchiveId(null)}>
           <form onSubmit={e => { e.preventDefault(); handleUnarchiveChore(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will move{' '}
@@ -451,8 +457,10 @@ export default function ChoresPage({ userId, chosenGroup, setChosenGroup }: Chor
             back into the active chore list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmUnarchiveId(null)}>Cancel</Button>
-            <Button size="sm" type="submit">Unarchive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmUnarchiveId(null)} disabled={saving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={saving}>
+              {saving ? 'Restoring...' : 'Unarchive'}
+            </Button>
           </div>
           </form>
         </Modal>

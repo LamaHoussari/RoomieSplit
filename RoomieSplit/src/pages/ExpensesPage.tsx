@@ -224,6 +224,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   const {
     expenses,
     loading: expensesLoading,
+    saving: expensesSaving,
     error,
     successMessage,
     addExpense,
@@ -360,7 +361,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   const saveEdit = async () => {
     const rawAmount = Number(editDraft.amount);
     const amount = roundCurrency(rawAmount);
-    if (!editDraft.title.trim() || Number.isNaN(rawAmount) || !editingId) return;
+    if (expensesSaving || !editDraft.title.trim() || Number.isNaN(rawAmount) || !editingId) return;
     const success = await editExpense(
       editingId,
       { description: editDraft.title.trim(), amount, payer_id: editDraft.payer, date: editDraft.date },
@@ -375,7 +376,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   const handleAdd = async () => {
     const rawAmount = Number(addDraft.amount);
     const amount = roundCurrency(rawAmount);
-    if (!addDraft.title.trim() || Number.isNaN(rawAmount) || !groupId) return;
+    if (expensesSaving || !addDraft.title.trim() || Number.isNaN(rawAmount) || !groupId) return;
     const success = await addExpense(
       { group_id: groupId, description: addDraft.title.trim(), amount, payer_id: addDraft.payer, created_by: userId, date: addDraft.date },
       splitAmountEvenly(amount, addDraft.splitUserIds),
@@ -387,19 +388,19 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
   };
 
   const handleDelete = async () => {
-    if (!confirmDeleteId) return;
+    if (expensesSaving || !confirmDeleteId) return;
     const success = await removeExpense(confirmDeleteId);
     if (success) setConfirmDeleteId(null);
   };
 
   const handleArchive = async () => {
-    if (!confirmArchiveId) return;
+    if (expensesSaving || !confirmArchiveId) return;
     const success = await archiveExpense(confirmArchiveId);
     if (success) setConfirmArchiveId(null);
   };
 
   const handleUnarchive = async () => {
-    if (!confirmUnarchiveId) return;
+    if (expensesSaving || !confirmUnarchiveId) return;
     const success = await unarchiveExpense(confirmUnarchiveId);
     if (success) setConfirmUnarchiveId(null);
   };
@@ -649,7 +650,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
       </Card>
 
       {showModal && (
-        <Modal title="Add Expense" onClose={() => setShowModal(false)}>
+        <Modal title="Add Expense" onClose={() => !expensesSaving && setShowModal(false)}>
           <form onSubmit={e => { e.preventDefault(); handleAdd(); }}>
           <FormField label="Title">
             <Input value={addDraft.title} onChange={e => setAddDraft(d => ({ ...d, title: e.target.value }))} placeholder="e.g. Electric bill" />
@@ -669,15 +670,17 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             <SplitPicker value={addDraft.splitUserIds} onChange={splitUserIds => setAddDraft(d => ({ ...d, splitUserIds }))} members={selectedGroupMembers} />
           </FormField>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button size="sm" type="submit">Add</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowModal(false)} disabled={expensesSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={expensesSaving}>
+              {expensesSaving ? 'Adding...' : 'Add'}
+            </Button>
           </div>
           </form>
         </Modal>
       )}
 
       {editingExpense && (
-        <Modal title="Edit Expense" onClose={() => setEditingId(null)}>
+        <Modal title="Edit Expense" onClose={() => !expensesSaving && setEditingId(null)}>
           <form onSubmit={e => { e.preventDefault(); saveEdit(); }}>
           <FormField label="Title">
             <Input value={editDraft.title} onChange={e => setEditDraft(d => ({ ...d, title: e.target.value }))} placeholder="e.g. Electric bill" />
@@ -697,15 +700,17 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             <SplitPicker value={editDraft.splitUserIds} onChange={splitUserIds => setEditDraft(d => ({ ...d, splitUserIds }))} members={editMembers} />
           </FormField>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setEditingId(null)}>Cancel</Button>
-            <Button size="sm" type="submit">Save</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setEditingId(null)} disabled={expensesSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={expensesSaving}>
+              {expensesSaving ? 'Saving...' : 'Save'}
+            </Button>
           </div>
           </form>
         </Modal>
       )}
 
       {expenseToDelete && (
-        <Modal title="Delete expense?" onClose={() => setConfirmDeleteId(null)}>
+        <Modal title="Delete expense?" onClose={() => !expensesSaving && setConfirmDeleteId(null)}>
           <form onSubmit={e => { e.preventDefault(); handleDelete(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will permanently remove{' '}
@@ -713,9 +718,9 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             from the list.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
-            <Button variant="danger" size="sm" type="submit">
-              Delete
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmDeleteId(null)} disabled={expensesSaving}>Cancel</Button>
+            <Button variant="danger" size="sm" type="submit" disabled={expensesSaving}>
+              {expensesSaving ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
           </form>
@@ -723,7 +728,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
       )}
 
       {expenseToArchive && (
-        <Modal title="Archive expense?" onClose={() => setConfirmArchiveId(null)}>
+        <Modal title="Archive expense?" onClose={() => !expensesSaving && setConfirmArchiveId(null)}>
           <form onSubmit={e => { e.preventDefault(); handleArchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will hide{' '}
@@ -731,9 +736,9 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             and any linked balances from the active lists.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmArchiveId(null)}>Cancel</Button>
-            <Button size="sm" type="submit">
-              Archive
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmArchiveId(null)} disabled={expensesSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={expensesSaving}>
+              {expensesSaving ? 'Archiving...' : 'Archive'}
             </Button>
           </div>
           </form>
@@ -741,7 +746,7 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
       )}
 
       {expenseToUnarchive && (
-        <Modal title="Restore expense?" onClose={() => setConfirmUnarchiveId(null)}>
+        <Modal title="Restore expense?" onClose={() => !expensesSaving && setConfirmUnarchiveId(null)}>
           <form onSubmit={e => { e.preventDefault(); handleUnarchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will move{' '}
@@ -749,9 +754,9 @@ export default function ExpensesPage({ userId, chosenGroup, setChosenGroup }: Ex
             back into the active expenses list and restore its linked balances.
           </p>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmUnarchiveId(null)}>Cancel</Button>
-            <Button size="sm" type="submit">
-              Unarchive
+            <Button variant="outline" size="sm" type="button" onClick={() => setConfirmUnarchiveId(null)} disabled={expensesSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={expensesSaving}>
+              {expensesSaving ? 'Restoring...' : 'Unarchive'}
             </Button>
           </div>
           </form>

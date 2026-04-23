@@ -9,6 +9,7 @@ export function useGroups(userId: string | null) {
   const [groups, setGroups] = useState<Group[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -66,41 +67,55 @@ export function useGroups(userId: string | null) {
     return () => clearTimeout(id);
   }, [error]);
 
+  async function runSaving<T>(operation: () => Promise<T>) {
+    setSaving(true);
+    try {
+      return await operation();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // Adds a new group
   async function addGroup(group: NewGroup) {
-    setError("");
-    setSuccessMessage("");
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
 
-    const { data, error } = await createGroup(group, userId);
+      const { data, error } = await createGroup(group, userId);
 
-    if (error) {
-      setError(friendlyError(error.message));
-      return null;
-    }
+      if (error) {
+        setError(friendlyError(error.message));
+        return null;
+      }
 
-    setSuccessMessage("Group added successfully.");
+      setSuccessMessage("Group added successfully.");
 
-    const nextGroups = await loadGroups();
+      const nextGroups = await loadGroups();
 
-    return data ?? nextGroups.find(existingGroup => existingGroup.code === group.code) ?? null;
+      return data ?? nextGroups.find(existingGroup => existingGroup.code === group.code) ?? null;
+    });
   }
 
   async function joinGroup(code: string) {
-    setError("");
-    setSuccessMessage("");
-    const { error } = await joinGroupByCodeWithFallback(code, userId);
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
-    }
-    setSuccessMessage("Joined group successfully.");
-    await loadGroups();
-    return true;
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
+      const { error } = await joinGroupByCodeWithFallback(code, userId);
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
+      }
+      setSuccessMessage("Joined group successfully.");
+      await loadGroups();
+      return true;
+    });
   }
 
   return {
     groups,
     loading,
+    saving,
     error,
     successMessage,
     addGroup,

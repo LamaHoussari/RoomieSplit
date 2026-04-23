@@ -42,6 +42,7 @@ export function useExpenses(
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const allGroupIds = normalizeGroupIds(groups);
@@ -220,251 +221,84 @@ export function useExpenses(
     return () => window.clearTimeout(id);
   }, [error]);
 
+  async function runSaving<T>(operation: () => Promise<T>) {
+    setSaving(true);
+    try {
+      return await operation();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function addExpense(expense: NewExpense, splits: NewExpenseSplit[]) {
-    setError("");
-    setSuccessMessage("");
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
 
-    const normalizedExpense = {
-      ...expense,
-      amount: roundCurrency(expense.amount),
-      is_paid: expense.is_paid ?? !isFutureDatedExpense(expense.date),
-    };
-    const normalizedSplits = normalizeSplits(splits);
-    const validationError = validateExpenseSplits(
-      normalizedExpense.amount,
-      normalizedSplits,
-    );
+      const normalizedExpense = {
+        ...expense,
+        amount: roundCurrency(expense.amount),
+        is_paid: expense.is_paid ?? !isFutureDatedExpense(expense.date),
+      };
+      const normalizedSplits = normalizeSplits(splits);
+      const validationError = validateExpenseSplits(
+        normalizedExpense.amount,
+        normalizedSplits,
+      );
 
-    if (validationError) {
-      setError(validationError);
-      return false;
-    }
+      if (validationError) {
+        setError(validationError);
+        return false;
+      }
 
-    const { data: createdExpenseId, error } = await createExpense(
-      normalizedExpense,
-      normalizedSplits,
-    );
-
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
-    }
-
-    const expenseId =
-      typeof createdExpenseId === "string"
-        ? createdExpenseId
-        : (createdExpenseId as { id?: string } | null)?.id;
-
-    if (expenseId) {
-      const planError = await ensureExpenseSettlementPlan(
-        expenseId,
+      const { data: createdExpenseId, error } = await createExpense(
         normalizedExpense,
         normalizedSplits,
       );
 
-      if (planError) {
-        setError(
-          `Expense was added, but the settlement plan could not be created: ${friendlyError(planError.message)}`,
-        );
-        await loadExpenses();
-        return true;
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
       }
-    }
 
-    setSuccessMessage("Expense added successfully.");
-    await loadExpenses();
-    return true;
+      const expenseId =
+        typeof createdExpenseId === "string"
+          ? createdExpenseId
+          : (createdExpenseId as { id?: string } | null)?.id;
+
+      if (expenseId) {
+        const planError = await ensureExpenseSettlementPlan(
+          expenseId,
+          normalizedExpense,
+          normalizedSplits,
+        );
+
+        if (planError) {
+          setError(
+            `Expense was added, but the settlement plan could not be created: ${friendlyError(planError.message)}`,
+          );
+          await loadExpenses();
+          return true;
+        }
+      }
+
+      setSuccessMessage("Expense added successfully.");
+      await loadExpenses();
+      return true;
+    });
   }
 
   async function removeExpense(expenseId: string) {
-    setError("");
-    setSuccessMessage("");
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
 
-    const expense = expenses.find((item) => item.id === expenseId);
-    if (!expense) {
-      setError("Expense not found.");
-      return false;
-    }
-
-    const { data: linkedSettlements, error: linkedError } =
-      await getSettlementsByExpense(expenseId);
-
-    if (linkedError) {
-      setError(friendlyError(linkedError.message));
-      return false;
-    }
-
-    if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
-      setError(
-        "This expense has recorded payments. Please remove or adjust those payments first.",
-      );
-      return false;
-    }
-
-    const { error: settlementError } = await deleteSettlementsByExpense(expenseId);
-    if (settlementError) {
-      setError(friendlyError(settlementError.message));
-      return false;
-    }
-
-    const { error } = await deleteExpenseService(expenseId);
-    if (error) {
-      if (expense.is_paid) {
-        await syncExpenseSettlements(expenseId);
+      const expense = expenses.find((item) => item.id === expenseId);
+      if (!expense) {
+        setError("Expense not found.");
+        return false;
       }
 
-      setError(friendlyError(error.message));
-      return false;
-    }
-
-    setSuccessMessage("Expense deleted.");
-    await loadExpenses();
-    return true;
-  }
-
-  async function archiveExpense(expenseId: string) {
-    setError("");
-    setSuccessMessage("");
-
-    const expense = expenses.find((item) => item.id === expenseId);
-    if (!expense) {
-      setError("Expense not found.");
-      return false;
-    }
-
-    const { data: linkedSettlements, error: linkedError } =
-      await getSettlementsByExpense(expenseId);
-
-    if (linkedError) {
-      setError(friendlyError(linkedError.message));
-      return false;
-    }
-
-    if (!expense.is_paid) {
-      setError("Only paid expenses can be archived.");
-      return false;
-    }
-
-    const owingSplitUserIds = getOwingSplitUserIds(expense);
-    const settlementsByUserId = new Map(
-      (linkedSettlements ?? []).map((settlement) => [
-        settlement.from_user_id,
-        settlement,
-      ]),
-    );
-    const hasUnsettledBalances = owingSplitUserIds.some((userId) => {
-      const settlement = settlementsByUserId.get(userId);
-      return !settlement || !isSettlementSettled(settlement);
-    });
-
-    if (hasUnsettledBalances) {
-      setError("Please settle all linked balances before archiving this expense.");
-      return false;
-    }
-
-    const archivedAt = new Date().toISOString();
-    const linkedSettlementIds = (linkedSettlements ?? []).map(
-      (settlement) => settlement.id,
-    );
-
-    const { error: expenseError } = await setExpenseArchivedAt(expenseId, archivedAt);
-    if (expenseError) {
-      setError(friendlyError(expenseError.message));
-      return false;
-    }
-
-    const { error: settlementError } = await setSettlementsArchivedAt(
-      linkedSettlementIds,
-      archivedAt,
-    );
-    if (settlementError) {
-      await setExpenseArchivedAt(expenseId, null);
-      setError(friendlyError(settlementError.message));
-      return false;
-    }
-
-    setSuccessMessage("Expense archived.");
-    await loadExpenses();
-    return true;
-  }
-
-  async function unarchiveExpense(expenseId: string) {
-    setError("");
-    setSuccessMessage("");
-
-    const expense = expenses.find((item) => item.id === expenseId);
-    if (!expense) {
-      setError("Expense not found.");
-      return false;
-    }
-
-    const previousArchivedAt = expense.archived_at ?? new Date().toISOString();
-    const { data: linkedSettlements, error: linkedError } =
-      await getSettlementsByExpense(expenseId, "archived");
-
-    if (linkedError) {
-      setError(friendlyError(linkedError.message));
-      return false;
-    }
-
-    const { error: expenseError } = await setExpenseArchivedAt(expenseId, null);
-    if (expenseError) {
-      setError(friendlyError(expenseError.message));
-      return false;
-    }
-
-    const { error: settlementError } = await setSettlementsArchivedAt(
-      (linkedSettlements ?? []).map((settlement) => settlement.id),
-      null,
-    );
-    if (settlementError) {
-      await setExpenseArchivedAt(expenseId, previousArchivedAt);
-      setError(friendlyError(settlementError.message));
-      return false;
-    }
-
-    setSuccessMessage("Expense restored.");
-    await loadExpenses();
-    return true;
-  }
-
-  async function editExpense(
-    expenseId: string,
-    updates: Partial<NewExpense>,
-    splits: NewExpenseSplit[],
-  ) {
-    setError("");
-    setSuccessMessage("");
-
-    const expense = expenses.find((item) => item.id === expenseId);
-    if (!expense) {
-      setError("Expense not found.");
-      return false;
-    }
-
-    const normalizedUpdates = {
-      ...updates,
-      amount:
-        updates.amount == null ? expense.amount : roundCurrency(updates.amount),
-    };
-    const normalizedSplits = normalizeSplits(splits);
-    const validationError = validateExpenseSplits(
-      normalizedUpdates.amount,
-      normalizedSplits,
-    );
-
-    if (validationError) {
-      setError(validationError);
-      return false;
-    }
-
-    const nextPayerId = normalizedUpdates.payer_id ?? expense.payer_id;
-    const financialChanged =
-      roundCurrency(expense.amount) !== normalizedUpdates.amount ||
-      expense.payer_id !== nextPayerId ||
-      !areSplitConfigsEqual(expense.expense_splits ?? [], normalizedSplits);
-
-    if (expense.is_paid && financialChanged) {
       const { data: linkedSettlements, error: linkedError } =
         await getSettlementsByExpense(expenseId);
 
@@ -475,97 +309,7 @@ export function useExpenses(
 
       if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
         setError(
-          "You can't change the amount, payer, or split after payments have been recorded.",
-        );
-        return false;
-      }
-    }
-
-    const { error } = await updateExpenseWithSplits(
-      expenseId,
-      normalizedUpdates,
-      normalizedSplits,
-    );
-
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
-    }
-
-    if (expense.is_paid && financialChanged) {
-      const { error: syncError } = await syncExpenseSettlements(expenseId);
-
-      if (syncError) {
-        setError(friendlyError(syncError.message));
-        return false;
-      }
-    }
-
-    setSuccessMessage("Expense updated.");
-    await loadExpenses();
-    return true;
-  }
-
-  async function togglePaid(
-    expenseId: string,
-    currentlyPaid: boolean,
-    expense?: Expense,
-  ) {
-    setError("");
-    setSuccessMessage("");
-
-    const targetExpense = expense ?? expenses.find((item) => item.id === expenseId);
-    if (!targetExpense) {
-      setError("Expense not found.");
-      return false;
-    }
-
-    const currentSplits = targetExpense.expense_splits ?? [];
-    const { data: linkedSettlements, error: linkedError } =
-      await getSettlementsByExpense(expenseId);
-
-    if (linkedError) {
-      setError(friendlyError(linkedError.message));
-      return false;
-    }
-
-    if (!currentlyPaid) {
-      const validationError = validateExpenseSplits(
-        targetExpense.amount,
-        currentSplits,
-      );
-
-      if (validationError) {
-        setError(validationError);
-        return false;
-      }
-
-      if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
-        setError(
-          "This expense has recorded payments. Please refresh and try again.",
-        );
-        return false;
-      }
-
-      const { error } = await updateExpense(expenseId, { is_paid: true });
-      if (error) {
-        setError(friendlyError(error.message));
-        return false;
-      }
-
-      const { error: syncError } = await syncExpenseSettlements(expenseId);
-
-      if (syncError) {
-        await updateExpense(expenseId, { is_paid: false });
-        setError(friendlyError(syncError.message));
-        return false;
-      }
-
-      setSuccessMessage("Expense marked paid.");
-    } else {
-      if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
-        setError(
-          "You can't mark this expense as unpaid after payments have been recorded.",
+          "This expense has recorded payments. Please remove or adjust those payments first.",
         );
         return false;
       }
@@ -576,23 +320,302 @@ export function useExpenses(
         return false;
       }
 
-      const { error } = await updateExpense(expenseId, { is_paid: false });
+      const { error } = await deleteExpenseService(expenseId);
       if (error) {
-        await syncExpenseSettlements(expenseId);
+        if (expense.is_paid) {
+          await syncExpenseSettlements(expenseId);
+        }
+
         setError(friendlyError(error.message));
         return false;
       }
 
-      setSuccessMessage("Expense marked unpaid.");
-    }
+      setSuccessMessage("Expense deleted.");
+      await loadExpenses();
+      return true;
+    });
+  }
 
-    await loadExpenses();
-    return true;
+  async function archiveExpense(expenseId: string) {
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
+
+      const expense = expenses.find((item) => item.id === expenseId);
+      if (!expense) {
+        setError("Expense not found.");
+        return false;
+      }
+
+      const { data: linkedSettlements, error: linkedError } =
+        await getSettlementsByExpense(expenseId);
+
+      if (linkedError) {
+        setError(friendlyError(linkedError.message));
+        return false;
+      }
+
+      if (!expense.is_paid) {
+        setError("Only paid expenses can be archived.");
+        return false;
+      }
+
+      const owingSplitUserIds = getOwingSplitUserIds(expense);
+      const settlementsByUserId = new Map(
+        (linkedSettlements ?? []).map((settlement) => [
+          settlement.from_user_id,
+          settlement,
+        ]),
+      );
+      const hasUnsettledBalances = owingSplitUserIds.some((userId) => {
+        const settlement = settlementsByUserId.get(userId);
+        return !settlement || !isSettlementSettled(settlement);
+      });
+
+      if (hasUnsettledBalances) {
+        setError("Please settle all linked balances before archiving this expense.");
+        return false;
+      }
+
+      const archivedAt = new Date().toISOString();
+      const linkedSettlementIds = (linkedSettlements ?? []).map(
+        (settlement) => settlement.id,
+      );
+
+      const { error: expenseError } = await setExpenseArchivedAt(expenseId, archivedAt);
+      if (expenseError) {
+        setError(friendlyError(expenseError.message));
+        return false;
+      }
+
+      const { error: settlementError } = await setSettlementsArchivedAt(
+        linkedSettlementIds,
+        archivedAt,
+      );
+      if (settlementError) {
+        await setExpenseArchivedAt(expenseId, null);
+        setError(friendlyError(settlementError.message));
+        return false;
+      }
+
+      setSuccessMessage("Expense archived.");
+      await loadExpenses();
+      return true;
+    });
+  }
+
+  async function unarchiveExpense(expenseId: string) {
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
+
+      const expense = expenses.find((item) => item.id === expenseId);
+      if (!expense) {
+        setError("Expense not found.");
+        return false;
+      }
+
+      const previousArchivedAt = expense.archived_at ?? new Date().toISOString();
+      const { data: linkedSettlements, error: linkedError } =
+        await getSettlementsByExpense(expenseId, "archived");
+
+      if (linkedError) {
+        setError(friendlyError(linkedError.message));
+        return false;
+      }
+
+      const { error: expenseError } = await setExpenseArchivedAt(expenseId, null);
+      if (expenseError) {
+        setError(friendlyError(expenseError.message));
+        return false;
+      }
+
+      const { error: settlementError } = await setSettlementsArchivedAt(
+        (linkedSettlements ?? []).map((settlement) => settlement.id),
+        null,
+      );
+      if (settlementError) {
+        await setExpenseArchivedAt(expenseId, previousArchivedAt);
+        setError(friendlyError(settlementError.message));
+        return false;
+      }
+
+      setSuccessMessage("Expense restored.");
+      await loadExpenses();
+      return true;
+    });
+  }
+
+  async function editExpense(
+    expenseId: string,
+    updates: Partial<NewExpense>,
+    splits: NewExpenseSplit[],
+  ) {
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
+
+      const expense = expenses.find((item) => item.id === expenseId);
+      if (!expense) {
+        setError("Expense not found.");
+        return false;
+      }
+
+      const normalizedUpdates = {
+        ...updates,
+        amount:
+          updates.amount == null ? expense.amount : roundCurrency(updates.amount),
+      };
+      const normalizedSplits = normalizeSplits(splits);
+      const validationError = validateExpenseSplits(
+        normalizedUpdates.amount,
+        normalizedSplits,
+      );
+
+      if (validationError) {
+        setError(validationError);
+        return false;
+      }
+
+      const nextPayerId = normalizedUpdates.payer_id ?? expense.payer_id;
+      const financialChanged =
+        roundCurrency(expense.amount) !== normalizedUpdates.amount ||
+        expense.payer_id !== nextPayerId ||
+        !areSplitConfigsEqual(expense.expense_splits ?? [], normalizedSplits);
+
+      if (expense.is_paid && financialChanged) {
+        const { data: linkedSettlements, error: linkedError } =
+          await getSettlementsByExpense(expenseId);
+
+        if (linkedError) {
+          setError(friendlyError(linkedError.message));
+          return false;
+        }
+
+        if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
+          setError(
+            "You can't change the amount, payer, or split after payments have been recorded.",
+          );
+          return false;
+        }
+      }
+
+      const { error } = await updateExpenseWithSplits(
+        expenseId,
+        normalizedUpdates,
+        normalizedSplits,
+      );
+
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
+      }
+
+      if (expense.is_paid && financialChanged) {
+        const { error: syncError } = await syncExpenseSettlements(expenseId);
+
+        if (syncError) {
+          setError(friendlyError(syncError.message));
+          return false;
+        }
+      }
+
+      setSuccessMessage("Expense updated.");
+      await loadExpenses();
+      return true;
+    });
+  }
+
+  async function togglePaid(
+    expenseId: string,
+    currentlyPaid: boolean,
+    expense?: Expense,
+  ) {
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
+
+      const targetExpense = expense ?? expenses.find((item) => item.id === expenseId);
+      if (!targetExpense) {
+        setError("Expense not found.");
+        return false;
+      }
+
+      const currentSplits = targetExpense.expense_splits ?? [];
+      const { data: linkedSettlements, error: linkedError } =
+        await getSettlementsByExpense(expenseId);
+
+      if (linkedError) {
+        setError(friendlyError(linkedError.message));
+        return false;
+      }
+
+      if (!currentlyPaid) {
+        const validationError = validateExpenseSplits(
+          targetExpense.amount,
+          currentSplits,
+        );
+
+        if (validationError) {
+          setError(validationError);
+          return false;
+        }
+
+        if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
+          setError(
+            "This expense has recorded payments. Please refresh and try again.",
+          );
+          return false;
+        }
+
+        const { error } = await updateExpense(expenseId, { is_paid: true });
+        if (error) {
+          setError(friendlyError(error.message));
+          return false;
+        }
+
+        const { error: syncError } = await syncExpenseSettlements(expenseId);
+
+        if (syncError) {
+          await updateExpense(expenseId, { is_paid: false });
+          setError(friendlyError(syncError.message));
+          return false;
+        }
+
+        setSuccessMessage("Expense marked paid.");
+      } else {
+        if (hasRecordedSettlementPayments(linkedSettlements ?? [])) {
+          setError(
+            "You can't mark this expense as unpaid after payments have been recorded.",
+          );
+          return false;
+        }
+
+        const { error: settlementError } = await deleteSettlementsByExpense(expenseId);
+        if (settlementError) {
+          setError(friendlyError(settlementError.message));
+          return false;
+        }
+
+        const { error } = await updateExpense(expenseId, { is_paid: false });
+        if (error) {
+          await syncExpenseSettlements(expenseId);
+          setError(friendlyError(error.message));
+          return false;
+        }
+
+        setSuccessMessage("Expense marked unpaid.");
+      }
+
+      await loadExpenses();
+      return true;
+    });
   }
 
   return {
     expenses,
     loading,
+    saving,
     error,
     successMessage,
     addExpense,

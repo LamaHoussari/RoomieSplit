@@ -14,7 +14,7 @@ interface GroupsPageProps {
 }
 
 export default function GroupsPage({ userId }: GroupsPageProps) {
-  const { groups, loading, error, successMessage, addGroup, joinGroup } = useGroups(userId);
+  const { groups, loading, saving, error, successMessage, addGroup, joinGroup } = useGroups(userId);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
     return () => clearTimeout(id);
   }, [pageFeedback]);
 
-  const canCreate = groupName.trim() !== '' && inviteEmails.length > 0 && !creating;
+  const canCreate = groupName.trim() !== '' && inviteEmails.length > 0 && !creating && !saving;
 
   const handleAddEmail = () => {
     const email = emailInput.trim().toLowerCase();
@@ -115,7 +115,7 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
   };
 
   const handleJoin = async () => {
-    if (!joinCode.trim()) return;
+    if (!joinCode.trim() || saving) return;
     setPageFeedback(null);
     const success = await joinGroup(joinCode.trim());
     if (success) {
@@ -303,8 +303,8 @@ export default function GroupsPage({ userId }: GroupsPageProps) {
               <Button variant="outline" size="sm" type="button" onClick={() => setShowJoin(false)}>
                 Cancel
               </Button>
-              <Button size="sm" type="submit">
-                Join
+              <Button size="sm" type="submit" disabled={saving || !joinCode.trim()}>
+                {saving ? 'Joining...' : 'Join'}
               </Button>
             </div>
           </form>

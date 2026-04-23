@@ -19,6 +19,7 @@ export function useChores(
   const [chores, setChores] = useState<Chore[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const allGroupIds = normalizeGroupIds(groups);
@@ -74,85 +75,105 @@ export function useChores(
     return () => clearTimeout(id);
   }, [error]);
 
-  async function addChore(chore: NewChore) {
-    setError("");
-    setSuccessMessage("");
-
-    const { error } = await createChore(chore);
-
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
+  async function runSaving<T>(operation: () => Promise<T>) {
+    setSaving(true);
+    try {
+      return await operation();
+    } finally {
+      setSaving(false);
     }
+  }
 
-    setSuccessMessage("Chore added successfully.");
+  async function addChore(chore: NewChore) {
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
 
-    await loadChores();
+      const { error } = await createChore(chore);
 
-    return true;
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
+      }
+
+      setSuccessMessage("Chore added successfully.");
+
+      await loadChores();
+
+      return true;
+    });
   }
 
   async function removeChore(choreId: string) {
-    setError("");
-    setSuccessMessage("");
-    const { error } = await deleteChoreService(choreId);
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
-    }
-    setSuccessMessage("Chore removed.");
-    await loadChores();
-    return true;
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
+      const { error } = await deleteChoreService(choreId);
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
+      }
+      setSuccessMessage("Chore removed.");
+      await loadChores();
+      return true;
+    });
   }
 
   async function archiveChore(choreId: string) {
-    setError("");
-    setSuccessMessage("");
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
 
-    const { error } = await setChoreArchivedAt(choreId, new Date().toISOString());
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
-    }
+      const { error } = await setChoreArchivedAt(choreId, new Date().toISOString());
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
+      }
 
-    setSuccessMessage("Chore archived.");
-    await loadChores();
-    return true;
+      setSuccessMessage("Chore archived.");
+      await loadChores();
+      return true;
+    });
   }
 
   async function unarchiveChore(choreId: string) {
-    setError("");
-    setSuccessMessage("");
+    return runSaving(async () => {
+      setError("");
+      setSuccessMessage("");
 
-    const { error } = await setChoreArchivedAt(choreId, null);
-    if (error) {
-      setError(friendlyError(error.message));
-      return false;
-    }
+      const { error } = await setChoreArchivedAt(choreId, null);
+      if (error) {
+        setError(friendlyError(error.message));
+        return false;
+      }
 
-    setSuccessMessage("Chore restored.");
-    await loadChores();
-    return true;
+      setSuccessMessage("Chore restored.");
+      await loadChores();
+      return true;
+    });
   }
 
   async function toggleChore(choreId: string, isCompleted: boolean) {
-    setError("");
-    // Optimistic update
-    setChores(chores.map(c => c.id === choreId ? { ...c, is_completed: isCompleted } : c));
-    
-    const { error } = await updateChoreService(choreId, { is_completed: isCompleted });
-    if (error) {
-      setError(friendlyError(error.message));
-      // Revert optimistic update on error
-      setChores(chores.map(c => c.id === choreId ? { ...c, is_completed: !isCompleted } : c));
-      return false;
-    }
-    return true;
+    return runSaving(async () => {
+      setError("");
+      // Optimistic update
+      setChores(chores.map(c => c.id === choreId ? { ...c, is_completed: isCompleted } : c));
+      
+      const { error } = await updateChoreService(choreId, { is_completed: isCompleted });
+      if (error) {
+        setError(friendlyError(error.message));
+        // Revert optimistic update on error
+        setChores(chores.map(c => c.id === choreId ? { ...c, is_completed: !isCompleted } : c));
+        return false;
+      }
+      return true;
+    });
   }
 
   return {
     chores,
     loading,
+    saving,
     error,
     successMessage,
     addChore,

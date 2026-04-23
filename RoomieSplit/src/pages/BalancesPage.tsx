@@ -44,6 +44,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   const {
     settlements,
     loading: settlementsLoading,
+    saving: settlementsSaving,
     error,
     successMessage,
     archiveSettlement,
@@ -80,7 +81,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
 
   const submitPay = async () => {
     const amount = parseFloat(payAmount);
-    if (!amount || amount <= 0 || !payTarget) return;
+    if (settlementsSaving || !amount || amount <= 0 || !payTarget) return;
     const remaining = getSettlementRemaining(payTarget);
     if (amount > remaining) {
       setPayError(`Amount exceeds the remaining balance of $${formatMoney(remaining)}.`);
@@ -95,20 +96,20 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
   };
 
   const submitArchive = async () => {
-    if (!archiveTarget) return;
+    if (settlementsSaving || !archiveTarget) return;
     const success = await archiveSettlement(archiveTarget.id);
     if (success) setArchiveTarget(null);
   };
 
   const submitUnarchive = async () => {
-    if (!unarchiveTarget) return;
+    if (settlementsSaving || !unarchiveTarget) return;
     const success = await unarchiveSettlement(unarchiveTarget.id);
     if (success) setUnarchiveTarget(null);
   };
 
   const submitNewSettlement = async () => {
     const amount = parseFloat(newAmount);
-    if (!newFrom || !newTo || !amount || amount <= 0 || !groupId) return;
+    if (settlementsSaving || !newFrom || !newTo || !amount || amount <= 0 || !groupId) return;
     if (newFrom === newTo) return;
     const success = await addSettlement({
       group_id: groupId,
@@ -415,7 +416,7 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
       </Card>
 
       {showNewSettlement && (
-        <Modal title="New Settlement" onClose={() => setShowNewSettlement(false)}>
+        <Modal title="New Settlement" onClose={() => !settlementsSaving && setShowNewSettlement(false)}>
           <form onSubmit={e => { e.preventDefault(); submitNewSettlement(); }}>
           <FormField label="From (who owes)">
             <Select value={newFrom} onChange={e => setNewFrom(e.target.value)}>
@@ -444,15 +445,17 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             <p className="mt-1 text-sm text-red-500">From and To must be different members</p>
           )}
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setShowNewSettlement(false)}>Cancel</Button>
-            <Button size="sm" type="submit" disabled={!newFrom || !newTo || newFrom === newTo || !parseFloat(newAmount)}>Create</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setShowNewSettlement(false)} disabled={settlementsSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={settlementsSaving || !newFrom || !newTo || newFrom === newTo || !parseFloat(newAmount)}>
+              {settlementsSaving ? 'Creating...' : 'Create'}
+            </Button>
           </div>
           </form>
         </Modal>
       )}
 
       {payTarget && (
-        <Modal title="Record payment" onClose={() => { setPayTarget(null); setPayError(null); }}>
+        <Modal title="Record payment" onClose={() => { if (!settlementsSaving) { setPayTarget(null); setPayError(null); } }}>
           {payError && (
             <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
               {payError}
@@ -505,15 +508,17 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
           </p>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setPayTarget(null)}>Cancel</Button>
-            <Button size="sm" type="submit">Confirm payment</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setPayTarget(null)} disabled={settlementsSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={settlementsSaving}>
+              {settlementsSaving ? 'Recording...' : 'Confirm payment'}
+            </Button>
           </div>
           </form>
         </Modal>
       )}
 
       {archiveTarget && (
-        <Modal title="Archive balance?" onClose={() => setArchiveTarget(null)}>
+        <Modal title="Archive balance?" onClose={() => !settlementsSaving && setArchiveTarget(null)}>
           <form onSubmit={e => { e.preventDefault(); submitArchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will hide the balance from{' '}
@@ -530,15 +535,17 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             For: {archiveTarget.expense?.description?.trim() || 'Manual balance'}
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setArchiveTarget(null)}>Cancel</Button>
-            <Button size="sm" type="submit">Archive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setArchiveTarget(null)} disabled={settlementsSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={settlementsSaving}>
+              {settlementsSaving ? 'Archiving...' : 'Archive'}
+            </Button>
           </div>
           </form>
         </Modal>
       )}
 
       {unarchiveTarget && (
-        <Modal title="Restore balance?" onClose={() => setUnarchiveTarget(null)}>
+        <Modal title="Restore balance?" onClose={() => !settlementsSaving && setUnarchiveTarget(null)}>
           <form onSubmit={e => { e.preventDefault(); submitUnarchive(); }}>
           <p className="text-base text-stone-600 dark:text-slate-300">
             This will move the balance from{' '}
@@ -555,8 +562,10 @@ export default function BalancesPage({ userId, chosenGroup, setChosenGroup }: Ba
             For: {unarchiveTarget.expense?.description?.trim() || 'Manual balance'}
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => setUnarchiveTarget(null)}>Cancel</Button>
-            <Button size="sm" type="submit">Unarchive</Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setUnarchiveTarget(null)} disabled={settlementsSaving}>Cancel</Button>
+            <Button size="sm" type="submit" disabled={settlementsSaving}>
+              {settlementsSaving ? 'Restoring...' : 'Unarchive'}
+            </Button>
           </div>
           </form>
         </Modal>
